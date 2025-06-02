@@ -12,17 +12,17 @@
 
 ### ✅ Completed Features
 
-- Built-in language toggle (English/Chinese), with support for adding more languages
-- Configurable multiple battle arena locations (players are teleported in/out automatically)
-- Customizable rank names and Elo thresholds, with flexible additions/removals
-- Supports both 1v1 and 2v2 (rotation battle) modes
-- Elo rating system with separate Elo calculations per mode
-- Mode-specific reward system with customizable command rewards
-- Built-in season system (automatic resets, rank and reward clearing)
-- Matchmaking queue system with Elo range restrictions and wait-time relaxation
-- Players who disconnect or forfeit receive double point loss; opponents gain no Elo
-- Free team-up support in 2v2 mode
-- Intuitive click-based GUI interface
+- Built-in English and Chinese support, extendable to other languages  
+- Configurable multiple arenas with auto teleport and return  
+- Customizable rank names and Elo thresholds, easily add/remove ranks  
+- Supports 1v1 and 2v2 (rotation battle) modes  
+- Elo ranking system with separate calculations per mode  
+- Mode-specific reward system with customizable commands  
+- Built-in season system with automatic rotation and reward reset  
+- Matchmaking queue with Elo range limit and wait-time relaxation  
+- Double Elo loss on disconnect/forfeit, no gain for opponent  
+- Free team-up support in 2v2 mode  
+- Click-based GUI interface for easy operation 
 
 ### 🔧 Planned Features
 
