@@ -1,22 +1,34 @@
-**Read this in other languages: [English](README.md)，[中文](README_zh.md)。**
+**Other Languages: [English](README.md)｜[中文](README_zh.md)**
 
 ---
 
 # 📊 CobblemonRanked Ranked System Documentation
 
+💡 *This plugin only needs to be installed on the server — no client-side installation required.*
+
+---
+
 ## 🎯 Feature Overview
 
-- ✅ Built-in support for Chinese and English messages (multi-language expandable)
-- ✅ Multiple battle arena locations (players auto-teleported in/out)
-- ✅ Customizable rank names and Elo score thresholds (flexible additions/removals)
-- ✅ Supports 1v1 and 2v2 (round-robin) formats
-- ✅ Elo rating system (independent per format)
-- ✅ Reward system per format with customizable commands
-- ✅ Automated season system (rotation and reward resets)
-- ✅ Matchmaking queue with Elo difference control and dynamic range expansion
-- ✅ Double Elo penalty for quitting/disconnection; opponent Elo unchanged
-- ✅ Custom team system for 2v2
-- ✅ Clickable GUI interfaces for convenience
+### ✅ Completed Features
+
+- Built-in language toggle (English/Chinese), with support for adding more languages
+- Configurable multiple battle arena locations (players are teleported in/out automatically)
+- Customizable rank names and Elo thresholds, with flexible additions/removals
+- Supports both 1v1 and 2v2 (rotation battle) modes
+- Elo rating system with separate Elo calculations per mode
+- Mode-specific reward system with customizable command rewards
+- Built-in season system (automatic resets, rank and reward clearing)
+- Matchmaking queue system with Elo range restrictions and wait-time relaxation
+- Players who disconnect or forfeit receive double point loss; opponents gain no Elo
+- Free team-up support in 2v2 mode
+- Intuitive click-based GUI interface
+
+### 🔧 Planned Features
+
+- [ ] Double Battle mode
+- [ ] Client-side visual GUI
+- [ ] Cross-server matchmaking support
 
 ---
 
