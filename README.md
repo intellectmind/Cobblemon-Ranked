@@ -4,7 +4,7 @@
 
 # 📊 CobblemonRanked Ranked System Documentation
 
-💡 *This plugin only needs to be installed on the server — no client-side installation required.*
+💡 *This mod currently only needs to be installed on the server side.*
 
 ---
 
