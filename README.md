@@ -1,167 +1,127 @@
-**Other Languages: [English](README.md)｜[中文](README_zh.md)**
+**Other languages: [English](README.md)｜[中文](README_zh.md)**
 
 ---
 
 # 📊 CobblemonRanked Ranked System Documentation
 
-💡 *This mod currently only needs to be installed on the server side.*
+💡 *This mod only needs to be installed on the server side.*
 
 ---
 
-## 🎯 Feature Overview
+## 🎯 Features Overview
 
 ### ✅ Completed Features
 
-- Built-in English and Chinese support, extendable to other languages  
-- Configurable multiple arenas with auto teleport and return  
-- Customizable rank names and Elo thresholds, easily add/remove ranks  
-- Supports 1v1 and 2v2 (rotation battle) modes  
-- Elo ranking system with separate calculations per mode  
-- Mode-specific reward system with customizable commands  
-- Built-in season system with automatic rotation and reward reset  
-- Matchmaking queue with Elo range limit and wait-time relaxation  
-- Double Elo loss on disconnect/forfeit, no gain for opponent  
-- Free team-up support in 2v2 mode  
-- Click-based GUI interface for easy operation 
+- Built-in multi-language support (Chinese & English), easy to extend
+- Configurable battle arenas with auto-teleport and return
+- Customizable rank titles and Elo thresholds
+- Supports both **Singles (1v1)** and **Doubles (2v2)** battle formats
+- Elo ranking system calculated independently per format
+- Independent reward system per format with customizable commands
+- Built-in **season system**, with auto-rotation and reward reset
+- Elo-based matchmaking queue with optional waiting-time-based relaxation
+- Disconnects count as losses (flee), no Elo penalty for opponent
+- Fully GUI-driven with clickable menu entries
 
 ### 🔧 Planned Features
 
-- [ ] Double Battle mode
+- [ ] 2v2 gauntlet (multi-battle) mode
 - [ ] Client-side visual GUI
 - [ ] Cross-server matchmaking support
+- [ ] Flee penalty: double loss, no Elo gain for the opponent
 
 ---
 
 ## 📌 Command Overview
 
-| Command | Description |
-|--------|-------------|
-| `/rank gui` | Open the main GUI menu |
-| `/rank gui_top` | Open leaderboard selection |
-| `/rank gui_info` | View your detailed battle info |
-| `/rank gui_info_players` | View other players' battle info |
-| `/rank gui_queue` | Matchmaking shortcut GUI |
-| `/rank gui_invite <page>` | Invite others for 2v2 (paginated) |
-| `/rank gui_reward` | Admin GUI for reward distribution |
-| `/rank gui_reward_format <format>` | Distribute rewards by format |
-| `/rank gui_info_format <player> <format>` | View specific player info in format |
-| `/rank gui_myinfo` | View your full battle history |
-| `/rank gui_reset` | Admin GUI to reset player data |
-| `/rank reset <player> <format>` | Reset a player's Elo in format |
-| `/rank reload` | Reload config file without restart |
-| `/rank queue join [format]` | Join matchmaking (default to config mode) |
-| `/rank queue leave` | Leave all queues |
-| `/rank info <format> <season>` | View your season stats |
-| `/rank info <player> <format> [season]` | View other player's stats |
-| `/rank top [format] [season] [page] [amount]` | Paginated leaderboard |
-| `/rank season` | View current season |
-| `/rank season end` | End current season (admin only) |
-| `/rank reward <player> <format> <rank>` | Give rank reward (admin only) |
-| `/rank duo invite <player>` | Send 2v2 team invite |
-| `/rank duo leave` | Leave or disband 2v2 team |
-| `/rank duo accept` | Accept 2v2 invite |
-| `/rank duo status` | View current 2v2 queue/team status |
+> All commands start with `/rank`
 
 ---
 
-## ⚙️ Configuration File (`cobblemon_ranked.json`)
+## 🎮 Player Commands
+
+| Command | Description |
+|--------|-------------|
+| `/rank gui` | Opens the main menu GUI |
+| `/rank gui_top` | Opens the leaderboard format selection GUI |
+| `/rank gui_info` | View your detailed Elo stats |
+| `/rank gui_info_players` | Paginated list of online players to inspect their rankings |
+| `/rank gui_myinfo` | Quick access to your own ranking |
+| `/rank gui_queue` | Opens the matchmaking menu |
+| `/rank gui_reward_format <format>` | Shows unclaimed rewards for a specific format |
+| `/rank gui_info_format <player> <format>` | GUI view of another player's seasonal stats |
+| `/rank queue join [format]` | Join a ranked queue (default or specify format: `singles`, `doubles`) |
+| `/rank queue leave` | Leave all matchmaking queues |
+| `/rank status` | Show your current queue status |
+| `/rank info <format> <season>` | Show your stats for the given format and season |
+| `/rank info <player> <format> [season]` | View another player's ranking for a specific format and season |
+| `/rank top` | View leaderboard for default format and current season |
+| `/rank top <format> [season] [page] [count]` | Paginated leaderboard for given format and season |
+| `/rank season` | View current season info (start/end time, participation, etc.) |
+
+---
+
+## 🛡️ Admin Commands (Requires OP)
+
+| Command | Description |
+|--------|-------------|
+| `/rank gui_reward` | Opens the reward format selection GUI |
+| `/rank gui_reset` | Paginated list of online players to reset rankings |
+| `/rank reset <player> <format>` | Reset a player's data for the current season and format |
+| `/rank reward <player> <format> <rank>` | Grant a reward to a player for a specific rank (auto-suggestion supported) |
+| `/rank season end` | Force-end the current season |
+| `/rank reload` | Reload config files (language, rank settings, etc.) |
+
+---
+
+## ⚙️ Configuration File Reference (`cobblemon_ranked.json`)
 
 <details>
-<summary>Click to expand full JSON with comments</summary>
+<summary>Click to expand full config reference (with inline comments)</summary>
 
 ```json
 {
-  // Default language: 'en' (English), or 'zh' (Chinese)
-  "defaultLang": "en",
-
-  // Default battle format used when not specified
-  "defaultFormat": "1v1",
-
-  // Minimum number of Pokémon allowed in a team
-  "minTeamSize": 1,
-
-  // Maximum number of Pokémon allowed in a team
-  "maxTeamSize": 6,
-
-  // Max allowed Elo difference for matchmaking
-  "maxEloDiff": 200,
-
-  // Max time (seconds) before Elo diff expands
-  "maxQueueTime": 300,
-
-  // Max Elo range multiplier (scales with wait time)
-  "maxEloMultiplier": 3.0,
-
-  // Days per season before it resets
-  "seasonDuration": 30,
-
-  // Starting Elo for every new season
-  "initialElo": 1000,
-
-  // K-factor for Elo calculations (affects how much Elo changes)
-  "eloKFactor": 32,
-
-  // Lowest possible Elo score (floor)
-  "minElo": 0,
-
-  // List of banned Pokémon names
-  "bannedPokemon": ["Mewtwo", "Arceus"],
-
-  // Allowed match formats
-  "allowedFormats": ["1v1", "2v2"],
-
-  // Max Pokémon level allowed (0 = no limit)
-  "maxLevel": 0,
-
-  // Allow duplicate species in a team (e.g., two Pikachus)
-  "allowDuplicateSpecies": false,
-
-  // List of arena coordinates to teleport to after matching
-  "battleArenas": [
+  "defaultLang": "en",                     // Default language: 'en' or 'zh'
+  "defaultFormat": "singles",              // Default battle format
+  "minTeamSize": 1,                        // Minimum Pokémon per team
+  "maxTeamSize": 6,                        // Maximum Pokémon per team
+  "maxEloDiff": 200,                       // Max Elo gap for matchmaking
+  "maxQueueTime": 300,                     // Max wait time (seconds) before relaxing Elo rules
+  "maxEloMultiplier": 3.0,                 // Max multiplier for Elo diff relaxation
+  "seasonDuration": 30,                    // Season duration (days)
+  "initialElo": 1000,                      // Elo at the beginning of a season
+  "eloKFactor": 32,                        // Elo K-factor (affects Elo change magnitude)
+  "minElo": 0,                             // Minimum Elo floor
+  "bannedPokemon": ["Mewtwo", "Arceus"],  // Banned Pokémon (e.g., legendaries)
+  "allowedFormats": ["singles", "doubles"], // Supported battle formats
+  "maxLevel": 0,                           // Max Pokémon level (0 = no limit)
+  "allowDuplicateSpecies": false,         // Whether duplicate Pokémon species are allowed
+  "battleArenas": [                        // List of arenas (teleport locations for battles)
     {
       "world": "minecraft:overworld",
       "playerPositions": [
         { "x": 0.0, "y": 70.0, "z": 0.0 },
-        { "x": 10.0, "y": 70.0, "z": 0.0 },
-        { "x": 0.0, "y": 70.0, "z": 10.0 },
-        { "x": 10.0, "y": 70.0, "z": 10.0 }
+        { "x": 10.0, "y": 70.0, "z": 0.0 }
       ]
     },
     {
       "world": "minecraft:overworld",
       "playerPositions": [
         { "x": 100.0, "y": 65.0, "z": 100.0 },
-        { "x": 110.0, "y": 65.0, "z": 100.0 },
-        { "x": 100.0, "y": 65.0, "z": 110.0 },
-        { "x": 110.0, "y": 65.0, "z": 110.0 }
+        { "x": 110.0, "y": 65.0, "z": 100.0 }
       ]
     }
   ],
-
-  // Rank rewards per format (custom commands using {player})
-  "rankRewards": {
-    "1v1": {
+  "rankRewards": {                         // Format-specific rank rewards (command-based)
+    "singles": {
       "Bronze": ["give {player} minecraft:apple 5"],
       "Silver": ["give {player} minecraft:golden_apple 3"],
-      "Gold": [
-        "give {player} minecraft:diamond 2",
-        "give {player} minecraft:emerald 5"
-      ],
-      "Platinum": [
-        "give {player} minecraft:diamond_block 1",
-        "effect give {player} minecraft:strength 3600 1"
-      ],
-      "Diamond": [
-        "give {player} minecraft:netherite_ingot 1",
-        "give {player} minecraft:elytra 1"
-      ],
-      "Master": [
-        "give {player} minecraft:netherite_block 2",
-        "give {player} minecraft:totem_of_undying 1",
-        "effect give {player} minecraft:resistance 7200 2"
-      ]
+      "Gold": ["give {player} minecraft:diamond 2", "give {player} minecraft:emerald 5"],
+      "Platinum": ["give {player} minecraft:diamond_block 1", "effect give {player} minecraft:strength 3600 1"],
+      "Diamond": ["give {player} minecraft:netherite_ingot 1", "give {player} minecraft:elytra 1"],
+      "Master": ["give {player} minecraft:netherite_block 2", "give {player} minecraft:totem_of_undying 1", "effect give {player} minecraft:resistance 7200 2"]
     },
-    "2v2": {
+    "doubles": {
       "Bronze": ["give {player} minecraft:bread 5"],
       "Silver": ["give {player} minecraft:gold_nugget 10"],
       "Gold": ["give {player} minecraft:emerald 1"],
@@ -170,9 +130,7 @@
       "Master": ["give {player} minecraft:netherite_ingot 2"]
     }
   },
-
-  // Elo thresholds for each rank (descending order)
-  "rankTitles": {
+  "rankTitles": {                          // Elo thresholds → rank names
     "3500": "Master",
     "3000": "Diamond",
     "2500": "Platinum",
