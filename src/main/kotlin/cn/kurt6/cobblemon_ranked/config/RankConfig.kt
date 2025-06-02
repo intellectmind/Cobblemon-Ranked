@@ -104,7 +104,7 @@ data class RankConfig(
     ),
 
 //    @Comment("段位名称配置（可增减）/ Elo thresholds for rank titles (customizable)")
-    val rankTitles: Map<Int, String> = mapOf(
+    var rankTitles: Map<Int, String> = mapOf(
         3500 to "Master",
         3000 to "Diamond",
         2500 to "Platinum",

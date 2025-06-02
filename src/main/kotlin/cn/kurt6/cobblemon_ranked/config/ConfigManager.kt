@@ -16,43 +16,22 @@ object ConfigManager {
             if (Files.exists(path)) {
                 val jsonText = Files.readString(path)
                 val json = jankson.load(jsonText) as blue.endless.jankson.JsonObject
-                val config = jankson.fromJson(json, RankConfig::class.java)
-
-                applyDefaults(config)
-                save(config)
-                config
+                jankson.fromJson(json, RankConfig::class.java)
             } else {
+                // 如果配置文件不存在，则创建默认文件
                 val default = RankConfig()
                 save(default)
                 default
             }
-        } catch (e: JsonParseException) {
-            e.printStackTrace()
-            RankConfig()
+        } catch (e: Exception) {
+            // 更具体的错误信息
+            throw RuntimeException("Configuration file loading failed：${e.message}", e)
         }
     }
 
     fun save(config: RankConfig) {
         val json = jankson.toJson(config).toJson(true, true)
         Files.writeString(path, json, StandardCharsets.UTF_8)
-    }
-
-    private fun applyDefaults(config: RankConfig) {
-        if (config.allowedFormats.isEmpty()) {
-            config.allowedFormats = listOf("singles", "doubles")
-        }
-
-        if (config.bannedPokemon.isEmpty()) {
-            config.bannedPokemon = listOf("Mewtwo", "Arceus")
-        }
-
-        // 保证奖励配置格式正确（fallback）
-        if (config.rankRewards.isEmpty()) {
-            config.rankRewards = mapOf(
-                "singles" to mapOf("青铜" to listOf("give {player} minecraft:apple 5")),
-                "doubles" to mapOf("青铜" to listOf("give {player} minecraft:bread 5"))
-            )
-        }
     }
 
     fun reload(): RankConfig {
