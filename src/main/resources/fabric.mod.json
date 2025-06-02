@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon-ranked",
+  "version": "${version}",
+  "name": "Cobblemon Ranked",
+  "description": "Adds competitive ranked battles to Cobblemo",
+  "authors": ["Kurt"],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/cobblemon_ranked/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "cn.kurt6.cobblemon_ranked.CobblemonRanked"
+    ]
+  },
+  "mixins": [
+    "cobblemon_ranked.mixins.json",
+    {
+      "config": "cobblemon_ranked.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-language-kotlin": ">=1.13.0+kotlin.2.1.0",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}",
+    "cobblemon": ">=1.6.0"
+  }
+}
