@@ -28,7 +28,6 @@
 - [ ] 2v2 gauntlet (multi-battle) mode
 - [ ] Client-side visual GUI
 - [ ] Cross-server matchmaking support
-- [ ] Flee penalty: double loss, no Elo gain for the opponent
 
 ---
 
