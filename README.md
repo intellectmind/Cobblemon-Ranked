@@ -15,12 +15,12 @@
 - Built-in multi-language support (Chinese & English), easy to extend
 - Configurable battle arenas with auto-teleport and return
 - Customizable rank titles and Elo thresholds
-- Supports both **Singles (1v1)** and **Doubles (2v2)** battle formats
+- Supports Singles (1v1) and Doubles (2v2) formats
 - Elo ranking system calculated independently per format
 - Independent reward system per format with customizable commands
-- Built-in **season system**, with auto-rotation and reward reset
+- Built-in season system with automatic rotation and data reset
 - Elo-based matchmaking queue with optional waiting-time-based relaxation
-- Disconnects count as losses (flee), no Elo penalty for opponent
+- Disconnects are treated as losses; Elo is deducted, opponent's Elo remains unchanged
 - Fully GUI-driven with clickable menu entries
 
 ### 🔧 Planned Features
