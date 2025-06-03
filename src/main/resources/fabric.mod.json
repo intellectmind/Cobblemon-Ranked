@@ -23,7 +23,6 @@
   ],
   "depends": {
     "fabricloader": ">=0.16.0",
-    "fabric-language-kotlin": ">=1.13.0+kotlin.2.1.0",
     "fabric": "*",
     "minecraft": "${minecraft_version}",
     "cobblemon": ">=1.6.0"
