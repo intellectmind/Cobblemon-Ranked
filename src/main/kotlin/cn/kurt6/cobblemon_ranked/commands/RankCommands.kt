@@ -5,6 +5,7 @@ import cn.kurt6.cobblemon_ranked.CobblemonRanked
 import cn.kurt6.cobblemon_ranked.config.ConfigManager
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.matchmaking.DuoMatchmakingQueue
+import com.cobblemon.mod.common.Cobblemon
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -64,16 +65,6 @@ object RankCommands {
                         1
                     }
                 )
-                .then(CommandManager.literal("gui_reward_format")
-                    .then(CommandManager.argument("format", StringArgumentType.word())
-                        .executes { ctx ->
-                            val player = ctx.source.player ?: return@executes 0
-                            val format = StringArgumentType.getString(ctx, "format")
-                            showRewardMenu(player, format)
-                            1
-                        }
-                    )
-                )
                 .then(CommandManager.literal("gui_info_format")
                     .then(CommandManager.argument("player", StringArgumentType.word())
                         .then(CommandManager.argument("format", StringArgumentType.word())
@@ -96,8 +87,9 @@ object RankCommands {
                 )
                 .then(CommandManager.literal("gui_myinfo")
                     .executes { ctx ->
+                        val season = CobblemonRanked.seasonManager.currentSeasonId
                         val player = ctx.source.player ?: return@executes 0
-                        showMyInfoMenu(player)
+                        showMyInfoMenu(player, season)
                         1
                     }
                 )
@@ -141,8 +133,6 @@ object RankCommands {
                             val player = it.source.player ?: return@executes 0
                             CobblemonRanked.matchmakingQueue.removePlayer(player.uuid)
                             DuoMatchmakingQueue.removePlayer(player)
-                            val lang = CobblemonRanked.config.defaultLang
-                            player.sendMessage(Text.literal(MessageConfig.get("queue.left_all", lang)))
                             1
                         }
                     )
@@ -278,6 +268,84 @@ object RankCommands {
                         1
                     }
                 )
+//                .then(CommandManager.literal("duo")
+//                    .then(CommandManager.literal("invite")
+//                        .then(CommandManager.argument("player", EntityArgumentType.player())
+//                            .executes {
+//                                val sender = it.source.player ?: return@executes 0
+//                                val target = EntityArgumentType.getPlayer(it, "player")
+//                                val lang = CobblemonRanked.config.defaultLang
+//
+//                                if (sender.uuid == target.uuid) {
+//                                    sender.sendMessage(Text.literal("§c不能邀请自己组队。"));
+//                                    return@executes 0
+//                                }
+//                                if (!target.isAlive || Cobblemon.battleRegistry.getBattleByParticipatingPlayer(target) != null) {
+//                                    sender.sendMessage(Text.literal("§c目标玩家正在战斗或离线，无法邀请。"));
+//                                    return@executes 0
+//                                }
+//                                if (DuoMatchmakingQueue.getPartner(sender.uuid) == target.uuid) {
+//                                    sender.sendMessage(Text.literal("§e你们已经是队友，无需重复邀请"));
+//                                    return@executes 0
+//                                }
+//                                if (DuoMatchmakingQueue.isPending(target.uuid)) {
+//                                    sender.sendMessage(Text.literal("§e该玩家已在匹配队列中，无法重复邀请"));
+//                                    return@executes 0
+//                                }
+//
+//                                DuoMatchmakingQueue.pendingInvites[target.uuid] = sender.uuid
+//                                sender.sendMessage(Text.literal("§a已向 ${target.name.string} 发出组队邀请"));
+//                                target.sendMessage(Text.literal("§e${sender.name.string} 邀请你组队，输入 /rank duo accept 同意"));
+//                                1
+//                            }
+//                        )
+//                    )
+//                    .then(CommandManager.literal("leave")
+//                        .executes {
+//                            val player = it.source.player ?: return@executes 0
+//                            val lang = CobblemonRanked.config.defaultLang
+//                            val removed = DuoMatchmakingQueue.removePlayer(player)
+//
+//                            if (removed) {
+//                                player.sendMessage(Text.literal("§c你已退出双人排位队列"));
+//                            } else {
+//                                player.sendMessage(Text.literal("§7你当前未在双人队列或队伍中"));
+//                            }
+//                            1
+//                        }
+//                    )
+//                    .then(CommandManager.literal("accept")
+//                        .executes {
+//                            val player = it.source.player ?: return@executes 0
+//                            val inviterId = DuoMatchmakingQueue.pendingInvites.remove(player.uuid)
+//                            val lang = CobblemonRanked.config.defaultLang
+//
+//                            if (inviterId == null) {
+//                                player.sendMessage(Text.literal("§c你没有待处理的邀请。")); return@executes 0
+//                            }
+//                            val inviter = it.source.server.playerManager.getPlayer(inviterId)
+//                            if (inviter == null) {
+//                                player.sendMessage(Text.literal("§c邀请者已离线。")); return@executes 0
+//                            }
+//
+//                            val playerTeam = Cobblemon.storage.getParty(player).mapNotNull { it?.uuid }
+//                            val inviterTeam = Cobblemon.storage.getParty(inviter).mapNotNull { it?.uuid }
+//
+//                            if (playerTeam.isEmpty() || inviterTeam.isEmpty()) {
+//                                player.sendMessage(Text.literal("§c请确认你和对方都有宝可梦。"));
+//                                return@executes 0
+//                            }
+//
+//                            DuoMatchmakingQueue.joinQueue(inviter, inviterTeam)
+//                            DuoMatchmakingQueue.joinQueue(player, playerTeam)
+//                            DuoMatchmakingQueue.formTeam(inviter, player)
+//
+//                            player.sendMessage(Text.literal("§a你已接受组队邀请，与 ${inviter.name.string} 成为队友"));
+//                            inviter.sendMessage(Text.literal("§a${player.name.string} 已接受你的邀请"));
+//                            1
+//                        }
+//                    )
+//                )
         )
     }
 
@@ -319,7 +387,8 @@ object RankCommands {
         }
 
         // 调用奖励管理器发放奖励
-        CobblemonRanked.rewardManager.grantRankReward(player, matchedRank, format, source.server)
+        // 强制发放奖励，不记录为“已领取”
+        CobblemonRanked.rewardManager.grantRankReward(player, matchedRank, format, source.server, markClaimed = false)
         source.sendMessage(Text.literal(MessageConfig.get("reward.granted_to", lang, "player" to player.name.string, "format" to format, "rank" to matchedRank)))
         return 1
     }
@@ -568,39 +637,26 @@ object RankCommands {
 
     private fun showRewardFormatMenu(player: ServerPlayerEntity) {
         val lang = CobblemonRanked.config.defaultLang
-        player.sendMessage(Text.literal(MessageConfig.get("gui.reward.format_title", lang)))
-        CobblemonRanked.config.allowedFormats.forEach {
-            player.sendMessage(link(MessageConfig.get("gui.reward.format_button", lang, "format" to it), "/rank gui_reward_format $it"))
-        }
-    }
+        val formats = CobblemonRanked.config.allowedFormats
 
-    private fun showRewardMenu(player: ServerPlayerEntity, format: String) {
-        val lang = CobblemonRanked.config.defaultLang
-        val config = CobblemonRanked.config
-        val seasonId = CobblemonRanked.seasonManager.currentSeasonId
-        val data = CobblemonRanked.rankDao.getPlayerData(player.uuid, seasonId, format)
+        val ranks = CobblemonRanked.config.parsedRankTitles.entries
+            .sortedByDescending { it.key }
 
-        if (data == null) {
-            player.sendMessage(Text.literal(MessageConfig.get("gui.reward.no_data", lang)))
-            return
-        }
+        player.sendMessage(Text.literal(MessageConfig.get("gui.reward.top", lang)))
 
-        val ranks = config.rankTitles.values.toList()
-        player.sendMessage(Text.literal(MessageConfig.get("gui.reward.title", lang, "format" to format)))
+        for (format in formats) {
+            player.sendMessage(Text.literal(MessageConfig.get("gui.reward.title", lang, "format" to format)))
 
-        var anyShown = false
-        for (rank in ranks) {
-            if (!data.hasClaimedReward(rank, format)) {
-                val row = link(MessageConfig.get("gui.reward.claim", lang, "rank" to rank), "/rank reward ${player.name.string} $format $rank")
+            for ((elo, rankName) in ranks) {
+                val row = link(
+                    MessageConfig.get("gui.reward.claim", lang, "rank" to rankName),
+                    "/rank reward ${player.name.string} $format $rankName"
+                )
                 player.sendMessage(row)
-                anyShown = true
             }
         }
-
-        if (!anyShown) {
-            player.sendMessage(Text.literal(MessageConfig.get("gui.reward.all_claimed", lang, "format" to format)))
-        }
     }
+
 
     private fun showResetPlayerList(player: ServerPlayerEntity, page: Int) {
         val lang = CobblemonRanked.config.defaultLang
@@ -673,14 +729,15 @@ object RankCommands {
         }
     }
 
-    private fun showMyInfoMenu(player: ServerPlayerEntity) {
+    private fun showMyInfoMenu(player: ServerPlayerEntity, season: Int) {
         val lang = CobblemonRanked.config.defaultLang
-        val row1 = Text.empty()
-            .append(link(MessageConfig.get("gui.myinfo.1v1", lang), "/rank info ${player.name.string} singles 1"))
-            .append(space())
-            .append(link(MessageConfig.get("gui.myinfo.2v2", lang), "/rank info ${player.name.string} doubles 1"))
-
-        player.sendMessage(row1)
+        for (s in season downTo maxOf(1, season - 4)) {
+            val row1 = Text.empty()
+                .append(link(MessageConfig.get("gui.myinfo.1v1", lang), "/rank info ${player.name.string} singles $s"))
+                .append(space())
+                .append(link(MessageConfig.get("gui.myinfo.2v2", lang), "/rank info ${player.name.string} doubles $s"))
+            player.sendMessage(row1)
+        }
     }
 
     private fun link(label: String, command: String, hoverKey: String? = null): Text {

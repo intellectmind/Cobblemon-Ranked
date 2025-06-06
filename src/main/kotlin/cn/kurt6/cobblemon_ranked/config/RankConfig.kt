@@ -3,6 +3,7 @@
 package cn.kurt6.cobblemon_ranked.config
 
 import blue.endless.jankson.Comment
+import kotlin.text.toIntOrNull
 
 data class ArenaCoordinate(
     val x: Double,
@@ -104,12 +105,18 @@ data class RankConfig(
     ),
 
 //    @Comment("段位名称配置（可增减）/ Elo thresholds for rank titles (customizable)")
-    var rankTitles: Map<Int, String> = mapOf(
-        3500 to "Master",
-        3000 to "Diamond",
-        2500 to "Platinum",
-        2000 to "Gold",
-        1500 to "Silver",
-        0 to "Bronze"
+    var rankTitles: Map<String, String> = mapOf(
+        "3500" to "Master",
+        "3000" to "Diamond",
+        "2500" to "Platinum",
+        "2000" to "Gold",
+        "1500" to "Silver",
+        "0" to "Bronze"
     )
 )
+{
+    val parsedRankTitles: Map<Int, String>
+        get() = rankTitles.mapNotNull { (k, v) ->
+            k.toIntOrNull()?.let { it to v }
+        }.toMap()
+}

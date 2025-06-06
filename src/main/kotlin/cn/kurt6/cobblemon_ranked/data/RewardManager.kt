@@ -47,7 +47,7 @@ class RewardManager(private val rankDao: RankDao) {
             executeRewardCommand(command, player, server)
         }
 
-        // 标记奖励已领取（如果启用）
+        // 标记奖励已领取
         if (markClaimed) {
             val uuid = player.uuid
             val seasonId = CobblemonRanked.seasonManager.currentSeasonId

@@ -23,9 +23,10 @@ data class PlayerRankData(
 
     fun getRankTitle(): String {
         return CobblemonRanked.config.rankTitles
-            .filterKeys { it <= elo }
-            .maxByOrNull { it.key }
-            ?.value ?: "青铜"
+            .mapNotNull { (key, value) -> key.toIntOrNull()?.let { it to value } }
+            .filter { (k, _) -> k <= elo }
+            .maxByOrNull { it.first }
+            ?.second ?: "青铜"
     }
 
     fun hasClaimedReward(rank: String, format: String): Boolean =

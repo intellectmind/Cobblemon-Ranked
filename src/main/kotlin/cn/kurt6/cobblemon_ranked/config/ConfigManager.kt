@@ -2,7 +2,6 @@
 package cn.kurt6.cobblemon_ranked.config
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
-import com.google.gson.JsonParseException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path

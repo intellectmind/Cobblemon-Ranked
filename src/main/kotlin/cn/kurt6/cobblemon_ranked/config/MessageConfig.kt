@@ -162,10 +162,6 @@ object MessageConfig {
                     "zh" to "§a已手动结束当前赛季并开始新赛季",
                     "en" to "§aSeason has been manually ended and a new one started"
                 ),
-                "queue.left_all" to mapOf(
-                    "zh" to "§c你已退出所有匹配队列",
-                    "en" to "§cYou have left all matchmaking queues"
-                ),
                 "format.invalid" to mapOf(
                     "zh" to "§c无效的战斗模式: {format}",
                     "en" to "§cInvalid battle format: {format}"
@@ -257,7 +253,7 @@ object MessageConfig {
                 "gui.status" to mapOf("zh" to "§b[匹配状态]", "en" to "§b[Match State]"),
                 "gui.queue_leave" to mapOf("zh" to "§c[退出匹配]", "en" to "§c[Leave Queue]"),
                 "gui.op.title" to mapOf("zh" to "§6§l管理员功能：", "en" to "§6§lAdmin Functions:"),
-                "gui.op.reward" to mapOf("zh" to "§c[获取奖励-测试用]", "en" to "§c[Gain Rewards - Test]"),
+                "gui.op.reward" to mapOf("zh" to "§c[获取奖励]", "en" to "§c[Gain Rewards]"),
                 "gui.op.season_end" to mapOf("zh" to "§c[结束赛季]", "en" to "§c[End Season]"),
                 "gui.op.reload" to mapOf("zh" to "§c[重载配置]", "en" to "§c[Reload Config]"),
                 "gui.op.reset" to mapOf("zh" to "§c[重置玩家]", "en" to "§c[Reset Player]"),
@@ -292,17 +288,9 @@ object MessageConfig {
                 "gui.queue.1v1" to mapOf("zh" to "§a[加入 单打]", "en" to "§a[Join singles]"),
                 "gui.queue.2v2" to mapOf("zh" to "§b[加入 双打]", "en" to "§b[Join doubles]"),
                 "gui.queue.leave" to mapOf("zh" to "§c[离开匹配]", "en" to "§c[Leave Match]"),
-                "gui.reward.format_title" to mapOf(
-                    "zh" to "§6§l▶ 选择奖励格式",
-                    "en" to "§6§l▶ Select Reward Format"
-                ),
-                "gui.reward.format_button" to mapOf(
-                    "zh" to "§c[发放 {format} 奖励]",
-                    "en" to "§c[Grant {format} Rewards]"
-                ),
-                "gui.reward.no_data" to mapOf(
-                    "zh" to "§c未找到你的段位数据，无法发放奖励",
-                    "en" to "§cNo rank data found. Unable to issue rewards."
+                "gui.reward.top" to mapOf(
+                    "zh" to "直接发放可重复领取的奖励-用于测试",
+                    "en" to "Directly distribute reusable rewards - for testing purposes"
                 ),
                 "gui.reward.title" to mapOf(
                     "zh" to "§6§l▶ 可领取的段位奖励 - {format}",
@@ -311,10 +299,6 @@ object MessageConfig {
                 "gui.reward.claim" to mapOf(
                     "zh" to "§a[发放 {rank} 段位奖励]",
                     "en" to "§a[Claim {rank} Reward]"
-                ),
-                "gui.reward.all_claimed" to mapOf(
-                    "zh" to "§7你已领取所有 {format} 模式的段位奖励。",
-                    "en" to "§7You have claimed all rewards for {format} mode."
                 ),
                 "gui.reset.title" to mapOf(
                     "zh" to "§6§l▶ 重置玩家排位数据（第 {page} 页 / 共 {total} 页）",

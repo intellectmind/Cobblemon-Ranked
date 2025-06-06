@@ -27,6 +27,7 @@ class CobblemonRanked : ModInitializer {
         // 初始化路径和配置
         dataPath = FabricLoader.getInstance().configDir.resolve(MOD_ID).apply { toFile().mkdirs() }
         config = ConfigManager.load()
+
         // 初始化消息配置
         MessageConfig.get("msg_example")
 
