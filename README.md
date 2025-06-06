@@ -47,7 +47,6 @@
 | `/rank gui_info_players` | Paginated list of online players to inspect their rankings |
 | `/rank gui_myinfo` | Quick access to your own ranking |
 | `/rank gui_queue` | Opens the matchmaking menu |
-| `/rank gui_reward_format <format>` | Shows unclaimed rewards for a specific format |
 | `/rank gui_info_format <player> <format>` | GUI view of another player's seasonal stats |
 | `/rank queue join [format]` | Join a ranked queue (default or specify format: `singles`, `doubles`) |
 | `/rank queue leave` | Leave all matchmaking queues |
