@@ -20,53 +20,49 @@ data class BattleArena(
 )
 
 data class RankConfig(
-    @Comment("Obtain configuration file examples and annotation documents：https://github.com/intellectmind/Cobblemon-Ranked/blob/main/README.md")
-    val configDocumentation1: String = "Please refer to the link above",
-    @Comment("获取配置文件示例及注释文档：https://github.com/intellectmind/Cobblemon-Ranked/blob/main/README_zh.md")
-    val configDocumentation2: String = "请查阅上方链接",
     @Comment("Default language: zh or en")
     var defaultLang: String = "en",
 
-//    @Comment("默认的战斗模式‘singles’（单打） / Default battle format: 'singles'")
+    @Comment("Default battle format: 'singles' / 默认的战斗模式‘singles’（单打）")
     var defaultFormat: String = "singles",
 
-//    @Comment("宝可梦限制最少数量 / Minimum number of Pokémon allowed in a team")
+    @Comment("Minimum number of Pokémon allowed in a team / 宝可梦限制最少数量")
     var minTeamSize: Int = 1,
 
-//    @Comment("宝可梦限制最多数量 / Maximum number of Pokémon allowed in a team")
+    @Comment("Maximum number of Pokémon allowed in a team / 宝可梦限制最多数量")
     var maxTeamSize: Int = 6,
 
-//    @Comment("队伍Elo差限制 / Maximum allowed Elo difference in matchmaking")
+    @Comment("Maximum allowed Elo difference in matchmaking / 队伍Elo差限制")
     var maxEloDiff: Int = 200,
 
-//    @Comment("最大匹配等待时间（秒），Elo 差距将线性放宽，从1倍放宽至最大倍率（如3倍） / Max wait time for matchmaking (seconds), Elo range linearly expands to max multiplier")
+    @Comment("Max wait time for matchmaking (seconds), Elo range linearly expands to max multiplier / 最大匹配等待时间（秒），Elo 差距将线性放宽，从1倍放宽至最大倍率（如3倍）")
     var maxQueueTime: Int = 300,
 
-//    @Comment("最大 Elo 匹配放宽倍率（线性放宽）/ Max Elo multiplier for matchmaking range (linear expansion)")
+    @Comment("Max Elo multiplier for matchmaking range (linear expansion) / 最大 Elo 匹配放宽倍率（线性放宽）")
     var maxEloMultiplier: Double = 3.0,
 
-//    @Comment("每个赛季的持续时间（天）/ Season duration in days")
+    @Comment("Season duration in days / 每个赛季的持续时间（天）")
     val seasonDuration: Int = 30,
 
-//    @Comment("赛季初始Elo / Initial Elo at the start of the season")
+    @Comment("Initial Elo at the start of the season / 赛季初始Elo")
     val initialElo: Int = 1000,
 
-//    @Comment("Elo计算中的K因子 / K-factor in Elo calculation")
+    @Comment("K-factor in Elo calculation / Elo计算中的K因子")
     val eloKFactor: Int = 32,
 
-//    @Comment("最低Elo分数限制 / Minimum possible Elo score")
+    @Comment("Minimum possible Elo score / 最低Elo分数限制")
     val minElo: Int = 0,
 
-//    @Comment("禁止使用的宝可梦 / Banned Pokémon")
+    @Comment("Banned Pokémon / 禁止使用的宝可梦")
     var bannedPokemon: List<String> = listOf("Mewtwo", "Arceus"),
-//    @Comment("允许的战斗模式：‘singles’（单打）, ‘doubles’（双打） / Allowed battle formats: 'singles', 'doubles'")
+    @Comment("Allowed battle formats: 'singles', 'doubles' / 允许的战斗模式：‘singles’（单打）, ‘doubles’（双打）")
     var allowedFormats: List<String> = listOf("singles", "doubles"),
-//    @Comment("允许的宝可梦等级，0 = 无限制 / Max Pokémon level allowed (0 = no limit)")
+    @Comment("Max Pokémon level allowed (0 = no limit) / 允许的宝可梦等级，0 = 无限制")
     var maxLevel: Int = 0,
-//    @Comment("允许同一个队伍中出现相同的宝可梦 / Allowed to have the same species of Pokémon in a single team")
+    @Comment("Allowed to have the same species of Pokémon in a single team / 允许同一个队伍中出现相同的宝可梦")
     var allowDuplicateSpecies: Boolean = false,
 
-//    @Comment("匹配成功后可用的战斗场地列表，支持多个场地随机挑选，每个场地需要定义 2 个传送坐标/ Available battle arenas after matchmaking, each with 2 teleport coordinates")
+    @Comment("Available battle arenas after matchmaking, each with 2 teleport coordinates / 匹配成功后可用的战斗场地列表，支持多个场地随机挑选，每个场地需要定义 2 个传送坐标")
     var battleArenas: List<BattleArena> = listOf(
         BattleArena(
             world = "minecraft:overworld",
@@ -84,7 +80,7 @@ data class RankConfig(
         )
     ),
 
-//    @Comment("段位奖励配置，每种模式可单独配置 / Rank rewards configuration per format")
+    @Comment("Rank rewards configuration per format / 段位奖励配置，每种模式可单独配置 ")
     var rankRewards: Map<String, Map<String, List<String>>> = mapOf(
         "singles" to mapOf(
             "Bronze" to listOf("give {player} minecraft:apple 5"),
@@ -104,7 +100,7 @@ data class RankConfig(
         )
     ),
 
-//    @Comment("段位名称配置（可增减）/ Elo thresholds for rank titles (customizable)")
+    @Comment("Elo thresholds for rank titles (customizable) / 段位名称配置（可增减）")
     var rankTitles: Map<String, String> = mapOf(
         "3500" to "Master",
         "3000" to "Diamond",
@@ -112,6 +108,16 @@ data class RankConfig(
         "2000" to "Gold",
         "1500" to "Silver",
         "0" to "Bronze"
+    ),
+
+    @Comment("Minimum winning rate requirement for each rank reward / 每个段位奖励领取的最小胜率要求（0.0 ~ 1.0）")
+    var rankRequirements: Map<String, Double> = mapOf(
+        "Bronze" to 0.0,
+        "Silver" to 0.3,
+        "Gold" to 0.3,
+        "Platinum" to 0.3,
+        "Diamond" to 0.3,
+        "Master" to 0.3
     )
 )
 {

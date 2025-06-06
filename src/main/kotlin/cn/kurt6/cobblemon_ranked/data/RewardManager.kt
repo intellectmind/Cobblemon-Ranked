@@ -18,20 +18,29 @@ class RewardManager(private val rankDao: RankDao) {
         val seasonId = seasonManager.currentSeasonId
         val lang = CobblemonRanked.config.defaultLang
 
-        // 获取玩家数据
         val playerData = BattleHandler.rankDao.getPlayerData(uuid, seasonId, format) ?: return
+
+        val requiredWinRate = CobblemonRanked.config.rankRequirements[rank] ?: 0.0
+        val totalGames = playerData.wins + playerData.losses
+        val winRate = if (totalGames > 0) playerData.wins.toDouble() / totalGames else 0.0
+
+        if (winRate < requiredWinRate) {
+            val ratePercent = (requiredWinRate * 100).toInt().toString()
+            val denyMsg = MessageConfig.get("reward.not_eligible", lang, "rate" to ratePercent, "rank" to rank)
+            player.sendMessage(Text.literal(denyMsg))
+            return
+        }
 
         if (!playerData.hasClaimedReward(rank, format)) {
             BattleHandler.grantRankReward(player, rank, format, server)
 
-            // 广播全服首次领取该段位奖励
             val name = player.name.string
             val message = Text.literal(MessageConfig.get("reward.broadcast", lang, "player" to name, "rank" to rank))
             server.playerManager.broadcast(message, false)
         }
     }
 
-    // 强制发放段位奖励
+    // 发放段位奖励
     fun grantRankReward(player: PlayerEntity, rank: String, format: String, server: MinecraftServer, markClaimed: Boolean = true) {
         val config = CobblemonRanked.config
         val lang = CobblemonRanked.config.defaultLang

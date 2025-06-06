@@ -136,6 +136,10 @@ object MessageConfig {
                 ),
 
                 // RewardManager
+                "reward.not_eligible" to mapOf(
+                    "zh" to "§c胜率未达要求（{rate}%），无法领取 {rank} 段位奖励。",
+                    "en" to "§cYou must have at least {rate}% win rate to claim the {rank} reward."
+                ),
                 "reward.broadcast" to mapOf(
                     "zh" to "§6[段位奖励] §b{player} §f首次晋升到 §e{rank} §f，已发放奖励！",
                     "en" to "§6[Rank Reward] §b{player} §fhas reached §e{rank} §fand received a reward!"

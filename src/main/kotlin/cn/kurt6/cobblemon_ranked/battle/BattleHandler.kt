@@ -187,9 +187,9 @@ object BattleHandler {
         }
 
         // 逃跑处理逻辑
-        CobblemonEvents.BATTLE_FLED.subscribe { event ->
-            onBattleFled(event)
-        }
+//        CobblemonEvents.BATTLE_FLED.subscribe { event ->
+//            onBattleFled(event)
+//        }
 
         // 断线处理逻辑
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
@@ -265,65 +265,65 @@ object BattleHandler {
         teleportBackIfPossible(winner)
     }
 
-    /** 没进入方法，有问题，目前fleeCount定义为断线次数了
-     * 处理玩家逃跑事件
-     * @param event 逃跑事件
-     */
-    private fun onBattleFled(event: BattleFledEvent) {
-        val battle = event.battle
-        val fleeingActor = event.player
-        val battleId = battleToIdMap.remove(battle) ?: return
-        val formatName = rankedBattles.remove(battleId) ?: return
-        val lang = CobblemonRanked.config.defaultLang
-
-        // 获取逃跑玩家
-        val loser: ServerPlayerEntity = fleeingActor.entity as? ServerPlayerEntity ?: return
-
-        // 获取剩下的玩家
-        val players = battle.sides
-            .flatMap { it.actors.toList() }
-            .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
-
-        val winner: ServerPlayerEntity = players.firstOrNull { it.uuid != loser.uuid } ?: return
-        val seasonId = seasonManager.currentSeasonId
-
-        // 获取Elo数据
-        val loserData = getOrCreatePlayerData(loser.uuid, seasonId, formatName)
-        val winnerData = getOrCreatePlayerData(winner.uuid, seasonId, formatName)
-
-        loserData.playerName = loser.name.string
-        winnerData.playerName = winner.name.string
-
-        // 计算Elo变动(仅计算，不应用胜利方)
-        val (newLoserElo, _) = RankUtils.calculateElo(
-            loserData.elo,
-            winnerData.elo,
-            CobblemonRanked.config.eloKFactor,
-            CobblemonRanked.config.minElo
-        )
-
-        val eloLoss = (loserData.elo - newLoserElo).coerceAtLeast(0)
-
-        // 逃跑双倍扣分，胜方不加分
-        loserData.apply {
-            elo -= (eloLoss * 2)
-            losses++
-            winStreak = 0
-            fleeCount++
-        }
-
-        // 保存玩家数据
-        rankDao.savePlayerData(loserData)
-        rankDao.savePlayerData(winnerData)
-
-        // 消息通知
-        RankUtils.sendMessage(loser, MessageConfig.get("battle.flee.loser", lang, "elo" to loserData.elo.toString()))
-        RankUtils.sendMessage(winner, MessageConfig.get("battle.flee.winner", lang, "elo" to winnerData.elo.toString()))
-
-        // 回传送
-        teleportBackIfPossible(loser)
-        teleportBackIfPossible(winner)
-    }
+//    /** 有问题，目前fleeCount定义为断线次数了
+//     * 处理玩家逃跑事件
+//     * @param event 逃跑事件
+//     */
+//    private fun onBattleFled(event: BattleFledEvent) {
+//        val battle = event.battle
+//        val fleeingActor = event.player
+//        val battleId = battleToIdMap.remove(battle) ?: return
+//        val formatName = rankedBattles.remove(battleId) ?: return
+//        val lang = CobblemonRanked.config.defaultLang
+//
+//        // 获取逃跑玩家
+//        val loser: ServerPlayerEntity = fleeingActor.entity as? ServerPlayerEntity ?: return
+//
+//        // 获取剩下的玩家
+//        val players = battle.sides
+//            .flatMap { it.actors.toList() }
+//            .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+//
+//        val winner: ServerPlayerEntity = players.firstOrNull { it.uuid != loser.uuid } ?: return
+//        val seasonId = seasonManager.currentSeasonId
+//
+//        // 获取Elo数据
+//        val loserData = getOrCreatePlayerData(loser.uuid, seasonId, formatName)
+//        val winnerData = getOrCreatePlayerData(winner.uuid, seasonId, formatName)
+//
+//        loserData.playerName = loser.name.string
+//        winnerData.playerName = winner.name.string
+//
+//        // 计算Elo变动(仅计算，不应用胜利方)
+//        val (newLoserElo, _) = RankUtils.calculateElo(
+//            loserData.elo,
+//            winnerData.elo,
+//            CobblemonRanked.config.eloKFactor,
+//            CobblemonRanked.config.minElo
+//        )
+//
+//        val eloLoss = (loserData.elo - newLoserElo).coerceAtLeast(0)
+//
+//        // 逃跑双倍扣分，胜方不加分
+//        loserData.apply {
+//            elo -= (eloLoss * 2)
+//            losses++
+//            winStreak = 0
+//            fleeCount++
+//        }
+//
+//        // 保存玩家数据
+//        rankDao.savePlayerData(loserData)
+//        rankDao.savePlayerData(winnerData)
+//
+//        // 消息通知
+//        RankUtils.sendMessage(loser, MessageConfig.get("battle.flee.loser", lang, "elo" to loserData.elo.toString()))
+//        RankUtils.sendMessage(winner, MessageConfig.get("battle.flee.winner", lang, "elo" to winnerData.elo.toString()))
+//
+//        // 回传送
+//        teleportBackIfPossible(loser)
+//        teleportBackIfPossible(winner)
+//    }
 
     /**
      * 标记战斗为排位赛
@@ -439,67 +439,6 @@ object BattleHandler {
      */
     private fun extractPlayerActors(actors: List<BattleActor>): List<PlayerBattleActor> {
         return actors.filterIsInstance<PlayerBattleActor>()
-    }
-
-    /**
-     * 处理排位赛结果
-     * @param winner 胜利者
-     * @param loser 失败者
-     * @param formatName 战斗格式名称
-     * @param server 服务器实例
-     */
-    private fun processRankedBattleResult(
-        winner: PlayerEntity,
-        loser: PlayerEntity,
-        formatName: String,
-        server: MinecraftServer
-    ) {
-        val winnerId = winner.uuid
-        val loserId = loser.uuid
-        val seasonId = seasonManager.currentSeasonId
-
-        val winnerData = getOrCreatePlayerData(winnerId, seasonId, formatName)
-        val loserData = getOrCreatePlayerData(loserId, seasonId, formatName)
-
-        winnerData.playerName = winner.name.string
-        loserData.playerName = loser.name.string
-
-        // 计算Elo变化
-        val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(
-            winnerData.elo,
-            loserData.elo,
-            CobblemonRanked.config.eloKFactor,
-            CobblemonRanked.config.minElo
-        )
-
-        val eloDiffWinner = newWinnerElo - winnerData.elo
-        val eloDiffLoser = newLoserElo - loserData.elo
-
-        // 更新胜利者数据
-        winnerData.apply {
-            elo = newWinnerElo
-            wins++
-            winStreak++
-            if (winStreak > bestWinStreak) bestWinStreak = winStreak
-        }
-
-        // 更新失败者数据
-        loserData.apply {
-            elo = newLoserElo
-            losses++
-            winStreak = 0
-        }
-
-        rankDao.savePlayerData(winnerData)
-        rankDao.savePlayerData(loserData)
-
-        // 发送战斗结果消息
-        sendBattleResultMessage(winner, winnerData, eloDiffWinner)
-        sendBattleResultMessage(loser, loserData, eloDiffLoser)
-
-        // 发放奖励
-        rewardManager.grantRankRewardIfEligible(winner, winnerData.getRankTitle(), formatName, server)
-        rewardManager.grantRankRewardIfEligible(loser, loserData.getRankTitle(), formatName, server)
     }
 
     /**
