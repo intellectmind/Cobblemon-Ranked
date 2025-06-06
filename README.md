@@ -67,7 +67,7 @@
 | `/rank gui_reward` | Opens the reward format selection GUI |
 | `/rank gui_reset` | Paginated list of online players to reset rankings |
 | `/rank reset <player> <format>` | Reset a player's data for the current season and format |
-| `/rank reward <player> <format> <rank>` | Grant a reward to a player for a specific rank (auto-suggestion supported) |
+| `/rank reward <player> <format> <rank>` | Grant a reward to a player for a specific rank |
 | `/rank season end` | Force-end the current season |
 | `/rank reload` | Reload config files (language, rank settings, etc.) |
 
