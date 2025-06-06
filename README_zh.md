@@ -47,7 +47,6 @@
 | `/rank gui_info_players` | 查看在线玩家，支持点击查看他人战绩 |
 | `/rank gui_myinfo` | 快速查看自己的战绩 |
 | `/rank gui_queue` | 打开匹配队列加入界面 |
-| `/rank gui_reward_format <format>` | 查看指定模式下可领取的奖励 |
 | `/rank gui_info_format <player> <format>` | 查看指定玩家指定模式的赛季战绩 |
 | `/rank queue join [format]` | 加入匹配队列（可选 `singles` 或 `doubles`） |
 | `/rank queue leave` | 退出所有匹配队列 |
