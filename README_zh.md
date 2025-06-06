@@ -67,7 +67,7 @@
 | `/rank gui_reward` | 打开段位奖励选择界面 |
 | `/rank gui_reset` | 分页查看在线玩家并重置其战绩 |
 | `/rank reset <player> <format>` | 重置指定玩家某模式的当前赛季 Elo 数据 |
-| `/rank reward <player> <format> <rank>` | 发放指定段位奖励（支持自动补全） |
+| `/rank reward <player> <format> <rank>` | 发放指定段位奖励 |
 | `/rank season end` | 结束当前赛季 |
 | `/rank reload` | 重新加载配置文件与语言包 |
 
