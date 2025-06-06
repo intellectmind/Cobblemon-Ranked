@@ -141,8 +141,8 @@ object MessageConfig {
                     "en" to "§cYou must have at least {rate}% win rate to claim the {rank} reward."
                 ),
                 "reward.broadcast" to mapOf(
-                    "zh" to "§6[段位奖励] §b{player} §f首次晋升到 §e{rank} §f，已发放奖励！",
-                    "en" to "§6[Rank Reward] §b{player} §fhas reached §e{rank} §fand received a reward!"
+                    "zh" to "§6[Cobblemon Rank] §b{player} §f首次晋升到 §e{rank} §f，已发放奖励！",
+                    "en" to "§6[Cobblemon Rank] §b{player} §fhas reached §e{rank} §fand received a reward!"
                 ),
                 "reward.not_configured" to mapOf(
                     "zh" to "§c该段位没有配置奖励！",
@@ -329,12 +329,12 @@ object MessageConfig {
                     "en" to "§a[Season #{season}]"
                 ),
                 "gui.myinfo.1v1" to mapOf(
-                    "zh" to "§b[单打]",
-                    "en" to "§b[singles]"
+                    "zh" to "§b[查看单打]",
+                    "en" to "§b[View Singles]"
                 ),
                 "gui.myinfo.2v2" to mapOf(
-                    "zh" to "§c[双打]",
-                    "en" to "§c[doubles]"
+                    "zh" to "§c[查看双打]",
+                    "en" to "§c[View Doubles]"
                 ),
 
                 // BattleHandler

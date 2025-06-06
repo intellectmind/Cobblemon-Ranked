@@ -99,4 +99,21 @@ object RankUtils {
 
         dao.savePlayerData(data)
     }
+
+    /**
+     * 将玩家输入的段位（如 "gold"）标准化为配置中使用的段位名（如 "Gold"）
+     */
+    fun resolveStandardRankName(input: String): String? {
+        return CobblemonRanked.config.rankTitles.values.firstOrNull {
+            it.equals(input.trim(), ignoreCase = true)
+        }
+    }
+
+    /**
+     * 根据玩家输入的段位和格式，获取配置中的奖励指令列表（null 表示未配置）
+     */
+    fun getRewardCommands(format: String, rankInput: String): List<String>? {
+        val standardRank = resolveStandardRankName(rankInput) ?: return null
+        return CobblemonRanked.config.rankRewards[format]?.get(standardRank)
+    }
 }

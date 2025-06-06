@@ -5,7 +5,6 @@ import cn.kurt6.cobblemon_ranked.CobblemonRanked
 import cn.kurt6.cobblemon_ranked.config.ConfigManager
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.matchmaking.DuoMatchmakingQueue
-import com.cobblemon.mod.common.Cobblemon
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -133,6 +132,8 @@ object RankCommands {
                             val player = it.source.player ?: return@executes 0
                             CobblemonRanked.matchmakingQueue.removePlayer(player.uuid)
                             DuoMatchmakingQueue.removePlayer(player)
+                            val lang = CobblemonRanked.config.defaultLang
+                            player.sendMessage(Text.literal(MessageConfig.get("queue.left_all", lang)))
                             1
                         }
                     )
@@ -268,7 +269,7 @@ object RankCommands {
                         1
                     }
                 )
-//                .then(CommandManager.literal("duo")
+            //                .then(CommandManager.literal("duo")
 //                    .then(CommandManager.literal("invite")
 //                        .then(CommandManager.argument("player", EntityArgumentType.player())
 //                            .executes {
@@ -387,8 +388,7 @@ object RankCommands {
         }
 
         // 调用奖励管理器发放奖励
-        // 强制发放奖励，不记录为“已领取”
-        CobblemonRanked.rewardManager.grantRankReward(player, matchedRank, format, source.server, markClaimed = false)
+        CobblemonRanked.rewardManager.grantRankReward(player, matchedRank, format, source.server)
         source.sendMessage(Text.literal(MessageConfig.get("reward.granted_to", lang, "player" to player.name.string, "format" to format, "rank" to matchedRank)))
         return 1
     }
@@ -639,7 +639,7 @@ object RankCommands {
         val lang = CobblemonRanked.config.defaultLang
         val formats = CobblemonRanked.config.allowedFormats
 
-        val ranks = CobblemonRanked.config.parsedRankTitles.entries
+        val ranks = CobblemonRanked.config.rankTitles.entries
             .sortedByDescending { it.key }
 
         player.sendMessage(Text.literal(MessageConfig.get("gui.reward.top", lang)))
@@ -656,7 +656,6 @@ object RankCommands {
             }
         }
     }
-
 
     private fun showResetPlayerList(player: ServerPlayerEntity, page: Int) {
         val lang = CobblemonRanked.config.defaultLang
@@ -733,6 +732,8 @@ object RankCommands {
         val lang = CobblemonRanked.config.defaultLang
         for (s in season downTo maxOf(1, season - 4)) {
             val row1 = Text.empty()
+                .append(MessageConfig.get("gui.info_target.season", lang, "season" to s.toString()))
+                .append(space())
                 .append(link(MessageConfig.get("gui.myinfo.1v1", lang), "/rank info ${player.name.string} singles $s"))
                 .append(space())
                 .append(link(MessageConfig.get("gui.myinfo.2v2", lang), "/rank info ${player.name.string} doubles $s"))

@@ -101,13 +101,13 @@ data class RankConfig(
     ),
 
     @Comment("Elo thresholds for rank titles (customizable) / 段位名称配置（可增减）")
-    var rankTitles: Map<String, String> = mapOf(
-        "3500" to "Master",
-        "3000" to "Diamond",
-        "2500" to "Platinum",
-        "2000" to "Gold",
-        "1500" to "Silver",
-        "0" to "Bronze"
+    var rankTitles: Map<Int, String> = mapOf(
+        3500 to "Master",
+        3000 to "Diamond",
+        2500 to "Platinum",
+        2000 to "Gold",
+        1500 to "Silver",
+        0 to "Bronze"
     ),
 
     @Comment("Minimum winning rate requirement for each rank reward / 每个段位奖励领取的最小胜率要求（0.0 ~ 1.0）")
@@ -120,9 +120,3 @@ data class RankConfig(
         "Master" to 0.3
     )
 )
-{
-    val parsedRankTitles: Map<Int, String>
-        get() = rankTitles.mapNotNull { (k, v) ->
-            k.toIntOrNull()?.let { it to v }
-        }.toMap()
-}
