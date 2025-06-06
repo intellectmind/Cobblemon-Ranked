@@ -136,5 +136,13 @@
     "2000": "Gold",
     "1500": "Silver",
     "0": "Bronze"
+  },
+  "rankRequirements": {              // Minimum winning rate requirement for each rank reward（0.0 ~ 1.0）
+    "Bronze": 0.0,
+    "Silver": 0.3,
+    "Gold": 0.3,
+    "Platinum": 0.3,
+    "Diamond": 0.3,
+    "Master": 0.3
   }
 }
