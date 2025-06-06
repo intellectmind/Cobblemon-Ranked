@@ -481,7 +481,7 @@ object BattleHandler {
     }
 
     /**
-     * 发放排名奖励
+     * 发放段位奖励
      * @param player 玩家实体
      * @param rank 排名等级
      * @param format 战斗格式

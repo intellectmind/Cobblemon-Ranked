@@ -20,6 +20,11 @@ class RewardManager(private val rankDao: RankDao) {
 
         val playerData = BattleHandler.rankDao.getPlayerData(uuid, seasonId, format) ?: return
 
+        if (playerData.hasClaimedReward(rank, format)) {
+            return
+        }
+
+        // 胜率判断逻辑
         val requiredWinRate = CobblemonRanked.config.rankRequirements[rank] ?: 0.0
         val totalGames = playerData.wins + playerData.losses
         val winRate = if (totalGames > 0) playerData.wins.toDouble() / totalGames else 0.0
@@ -31,13 +36,11 @@ class RewardManager(private val rankDao: RankDao) {
             return
         }
 
-        if (!playerData.hasClaimedReward(rank, format)) {
-            BattleHandler.grantRankReward(player, rank, format, server)
-
-            val name = player.name.string
-            val message = Text.literal(MessageConfig.get("reward.broadcast", lang, "player" to name, "rank" to rank))
-            server.playerManager.broadcast(message, false)
-        }
+        // 发奖励
+        BattleHandler.grantRankReward(player, rank, format, server)
+        val name = player.name.string
+        val message = Text.literal(MessageConfig.get("reward.broadcast", lang, "player" to name, "rank" to rank))
+        server.playerManager.broadcast(message, false)
     }
 
     // 发放段位奖励
