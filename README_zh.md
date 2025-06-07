@@ -47,7 +47,7 @@
 | `/rank gui_myinfo` | 快速查看自己的战绩 |
 | `/rank gui_queue` | 打开匹配队列加入界面 |
 | `/rank gui_info_format <player> <format>` | 查看指定玩家指定模式的赛季战绩 |
-| `/rank queue join [format]` | 加入匹配队列（可选 `singles` 或 `doubles`） |
+| `/rank queue join [format]` | 加入匹配队列 |
 | `/rank queue leave` | 退出所有匹配队列 |
 | `/rank status` | 查看当前匹配状态 |
 | `/rank info <format> <season>` | 查看自己在指定模式与赛季下的 Elo 数据 |
@@ -90,8 +90,8 @@
   "eloKFactor": 32, // Elo K 系数
   "minElo": 0, // Elo 最低值限制
   "bannedPokemon": ["Mewtwo", "Arceus"], // 禁用宝可梦列表
-	"bannedHeldItems": ["cobblemon:leftovers"], // 禁止宝可梦携带的道具
-  "allowedFormats": ["singles", "doubles"], // 支持的对战模式
+  "bannedHeldItems": ["cobblemon:leftovers"], // 禁止宝可梦携带的道具
+  "allowedFormats": ["singles", "doubles", "2v2singles"], // 支持的对战模式
   "maxLevel": 0, // 宝可梦最大等级（0 表示不限制）
   "allowDuplicateSpecies": false, // 是否允许重复宝可梦
   "battleArenas": [ // 战斗场地配置
@@ -127,26 +127,15 @@
       "钻石": ["give {player} minecraft:totem_of_undying 1"],
       "大师": ["give {player} minecraft:netherite_ingot 2"]
     },
-		"2v2singles": {
-			"青铜": [
-				"give {player} minecraft:bread 5"
-			],
-			"白银": [
-				"give {player} minecraft:gold_nugget 10"
-			],
-			"黄金": [
-				"give {player} minecraft:emerald 1"
-			],
-			"白金": [
-				"give {player} minecraft:golden_apple 1"
-			],
-			"钻石": [
-				"give {player} minecraft:totem_of_undying 1"
-			],
-			"大师": [
-				"give {player} minecraft:netherite_ingot 2"
-			]
-		}
+    "2v2singles": {
+      "青铜": ["give {player} minecraft:bread 5"],
+      "白银": ["give {player} minecraft:gold_nugget 10"],
+      "黄金": ["give {player} minecraft:emerald 1"],
+      "白金": ["give {player} minecraft:golden_apple 1"],
+      "钻石": ["give {player} minecraft:totem_of_undying 1"],
+      "大师": ["give {player} minecraft:netherite_ingot 2"]
+    }
+  }
   },
   "rankTitles": { // Elo 段位划分
     "3500": "大师",
