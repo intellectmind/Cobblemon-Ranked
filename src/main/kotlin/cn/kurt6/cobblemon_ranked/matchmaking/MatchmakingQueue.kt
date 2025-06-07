@@ -24,6 +24,11 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger("RankedBattle")
+
+
 class MatchmakingQueue {
     // 使用线程安全的ConcurrentHashMap存储匹配队列
     private val queue = ConcurrentHashMap<UUID, QueueEntry>()
@@ -281,61 +286,63 @@ class MatchmakingQueue {
 
         // 5秒后开始传送和战斗
         scheduler.schedule({
-            // 再次验证队伍
-            if (!BattleHandler.validateTeam(player1.player, player1.team, player1.format) ||
-                !BattleHandler.validateTeam(player2.player, player2.team, player2.format)) {
-                RankUtils.sendMessage(player1.player, MessageConfig.get("queue.cancel_team_changed", lang))
-                RankUtils.sendMessage(player2.player, MessageConfig.get("queue.cancel_team_changed", lang))
-                return@schedule
+            server.execute {
+                // 再次验证队伍
+                if (!BattleHandler.validateTeam(player1.player, player1.team, player1.format) ||
+                    !BattleHandler.validateTeam(player2.player, player2.team, player2.format)) {
+                    RankUtils.sendMessage(player1.player, MessageConfig.get("queue.cancel_team_changed", lang))
+                    RankUtils.sendMessage(player2.player, MessageConfig.get("queue.cancel_team_changed", lang))
+                    return@execute
+                }
+
+                // 记录返回位置
+                BattleHandler.setReturnLocation(player1.player.uuid, player1.player.serverWorld, Triple(player1.player.x, player1.player.y, player1.player.z))
+                BattleHandler.setReturnLocation(player2.player.uuid, player2.player.serverWorld, Triple(player2.player.x, player2.player.y, player2.player.z))
+
+                // 传送玩家
+                player1.player.teleport(world, positions[0].x, positions[0].y, positions[0].z, 0f, 0f)
+                player2.player.teleport(world, positions[1].x, positions[1].y, positions[1].z, 0f, 0f)
+
+                // 创建战斗参与者
+                val actor1 = PlayerBattleActor(player1.player.uuid, team1)
+                val actor2 = PlayerBattleActor(player2.player.uuid, team2)
+                val side1 = BattleSide(actor1)
+                val side2 = BattleSide(actor2)
+
+                // 开始战斗
+                val result = Cobblemon.battleRegistry.startBattle(player1.format, side1, side2, true)
+
+                var battle: PokemonBattle? = null
+                var failReason: String? = null
+
+                result.ifSuccessful { b -> battle = b }
+                result.ifErrored { error -> failReason = error.toString() }
+
+                // 处理战斗开始失败
+                if (battle == null) {
+                    val errorMsg = failReason ?: "未知错误"
+                    RankUtils.sendMessage(player1.player, MessageConfig.get("queue.battle_start_fail", lang, "reason" to errorMsg))
+                    RankUtils.sendMessage(player2.player, MessageConfig.get("queue.battle_start_fail", lang, "reason" to errorMsg))
+
+                    // 设置冷却时间
+                    val cooldownUntil = System.currentTimeMillis() + BATTLE_COOLDOWN_MS
+                    cooldownMap[player1.player.uuid] = cooldownUntil
+                    cooldownMap[player2.player.uuid] = cooldownUntil
+                    return@execute
+                }
+
+                // 注册排位赛
+                val battleId = UUID.randomUUID()
+                val formatName = getFormatName(player1.format)
+                val nonNullBattle = battle!!
+
+                BattleHandler.markAsRanked(battleId, formatName)
+                BattleHandler.registerBattle(nonNullBattle, battleId)
+
+                // 通知玩家战斗开始
+                RankUtils.sendMessage(player1.player, MessageConfig.get("queue.battle_start", lang, "opponent" to player2.player.name.string))
+                RankUtils.sendMessage(player2.player, MessageConfig.get("queue.battle_start", lang, "opponent" to player1.player.name.string))
             }
-
-            // 记录返回位置
-            BattleHandler.setReturnLocation(player1.player.uuid, player1.player.serverWorld, Triple(player1.player.x, player1.player.y, player1.player.z))
-            BattleHandler.setReturnLocation(player2.player.uuid, player2.player.serverWorld, Triple(player2.player.x, player2.player.y, player2.player.z))
-
-            // 传送玩家
-            player1.player.teleport(world, positions[0].x, positions[0].y, positions[0].z, 0f, 0f)
-            player2.player.teleport(world, positions[1].x, positions[1].y, positions[1].z, 0f, 0f)
-
-            // 创建战斗参与者
-            val actor1 = PlayerBattleActor(player1.player.uuid, team1)
-            val actor2 = PlayerBattleActor(player2.player.uuid, team2)
-            val side1 = BattleSide(actor1)
-            val side2 = BattleSide(actor2)
-
-            // 开始战斗
-            val result = Cobblemon.battleRegistry.startBattle(player1.format, side1, side2, true)
-
-            var battle: PokemonBattle? = null
-            var failReason: String? = null
-
-            result.ifSuccessful { b -> battle = b }
-            result.ifErrored { error -> failReason = error.toString() }
-
-            // 处理战斗开始失败
-            if (battle == null) {
-                val errorMsg = failReason ?: "未知错误"
-                RankUtils.sendMessage(player1.player, MessageConfig.get("queue.battle_start_fail", lang, "reason" to errorMsg))
-                RankUtils.sendMessage(player2.player, MessageConfig.get("queue.battle_start_fail", lang, "reason" to errorMsg))
-
-                // 设置冷却时间
-                val cooldownUntil = System.currentTimeMillis() + BATTLE_COOLDOWN_MS
-                cooldownMap[player1.player.uuid] = cooldownUntil
-                cooldownMap[player2.player.uuid] = cooldownUntil
-                return@schedule
-            }
-
-            // 注册排位赛
-            val battleId = UUID.randomUUID()
-            val formatName = getFormatName(player1.format)
-            val nonNullBattle = battle!!
-
-            BattleHandler.markAsRanked(battleId, formatName)
-            BattleHandler.registerBattle(nonNullBattle, battleId)
-
-            // 通知玩家战斗开始
-            RankUtils.sendMessage(player1.player, MessageConfig.get("queue.battle_start", lang, "opponent" to player2.player.name.string))
-            RankUtils.sendMessage(player2.player, MessageConfig.get("queue.battle_start", lang, "opponent" to player1.player.name.string))
         }, 5, TimeUnit.SECONDS)
     }
 
