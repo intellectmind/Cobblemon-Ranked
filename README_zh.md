@@ -15,7 +15,7 @@
 - 支持中英文切换，支持扩展更多语言
 - 多个战斗场地配置，自动传送和归位
 - 自定义段位名称与 Elo 阈值，灵活配置
-- 支持单打（1v1）与双打（2v2）模式
+- 支持单打、双打、2v2单打3个模式
 - 独立 Elo 排名系统，按模式分别计算
 - 独立的段位奖励系统，支持自定义指令
 - 内置赛季机制，自动轮换与数据重置
@@ -25,7 +25,6 @@
 
 ### 🔧 计划中功能
 
-- [ ] 2v2 车轮战模式
 - [ ] 客户端可视化 GUI 界面
 - [ ] 跨服务器匹配支持
 
@@ -91,6 +90,7 @@
   "eloKFactor": 32, // Elo K 系数
   "minElo": 0, // Elo 最低值限制
   "bannedPokemon": ["Mewtwo", "Arceus"], // 禁用宝可梦列表
+	"bannedHeldItems": ["cobblemon:leftovers"], // 禁止宝可梦携带的道具
   "allowedFormats": ["singles", "doubles"], // 支持的对战模式
   "maxLevel": 0, // 宝可梦最大等级（0 表示不限制）
   "allowDuplicateSpecies": false, // 是否允许重复宝可梦
@@ -126,7 +126,27 @@
       "白金": ["give {player} minecraft:golden_apple 1"],
       "钻石": ["give {player} minecraft:totem_of_undying 1"],
       "大师": ["give {player} minecraft:netherite_ingot 2"]
-    }
+    },
+		"2v2singles": {
+			"青铜": [
+				"give {player} minecraft:bread 5"
+			],
+			"白银": [
+				"give {player} minecraft:gold_nugget 10"
+			],
+			"黄金": [
+				"give {player} minecraft:emerald 1"
+			],
+			"白金": [
+				"give {player} minecraft:golden_apple 1"
+			],
+			"钻石": [
+				"give {player} minecraft:totem_of_undying 1"
+			],
+			"大师": [
+				"give {player} minecraft:netherite_ingot 2"
+			]
+		}
   },
   "rankTitles": { // Elo 段位划分
     "3500": "大师",
