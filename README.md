@@ -47,7 +47,7 @@
 | `/rank gui_myinfo` | Quick access to your own ranking |
 | `/rank gui_queue` | Opens the matchmaking menu |
 | `/rank gui_info_format <player> <format>` | GUI view of another player's seasonal stats |
-| `/rank queue join [format]` | Join a ranked queue (default or specify format: `singles`, `doubles`) |
+| `/rank queue join [format]` | Join a ranked queue |
 | `/rank queue leave` | Leave all matchmaking queues |
 | `/rank status` | Show your current queue status |
 | `/rank info <format> <season>` | Show your stats for the given format and season |
@@ -90,7 +90,7 @@
   "eloKFactor": 32,                        // Elo K-factor (affects Elo change magnitude)
   "minElo": 0,                             // Minimum Elo floor
   "bannedPokemon": ["Mewtwo", "Arceus"],  // Banned Pokémon (e.g., legendaries)
-	"bannedHeldItems": ["cobblemon:leftovers"], // Prohibited items for Pokémon to carry
+  "bannedHeldItems": ["cobblemon:leftovers"], // Prohibited items for Pokémon to carry
   "allowedFormats": ["singles", "doubles", "2v2singles"], // Supported battle formats
   "maxLevel": 0,                           // Max Pokémon level (0 = no limit)
   "allowDuplicateSpecies": false,         // Whether duplicate Pokémon species are allowed
@@ -127,26 +127,14 @@
       "Diamond": ["give {player} minecraft:totem_of_undying 1"],
       "Master": ["give {player} minecraft:netherite_ingot 2"]
     },
-		"2v2singles": {
-			"Bronze": [
-				"give {player} minecraft:bread 5"
-			],
-			"Silver": [
-				"give {player} minecraft:gold_nugget 10"
-			],
-			"Gold": [
-				"give {player} minecraft:emerald 1"
-			],
-			"Platinum": [
-				"give {player} minecraft:golden_apple 1"
-			],
-			"Diamond": [
-				"give {player} minecraft:totem_of_undying 1"
-			],
-			"Master": [
-				"give {player} minecraft:netherite_ingot 2"
-			]
-		}
+    "2v2singles": {
+      "Bronze": ["give {player} minecraft:bread 5"],
+      "Silver": ["give {player} minecraft:gold_nugget 10"],
+      "Gold": ["give {player} minecraft:emerald 1"],
+      "Platinum": ["give {player} minecraft:golden_apple 1"],
+      "Diamond": ["give {player} minecraft:totem_of_undying 1"],
+      "Master": ["give {player} minecraft:netherite_ingot 2"]
+    }
   },
   "rankTitles": {                          // Elo thresholds → rank names
     "3500": "Master",
