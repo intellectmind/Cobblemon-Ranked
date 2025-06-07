@@ -133,7 +133,7 @@ object RankCommands {
                             CobblemonRanked.matchmakingQueue.removePlayer(player.uuid)
                             DuoMatchmakingQueue.removePlayer(player)
                             val lang = CobblemonRanked.config.defaultLang
-                            player.sendMessage(Text.literal(MessageConfig.get("queue.left_all", lang)))
+                            player.sendMessage(Text.literal(MessageConfig.get("queue.leave", lang)))
                             1
                         }
                     )
@@ -246,8 +246,13 @@ object RankCommands {
                         val lang = CobblemonRanked.config.defaultLang
                         val in1v1Queue = CobblemonRanked.matchmakingQueue.getPlayer(player.uuid, "singles") != null
                         val inFree2v2Queue = CobblemonRanked.matchmakingQueue.getPlayer(player.uuid, "doubles") != null
+                        val inDuo2v2Queue = DuoMatchmakingQueue.isInQueue(player.uuid)
 
                         when {
+                            inDuo2v2Queue -> {
+                                player.sendMessage(Text.literal(MessageConfig.get("status.2v2.singles", lang)))
+                            }
+
                             inFree2v2Queue -> {
                                 player.sendMessage(Text.literal(
                                     MessageConfig.get("status.2v2.solo", lang)
@@ -269,84 +274,6 @@ object RankCommands {
                         1
                     }
                 )
-            //                .then(CommandManager.literal("duo")
-//                    .then(CommandManager.literal("invite")
-//                        .then(CommandManager.argument("player", EntityArgumentType.player())
-//                            .executes {
-//                                val sender = it.source.player ?: return@executes 0
-//                                val target = EntityArgumentType.getPlayer(it, "player")
-//                                val lang = CobblemonRanked.config.defaultLang
-//
-//                                if (sender.uuid == target.uuid) {
-//                                    sender.sendMessage(Text.literal("§c不能邀请自己组队。"));
-//                                    return@executes 0
-//                                }
-//                                if (!target.isAlive || Cobblemon.battleRegistry.getBattleByParticipatingPlayer(target) != null) {
-//                                    sender.sendMessage(Text.literal("§c目标玩家正在战斗或离线，无法邀请。"));
-//                                    return@executes 0
-//                                }
-//                                if (DuoMatchmakingQueue.getPartner(sender.uuid) == target.uuid) {
-//                                    sender.sendMessage(Text.literal("§e你们已经是队友，无需重复邀请"));
-//                                    return@executes 0
-//                                }
-//                                if (DuoMatchmakingQueue.isPending(target.uuid)) {
-//                                    sender.sendMessage(Text.literal("§e该玩家已在匹配队列中，无法重复邀请"));
-//                                    return@executes 0
-//                                }
-//
-//                                DuoMatchmakingQueue.pendingInvites[target.uuid] = sender.uuid
-//                                sender.sendMessage(Text.literal("§a已向 ${target.name.string} 发出组队邀请"));
-//                                target.sendMessage(Text.literal("§e${sender.name.string} 邀请你组队，输入 /rank duo accept 同意"));
-//                                1
-//                            }
-//                        )
-//                    )
-//                    .then(CommandManager.literal("leave")
-//                        .executes {
-//                            val player = it.source.player ?: return@executes 0
-//                            val lang = CobblemonRanked.config.defaultLang
-//                            val removed = DuoMatchmakingQueue.removePlayer(player)
-//
-//                            if (removed) {
-//                                player.sendMessage(Text.literal("§c你已退出双人排位队列"));
-//                            } else {
-//                                player.sendMessage(Text.literal("§7你当前未在双人队列或队伍中"));
-//                            }
-//                            1
-//                        }
-//                    )
-//                    .then(CommandManager.literal("accept")
-//                        .executes {
-//                            val player = it.source.player ?: return@executes 0
-//                            val inviterId = DuoMatchmakingQueue.pendingInvites.remove(player.uuid)
-//                            val lang = CobblemonRanked.config.defaultLang
-//
-//                            if (inviterId == null) {
-//                                player.sendMessage(Text.literal("§c你没有待处理的邀请。")); return@executes 0
-//                            }
-//                            val inviter = it.source.server.playerManager.getPlayer(inviterId)
-//                            if (inviter == null) {
-//                                player.sendMessage(Text.literal("§c邀请者已离线。")); return@executes 0
-//                            }
-//
-//                            val playerTeam = Cobblemon.storage.getParty(player).mapNotNull { it?.uuid }
-//                            val inviterTeam = Cobblemon.storage.getParty(inviter).mapNotNull { it?.uuid }
-//
-//                            if (playerTeam.isEmpty() || inviterTeam.isEmpty()) {
-//                                player.sendMessage(Text.literal("§c请确认你和对方都有宝可梦。"));
-//                                return@executes 0
-//                            }
-//
-//                            DuoMatchmakingQueue.joinQueue(inviter, inviterTeam)
-//                            DuoMatchmakingQueue.joinQueue(player, playerTeam)
-//                            DuoMatchmakingQueue.formTeam(inviter, player)
-//
-//                            player.sendMessage(Text.literal("§a你已接受组队邀请，与 ${inviter.name.string} 成为队友"));
-//                            inviter.sendMessage(Text.literal("§a${player.name.string} 已接受你的邀请"));
-//                            1
-//                        }
-//                    )
-//                )
         )
     }
 
@@ -420,6 +347,10 @@ object RankCommands {
     private fun joinQueue(ctx: CommandContext<ServerCommandSource>, format: String?): Int {
         val player = ctx.source.player ?: return 0
         val selectedFormat = format ?: CobblemonRanked.config.defaultFormat
+
+        // 退出所有其他模式
+        CobblemonRanked.matchmakingQueue.removePlayer(player.uuid)  // 清 1v1 / 2v2 doubles
+        DuoMatchmakingQueue.removePlayer(player)                    // 清 2v2singles
 
         // 直接调用加入队列，内部会获取并验证队伍
         CobblemonRanked.matchmakingQueue.addPlayer(player, selectedFormat)
@@ -606,6 +537,8 @@ object RankCommands {
                 .append(link(MessageConfig.get("gui.top.1v1", lang, "season" to season.toString()), "/rank top singles $season"))
                 .append(space())
                 .append(link(MessageConfig.get("gui.top.2v2", lang, "season" to season.toString()), "/rank top doubles $season"))
+                .append(space())
+                .append(link(MessageConfig.get("gui.top.2v2singles", lang, "season" to season.toString()), "/rank top 2v2singles $season"))
             player.sendMessage(row)
         }
     }
@@ -620,6 +553,8 @@ object RankCommands {
                 .append(link(MessageConfig.get("gui.info.1v1", lang, "season" to season.toString(), "player" to player.name.string), "/rank info ${player.name.string} singles $season"))
                 .append(space())
                 .append(link(MessageConfig.get("gui.info.2v2", lang, "season" to season.toString(), "player" to player.name.string), "/rank info ${player.name.string} doubles $season"))
+                .append(space())
+                .append(link(MessageConfig.get("gui.info.2v2singles", lang, "season" to season.toString(), "player" to player.name.string), "/rank info ${player.name.string} 2v2singles $season"))
             player.sendMessage(row)
         }
     }
@@ -632,6 +567,8 @@ object RankCommands {
                 .append(link(MessageConfig.get("gui.queue.1v1", lang), "/rank queue join singles"))
                 .append(space())
                 .append(link(MessageConfig.get("gui.queue.2v2", lang), "/rank queue join doubles"))
+                .append(space())
+                .append(link(MessageConfig.get("gui.queue.2v2singles", lang), "/rank queue join 2v2singles"))
         )
     }
 
@@ -680,6 +617,8 @@ object RankCommands {
                 .append(space())
                 .append(link(MessageConfig.get("gui.reset.2v2", lang), "/rank reset $name doubles"))
                 .append(space())
+                .append(link(MessageConfig.get("gui.reset.2v2singles", lang), "/rank reset $name 2v2singles"))
+                .append(space())
                 .append(Text.literal("§f$name"))
             )
         }
@@ -709,6 +648,8 @@ object RankCommands {
                 .append(space())
                 .append(link(MessageConfig.get("gui.info_player.2v2", lang), "/rank gui_info_format ${p.name.string} doubles"))
                 .append(space())
+                .append(link(MessageConfig.get("gui.info_player.2v2singles", lang), "/rank gui_info_format ${p.name.string} 2v2singles"))
+                .append(space())
                 .append(Text.literal("§f${p.name.string}"))
             )
         }
@@ -737,6 +678,8 @@ object RankCommands {
                 .append(link(MessageConfig.get("gui.myinfo.1v1", lang), "/rank info ${player.name.string} singles $s"))
                 .append(space())
                 .append(link(MessageConfig.get("gui.myinfo.2v2", lang), "/rank info ${player.name.string} doubles $s"))
+                .append(space())
+                .append(link(MessageConfig.get("gui.myinfo.2v2singles", lang), "/rank info ${player.name.string} 2v2singles $s"))
             player.sendMessage(row1)
         }
     }

@@ -11,7 +11,6 @@ import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.api.battles.model.PokemonBattle
 import com.cobblemon.mod.common.api.battles.model.actor.BattleActor
 import com.cobblemon.mod.common.api.events.CobblemonEvents
-import com.cobblemon.mod.common.api.events.battles.BattleFledEvent
 import com.cobblemon.mod.common.api.events.battles.BattleVictoryEvent
 import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
@@ -22,6 +21,8 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import net.minecraft.registry.Registries
+import net.minecraft.item.ItemStack
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -136,7 +137,34 @@ object BattleHandler {
             return false
         }
 
+        // 禁用持有物品
+        val bannedHeldItems = config.bannedHeldItems.map { it.lowercase() }
+        val heldItemViolations = pokemonList.filter { poke ->
+            val stack = getHeldItemReflectively(poke) ?: return@filter false
+            val id = Registries.ITEM.getId(stack.item).toString().lowercase()
+            id in bannedHeldItems
+        }
+        if (heldItemViolations.isNotEmpty()) {
+            val names = heldItemViolations.joinToString(", ") {
+                val item = getHeldItemReflectively(it)?.item
+                val itemId = if (item != null) Registries.ITEM.getId(item).path else "Unknown"
+                "${it.species.name}($itemId)"
+            }
+            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_held_items", lang, "names" to names))
+            return false
+        }
+
         return true
+    }
+
+    fun getHeldItemReflectively(pokemon: Any): ItemStack? {
+        return try {
+            val field = pokemon.javaClass.getDeclaredField("heldItem")
+            field.isAccessible = true
+            field.get(pokemon) as? ItemStack
+        } catch (e: Exception) {
+            null
+        }
     }
 
     /**
@@ -174,7 +202,7 @@ object BattleHandler {
     private val battleToIdMap = mutableMapOf<PokemonBattle, UUID>()
     private val config get() = CobblemonRanked.config
     val rankDao get() = CobblemonRanked.rankDao
-    private val rewardManager get() = CobblemonRanked.rewardManager
+    val rewardManager get() = CobblemonRanked.rewardManager
     private val seasonManager get() = CobblemonRanked.seasonManager
 
     /**
@@ -183,12 +211,25 @@ object BattleHandler {
     fun register() {
         // 胜利处理逻辑
         CobblemonEvents.BATTLE_VICTORY.subscribe { event: BattleVictoryEvent ->
-            onBattleVictory(event)
-        }
+            val battle = event.battle
+            val battleId = battleToIdMap[battle] ?: return@subscribe
+            val format = rankedBattles[battleId] ?: return@subscribe
 
-        // 逃跑处理逻辑
-        CobblemonEvents.BATTLE_FLED.subscribe { event ->
-            onBattleFled(event)
+            // 2v2singles模式特殊处理
+            if (format == "2v2singles") {
+                val winners = event.winners.filterIsInstance<PlayerBattleActor>()
+                val losers = event.losers.filterIsInstance<PlayerBattleActor>()
+
+                if (winners.size == 1 && losers.size == 1) {
+                    val winnerId = winners.first().uuid
+                    val loserId = losers.first().uuid
+                    DuoBattleManager.handleVictory(winnerId, loserId)
+                }
+
+                return@subscribe
+            }
+
+            onBattleVictory(event)
         }
 
         // 断线处理逻辑
@@ -204,7 +245,7 @@ object BattleHandler {
     }
 
     /**
-     * 处理玩家断线
+     * 处理玩家断线,fleeCount定义为断线次数
      * @param battle 战斗对象
      * @param disconnected 断线的玩家
      */
@@ -259,66 +300,6 @@ object BattleHandler {
         // 通知
         RankUtils.sendMessage(loser, MessageConfig.get("battle.disconnect.loser", lang, "elo" to loserData.elo.toString()))
         RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", lang, "elo" to winnerData.elo.toString()))
-
-        // 回传送
-        teleportBackIfPossible(loser)
-        teleportBackIfPossible(winner)
-    }
-
-    /** 没进入方法，有问题，目前fleeCount定义为断线次数了
-     * 处理玩家逃跑事件
-     * @param event 逃跑事件
-     */
-    private fun onBattleFled(event: BattleFledEvent) {
-        val battle = event.battle
-        val fleeingActor = event.player
-        val battleId = battleToIdMap.remove(battle) ?: return
-        val formatName = rankedBattles.remove(battleId) ?: return
-        val lang = CobblemonRanked.config.defaultLang
-
-        // 获取逃跑玩家
-        val loser: ServerPlayerEntity = fleeingActor.entity as? ServerPlayerEntity ?: return
-
-        // 获取剩下的玩家
-        val players = battle.sides
-            .flatMap { it.actors.toList() }
-            .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
-
-        val winner: ServerPlayerEntity = players.firstOrNull { it.uuid != loser.uuid } ?: return
-        val seasonId = seasonManager.currentSeasonId
-
-        // 获取Elo数据
-        val loserData = getOrCreatePlayerData(loser.uuid, seasonId, formatName)
-        val winnerData = getOrCreatePlayerData(winner.uuid, seasonId, formatName)
-
-        loserData.playerName = loser.name.string
-        winnerData.playerName = winner.name.string
-
-        // 计算Elo变动(仅计算，不应用胜利方)
-        val (newLoserElo, _) = RankUtils.calculateElo(
-            loserData.elo,
-            winnerData.elo,
-            CobblemonRanked.config.eloKFactor,
-            CobblemonRanked.config.minElo
-        )
-
-        val eloLoss = (loserData.elo - newLoserElo).coerceAtLeast(0)
-
-        // 逃跑双倍扣分，胜方不加分
-        loserData.apply {
-            elo -= (eloLoss * 2)
-            losses++
-            winStreak = 0
-            fleeCount++
-        }
-
-        // 保存玩家数据
-        rankDao.savePlayerData(loserData)
-        rankDao.savePlayerData(winnerData)
-
-        // 消息通知
-        RankUtils.sendMessage(loser, MessageConfig.get("battle.flee.loser", lang, "elo" to loserData.elo.toString()))
-        RankUtils.sendMessage(winner, MessageConfig.get("battle.flee.winner", lang, "elo" to winnerData.elo.toString()))
 
         // 回传送
         teleportBackIfPossible(loser)
@@ -420,7 +401,7 @@ object BattleHandler {
      * 如果可能，将玩家传送回原位置
      * @param player 玩家实体
      */
-    private fun teleportBackIfPossible(player: PlayerEntity) {
+    fun teleportBackIfPossible(player: PlayerEntity) {
         if (player !is ServerPlayerEntity) return
 
         val lang = CobblemonRanked.config.defaultLang
@@ -529,7 +510,7 @@ object BattleHandler {
      * @param data 玩家排名数据
      * @param eloChange Elo变化值
      */
-    private fun sendBattleResultMessage(player: PlayerEntity, data: PlayerRankData, eloChange: Int) {
+    fun sendBattleResultMessage(player: PlayerEntity, data: PlayerRankData, eloChange: Int) {
         val lang = CobblemonRanked.config.defaultLang
         val changeText = if (eloChange > 0) "§a+$eloChange" else "§c$eloChange"
         val rankTitle = data.getRankTitle()

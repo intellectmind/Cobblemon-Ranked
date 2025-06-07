@@ -2,7 +2,6 @@
 package cn.kurt6.cobblemon_ranked.config
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
-import com.google.gson.JsonParseException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -39,13 +38,6 @@ object ConfigManager {
 
                     formatKey to rankToCommands
                 }?.toMap() ?: emptyMap()
-
-                // 调试
-//                println("Loaded rankTitles: $fixedRankTitles")
-//                println("Loaded rankRewards formats: ${fixedRankRewards.keys}")
-//                fixedRankRewards.forEach { (format, ranks) ->
-//                    println("    ▶ $format: ${ranks.keys}")
-//                }
 
                 // 替换字段并返回配置对象
                 rawConfig.copy(

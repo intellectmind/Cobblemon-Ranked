@@ -3,7 +3,6 @@
 package cn.kurt6.cobblemon_ranked.config
 
 import blue.endless.jankson.Comment
-import kotlin.text.toIntOrNull
 
 data class ArenaCoordinate(
     val x: Double,
@@ -54,11 +53,18 @@ data class RankConfig(
     val minElo: Int = 0,
 
     @Comment("Banned Pokémon / 禁止使用的宝可梦")
+
     var bannedPokemon: List<String> = listOf("Mewtwo", "Arceus"),
-    @Comment("Allowed battle formats: 'singles', 'doubles' / 允许的战斗模式：‘singles’（单打）, ‘doubles’（双打）")
-    var allowedFormats: List<String> = listOf("singles", "doubles"),
+
+    @Comment("Prohibited items for Pokémon to carry / 禁止宝可梦携带的道具")
+    var bannedHeldItems: List<String> = listOf("cobblemon:leftovers"),
+
+    @Comment("Allowed battle formats: 'singles', 'doubles', '2v2singles' / 允许的战斗模式：‘singles’（单打）, ‘doubles’（双打）, '2v2singles'（2v2单打）")
+    var allowedFormats: List<String> = listOf("singles", "doubles", "2v2singles"),
+
     @Comment("Max Pokémon level allowed (0 = no limit) / 允许的宝可梦等级，0 = 无限制")
     var maxLevel: Int = 0,
+
     @Comment("Allowed to have the same species of Pokémon in a single team / 允许同一个队伍中出现相同的宝可梦")
     var allowDuplicateSpecies: Boolean = false,
 
@@ -91,6 +97,14 @@ data class RankConfig(
             "Master" to listOf("give {player} minecraft:netherite_block 2", "give {player} minecraft:totem_of_undying 1", "effect give {player} minecraft:resistance 7200 2")
         ),
         "doubles" to mapOf(
+            "Bronze" to listOf("give {player} minecraft:bread 5"),
+            "Silver" to listOf("give {player} minecraft:gold_nugget 10"),
+            "Gold" to listOf("give {player} minecraft:emerald 1"),
+            "Platinum" to listOf("give {player} minecraft:golden_apple 1"),
+            "Diamond" to listOf("give {player} minecraft:totem_of_undying 1"),
+            "Master" to listOf("give {player} minecraft:netherite_ingot 2")
+        ),
+        "2v2singles" to mapOf(
             "Bronze" to listOf("give {player} minecraft:bread 5"),
             "Silver" to listOf("give {player} minecraft:gold_nugget 10"),
             "Gold" to listOf("give {player} minecraft:emerald 1"),

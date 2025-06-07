@@ -66,6 +66,10 @@ object MessageConfig {
                     "zh" to "§c没有可用战斗场地（至少2个玩家位置）",
                     "en" to "§cNo available battle arenas (at least 2 player positions required)"
                 ),
+                "duo.already_in_queue" to mapOf(
+                    "zh" to "§e你已经在匹配队列中。",
+                    "en" to "§eYou are already in the matchmaking queue."
+                ),
                 "queue.invalid_world" to mapOf(
                     "zh" to "§c世界 ID 无效: {world}",
                     "en" to "§cInvalid world ID: {world}"
@@ -92,6 +96,18 @@ object MessageConfig {
                 ),
 
                 // DuoMatchmakingQueue (双人匹配)
+                "duo.waiting_for_match" to mapOf(
+                    "zh" to "§a已加入 2v2单打 匹配队列...",
+                    "en" to "§aJoined the 2v2singles matchmaking queue..."
+                ),
+                "duo.match.announce" to mapOf(
+                    "zh" to "§a配对成功！§f {t1p1} & {t1p2} §7VS§f {t2p1} & {t2p2}",
+                    "en" to "§aMatch Found!§f {t1p1} & {t1p2} §7VS§f {t2p1} & {t2p2}"
+                ),
+                "duo.round.announce" to mapOf(
+                    "zh" to "§e本轮对战：§f{p1} §7VS§f {p2}",
+                    "en" to "§eThis round: §f{p1} §7VS§f {p2}"
+                ),
                 "duo.cooldown" to mapOf(
                     "zh" to "§c你刚刚匹配失败，请等待 {seconds} 秒后再加入队列",
                     "en" to "§cYou recently failed matchmaking. Please wait {seconds} seconds before trying again."
@@ -107,22 +123,6 @@ object MessageConfig {
                 "duo.invalid_team" to mapOf(
                     "zh" to "§c队伍不符合对战规则，无法加入匹配",
                     "en" to "§cYour team does not meet the battle requirements."
-                ),
-                "duo.waiting_for_teammate" to mapOf(
-                    "zh" to "§a等待队友加入双人排位... (使用 /rank duo invite <玩家名>)",
-                    "en" to "§aWaiting for your teammate to join 2v2... (Use /rank duo invite <player>)"
-                ),
-                "duo.form_fail" to mapOf(
-                    "zh" to "§c队伍数据异常，无法组队",
-                    "en" to "§cTeam data error. Failed to form a team."
-                ),
-                "duo.queue_success" to mapOf(
-                    "zh" to "§a已与 {partner} 组成排位队伍，等待匹配...",
-                    "en" to "§aYou and {partner} have formed a ranked team. Waiting for match..."
-                ),
-                "duo.battle_start_fail" to mapOf(
-                    "zh" to "§c创建对战失败: {reason}",
-                    "en" to "§cFailed to start battle: {reason}"
                 ),
 
                 // SeasonManager
@@ -154,6 +154,10 @@ object MessageConfig {
                 ),
 
                 // RankCommands
+                "status.2v2.singles" to mapOf(
+                    "zh" to "§a你当前在 §e2v2单打 §a匹配队列中。",
+                    "en" to "§aYou are currently in the §e2v2singles §amatchmaking queue."
+                ),
                 "command.hint" to mapOf(
                     "zh" to "§e点击执行命令: {command}",
                     "en" to "§eClick to run command: {command}"
@@ -269,6 +273,10 @@ object MessageConfig {
                     "zh" to "§a[单打 赛季 #{season}]",
                     "en" to "§a[singles Season #{season}]"
                 ),
+                "gui.top.2v2singles" to mapOf(
+                    "zh" to "§a[2v2单打 赛季 #{season}]",
+                    "en" to "§a[2v2singles Season #{season}]"
+                ),
                 "gui.top.2v2" to mapOf(
                     "zh" to "§b[双打 赛季 #{season}]",
                     "en" to "§b[doubles Season #{season}]"
@@ -285,12 +293,17 @@ object MessageConfig {
                     "zh" to "§b[双打 赛季 #{season}]",
                     "en" to "§b[doubles Season #{season}]"
                 ),
+                "gui.info.2v2singles" to mapOf(
+                    "zh" to "§b[2v2单打 赛季 #{season}]",
+                    "en" to "§b[2v2singles Season #{season}]"
+                ),
                 "gui.queue_title" to mapOf(
                     "zh" to "§6§l▶ 加入匹配 - 请选择模式",
                     "en" to "§6§l▶ Join Match - Select Mode"
                 ),
                 "gui.queue.1v1" to mapOf("zh" to "§a[加入 单打]", "en" to "§a[Join singles]"),
                 "gui.queue.2v2" to mapOf("zh" to "§b[加入 双打]", "en" to "§b[Join doubles]"),
+                "gui.queue.2v2singles" to mapOf("zh" to "§a[加入 2v2单打]", "en" to "§a[Join 2v2singles]"),
                 "gui.queue.leave" to mapOf("zh" to "§c[离开匹配]", "en" to "§c[Leave Match]"),
                 "gui.reward.top" to mapOf(
                     "zh" to "直接发放可重复领取的奖励-用于测试",
@@ -310,6 +323,7 @@ object MessageConfig {
                 ),
                 "gui.reset.1v1" to mapOf("zh" to "§a[重置 单打]", "en" to "§a[Reset singles]"),
                 "gui.reset.2v2" to mapOf("zh" to "§c[重置 双打]", "en" to "§c[Reset doubles]"),
+                "gui.reset.2v2singles" to mapOf("zh" to "§c[重置 2v2单打]", "en" to "§c[Reset 2v2singles]"),
                 "gui.reset.tip" to mapOf(
                     "zh" to "§7点击重置按钮清除指定玩家在该模式的段位数据。",
                     "en" to "§7Click the reset button to clear a player's rank data in that mode."
@@ -320,6 +334,7 @@ object MessageConfig {
                 ),
                 "gui.info_player.1v1" to mapOf("zh" to "§a[单打]", "en" to "§a[singles]"),
                 "gui.info_player.2v2" to mapOf("zh" to "§b[双打]", "en" to "§b[doubles]"),
+                "gui.info_player.2v2singles" to mapOf("zh" to "§a[2v2单打]", "en" to "§a[2v2singles]"),
                 "gui.info_target.title" to mapOf(
                     "zh" to "§6§l▶ {player} 的段位 - {format} - 选择赛季",
                     "en" to "§6§l▶ {player}'s Rank - {format} - Select Season"
@@ -333,11 +348,31 @@ object MessageConfig {
                     "en" to "§b[View Singles]"
                 ),
                 "gui.myinfo.2v2" to mapOf(
-                    "zh" to "§c[查看双打]",
-                    "en" to "§c[View Doubles]"
+                    "zh" to "§a[查看双打]",
+                    "en" to "§a[View Doubles]"
+                ),
+                "gui.myinfo.2v2singles" to mapOf(
+                    "zh" to "§b[查看2v2单打]",
+                    "en" to "§b[View 2v2singles]"
                 ),
 
                 // BattleHandler
+                "battle.flee.forbidden" to mapOf(
+                    "zh" to "你不能在排位战中逃跑！",
+                    "en" to "You cannot flee in a ranked battle."
+                ),
+                "battle.team.banned_held_items" to mapOf(
+                "zh" to "队伍中有宝可梦携带了被禁止的物品: {names}",
+                "en" to "Your team contains Pokémon with banned held items: {names}"
+                ),
+                "battle.team.banned_moves" to mapOf(
+                    "zh" to "队伍中有宝可梦使用了被禁止的招式: {names}",
+                    "en" to "Your team contains banned moves: {names}"
+                ),
+                "battle.team.banned_abilities" to mapOf(
+                    "zh" to "队伍中有宝可梦使用了被禁止的特性: {names}",
+                    "en" to "Your team contains Pokémon with banned abilities: {names}"
+                ),
                 "battle.disconnect.loser" to mapOf(
                     "zh" to "§c你断线导致失败，当前ELO: {elo}",
                     "en" to "§cYou disconnected and lost. Current ELO: {elo}"
@@ -460,6 +495,10 @@ object MessageConfig {
                 "duo.end.rank_display" to mapOf(
                     "zh" to "§7[双打] 当前段位: §e{rank} §8(ELO: {elo})",
                     "en" to "§7[doubles] Current Rank: §e{rank} §8(ELO: {elo})"
+                ),
+                "duo.rule" to mapOf(
+                    "zh" to "§e[提示] 本次为 2v2 轮战模式：每队每次出战一人，胜者留场，败者轮换，直到全员战败！",
+                    "en" to "§e[Tip] This is a 2v2 round-robin mode: each team will send one Pokémon per round, and the winner will stay in the battle, while the loser will be replaced. The battle will end when all Pokémon are defeated."
                 ),
 
                 // DuoSpectatorManager

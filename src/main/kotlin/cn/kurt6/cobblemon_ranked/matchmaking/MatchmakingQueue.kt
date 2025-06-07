@@ -43,6 +43,7 @@ class MatchmakingQueue {
     private fun initializeFormatMap() {
         formatMap["singles"] = BattleFormat.GEN_9_SINGLES
         formatMap["doubles"] = BattleFormat.GEN_9_DOUBLES
+        formatMap["2v2singles"] = BattleFormat.GEN_9_SINGLES
         // 待添加更多对战模式
     }
 
@@ -81,6 +82,21 @@ class MatchmakingQueue {
             return
         }
 
+        // 如果是2v2singles，则交由DuoMatchmakingQueue处理
+        if (formatName.lowercase() == "2v2singles") {
+            try {
+                val team = getPlayerTeam(player)
+                DuoMatchmakingQueue.joinQueue(player, team)
+            } catch (e: Exception) {
+                if (e.message?.contains("队伍为空") == true) {
+                    RankUtils.sendMessage(player, MessageConfig.get("queue.empty_team", lang))
+                } else {
+                    RankUtils.sendMessage(player, MessageConfig.get("queue.error", lang, "error" to e.message.toString()))
+                }
+            }
+            return
+        }
+
         try {
             // 获取玩家队伍并验证
             val team = getPlayerTeam(player)
@@ -111,7 +127,6 @@ class MatchmakingQueue {
      */
     fun removePlayer(playerId: UUID) {
         queue.remove(playerId)?.player?.let {
-            RankUtils.sendMessage(it, MessageConfig.get("queue.leave", config.defaultLang))
         }
     }
 
