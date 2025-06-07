@@ -15,7 +15,7 @@
 - Built-in multi-language support (Chinese & English), easy to extend
 - Configurable battle arenas with auto-teleport and return
 - Customizable rank titles and Elo thresholds
-- Supports Singles (1v1) and Doubles (2v2) formats
+- Supports three modes: Singles, Doubles, and 2v2singles
 - Elo ranking system calculated independently per format
 - Independent reward system per format with customizable commands
 - Built-in season system with automatic rotation and data reset
@@ -25,7 +25,6 @@
 
 ### 🔧 Planned Features
 
-- [ ] 2v2 gauntlet (multi-battle) mode
 - [ ] Client-side visual GUI
 - [ ] Cross-server matchmaking support
 
@@ -91,7 +90,8 @@
   "eloKFactor": 32,                        // Elo K-factor (affects Elo change magnitude)
   "minElo": 0,                             // Minimum Elo floor
   "bannedPokemon": ["Mewtwo", "Arceus"],  // Banned Pokémon (e.g., legendaries)
-  "allowedFormats": ["singles", "doubles"], // Supported battle formats
+	"bannedHeldItems": ["cobblemon:leftovers"], // Prohibited items for Pokémon to carry
+  "allowedFormats": ["singles", "doubles", "2v2singles"], // Supported battle formats
   "maxLevel": 0,                           // Max Pokémon level (0 = no limit)
   "allowDuplicateSpecies": false,         // Whether duplicate Pokémon species are allowed
   "battleArenas": [                        // List of arenas (teleport locations for battles)
@@ -126,7 +126,27 @@
       "Platinum": ["give {player} minecraft:golden_apple 1"],
       "Diamond": ["give {player} minecraft:totem_of_undying 1"],
       "Master": ["give {player} minecraft:netherite_ingot 2"]
-    }
+    },
+		"2v2singles": {
+			"Bronze": [
+				"give {player} minecraft:bread 5"
+			],
+			"Silver": [
+				"give {player} minecraft:gold_nugget 10"
+			],
+			"Gold": [
+				"give {player} minecraft:emerald 1"
+			],
+			"Platinum": [
+				"give {player} minecraft:golden_apple 1"
+			],
+			"Diamond": [
+				"give {player} minecraft:totem_of_undying 1"
+			],
+			"Master": [
+				"give {player} minecraft:netherite_ingot 2"
+			]
+		}
   },
   "rankTitles": {                          // Elo thresholds → rank names
     "3500": "Master",
