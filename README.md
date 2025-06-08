@@ -92,7 +92,8 @@
   "eloKFactor": 32,                        // Elo K-factor (affects Elo change magnitude)
   "minElo": 0,                             // Minimum Elo floor
   "bannedPokemon": ["Mewtwo", "Arceus"],  // Banned Pokémon (e.g., legendaries)
-  "bannedHeldItems": ["cobblemon:leftovers"], // Prohibited items for Pokémon to carry
+  "bannedHeldItems": ["cobblemon:leftovers"], // Banned held items for Pokémon
+  "bannedCarriedItems": ["cobblemon:leftovers"], // Banned items in player's inventory
   "allowedFormats": ["singles", "doubles", "2v2singles"], // Supported battle formats
   "maxLevel": 0,                           // Max Pokémon level (0 = no limit)
   "allowDuplicateSpecies": false,         // Whether duplicate Pokémon species are allowed
