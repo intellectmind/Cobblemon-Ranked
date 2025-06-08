@@ -20,7 +20,7 @@
 - Independent reward system per format with customizable commands
 - Built-in season system with automatic rotation and data reset
 - Elo-based matchmaking queue with optional waiting-time-based relaxation
-- Disconnects are treated as losses; Elo is deducted, opponent's Elo remains unchanged
+- Disconnects are treated as losses; Elo is deducted
 - Fully GUI-driven with clickable menu entries
 
 ### 🔧 Planned Features
