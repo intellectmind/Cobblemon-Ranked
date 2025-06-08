@@ -6,7 +6,7 @@
 
 💡 *本模组仅需安装在服务端，无需客户端参与。*
 
-从v1.0.3开始，客户端安装后，默认按Z键可打开简易GUI
+(从v1.0.3开始，客户端安装后，默认按Z键可打开简易GUI)
 
 ---
 
@@ -93,6 +93,7 @@
   "minElo": 0, // Elo 最低值限制
   "bannedPokemon": ["Mewtwo", "Arceus"], // 禁用宝可梦列表
   "bannedHeldItems": ["cobblemon:leftovers"], // 禁止宝可梦携带的道具
+  "bannedCarriedItems": ["cobblemon:leftovers"], // 禁止玩家背包携带的物品
   "allowedFormats": ["singles", "doubles", "2v2singles"], // 支持的对战模式
   "maxLevel": 0, // 宝可梦最大等级（0 表示不限制）
   "allowDuplicateSpecies": false, // 是否允许重复宝可梦
