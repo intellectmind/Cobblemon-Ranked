@@ -5,6 +5,7 @@
 # 📊 CobblemonRanked Ranked System Documentation
 
 💡 *This mod only needs to be installed on the server side.*
+
 (Starting from v1.0.3, after installing the client, pressing the Z key by default will open the simple GUI)
 
 ---
