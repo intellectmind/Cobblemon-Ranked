@@ -39,10 +39,42 @@ object ConfigManager {
                     formatKey to rankToCommands
                 }?.toMap() ?: emptyMap()
 
+                // 解析 bannedCarriedItems
+                val rawBannedCarriedItems = json.get("bannedCarriedItems") as? blue.endless.jankson.JsonArray
+                val fixedBannedCarriedItems = rawBannedCarriedItems
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.bannedCarriedItems
+
+                // 解析 bannedHeldItems
+                val rawBannedHeldItems = json.get("bannedHeldItems") as? blue.endless.jankson.JsonArray
+                val fixedBannedHeldItems = rawBannedHeldItems
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.bannedHeldItems
+
+                // 解析 bannedPokemon
+                val rawBannedPokemon = json.get("bannedPokemon") as? blue.endless.jankson.JsonArray
+                val fixedBannedPokemon = rawBannedPokemon
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.bannedPokemon
+
+                // 解析 allowedFormats
+                val rawAllowedFormats = json.get("allowedFormats") as? blue.endless.jankson.JsonArray
+                val fixedAllowedFormats = rawAllowedFormats
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.allowedFormats
+
                 // 替换字段并返回配置对象
                 rawConfig.copy(
                     rankTitles = fixedRankTitles,
-                    rankRewards = fixedRankRewards
+                    rankRewards = fixedRankRewards,
+                    allowedFormats = fixedAllowedFormats,
+                    bannedCarriedItems = fixedBannedCarriedItems,
+                    bannedHeldItems = fixedBannedHeldItems,
+                    bannedPokemon = fixedBannedPokemon
                 )
             } else {
                 val default = RankConfig()

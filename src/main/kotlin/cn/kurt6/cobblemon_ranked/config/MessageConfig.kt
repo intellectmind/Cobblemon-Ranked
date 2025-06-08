@@ -23,8 +23,12 @@ object MessageConfig {
                     "en" to "§cYou recently failed matchmaking. Please wait {seconds} seconds before trying again."
                 ),
                 "queue.invalid_format" to mapOf(
-                    "zh" to "§c无效的战斗模式: {format}",
-                    "en" to "§cInvalid battle format: {format}"
+                    "zh" to "§禁用的战斗模式: {format}",
+                    "en" to "§cBanned battle format: {format}"
+                ),
+                "queue.ban_format" to mapOf(
+                    "zh" to "§c模式已被禁用: {format}",
+                    "en" to "§cFormat is banned: {format}"
                 ),
                 "queue.already_in_battle" to mapOf(
                     "zh" to "§c你正在进行战斗，无法加入匹配队列",
@@ -85,6 +89,10 @@ object MessageConfig {
                 "queue.cancel_team_changed" to mapOf(
                     "zh" to "§c战斗取消：队伍发生变动",
                     "en" to "§cBattle cancelled: team changed"
+                ),
+                "duo.disqualified" to mapOf(
+                    "zh" to "§c在战斗中更换了非法队伍，判负处理。",
+                    "en" to "§cDisqualified from battle: team changed"
                 ),
                 "queue.battle_start_fail" to mapOf(
                     "zh" to "§c创建战斗失败: {reason}",
@@ -357,6 +365,14 @@ object MessageConfig {
                 ),
 
                 // BattleHandler
+                "battle.player.banned_items" to mapOf(
+                    "zh" to "§c你的背包中含有被禁止的物品: {items}",
+                    "en" to "§cYour inventory contains banned items: {items}"
+                ),
+                "battle.disconnect.broadcast" to mapOf(
+                    "zh" to "§c玩家 {player} 断线，所在队伍判负。",
+                    "en" to "§cPlayer {player} disconnected and lost. Their team was eliminated."
+                ),
                 "battle.flee.forbidden" to mapOf(
                     "zh" to "你不能在排位战中逃跑！",
                     "en" to "You cannot flee in a ranked battle."
@@ -373,13 +389,17 @@ object MessageConfig {
                     "zh" to "队伍中有宝可梦使用了被禁止的特性: {names}",
                     "en" to "Your team contains Pokémon with banned abilities: {names}"
                 ),
+                "battle.team.banned_natures" to mapOf(
+                    "zh" to "队伍中有宝可梦使用了被禁止的性格: {names}",
+                    "en" to "Your team contains banned natures: {names}"
+                ),
                 "battle.disconnect.loser" to mapOf(
-                    "zh" to "§c你断线导致失败，当前ELO: {elo}",
-                    "en" to "§cYou disconnected and lost. Current ELO: {elo}"
+                    "zh" to "§c你断线导致失败。",
+                    "en" to "§cYou disconnected and lost."
                 ),
                 "battle.disconnect.winner" to mapOf(
-                    "zh" to "§a对手断线，你的分数未变化。当前ELO: {elo}",
-                    "en" to "§aOpponent disconnected. Your ELO remains unchanged. Current ELO: {elo}"
+                    "zh" to "§a对手断线，你获得了胜利。",
+                    "en" to "§aOpponent disconnected. You win."
                 ),
                 "battle.invalid_team_selection" to mapOf(
                     "zh" to "§c只能使用当前出战队伍中的宝可梦！",

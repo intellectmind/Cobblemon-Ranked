@@ -56,8 +56,11 @@ data class RankConfig(
 
     var bannedPokemon: List<String> = listOf("Mewtwo", "Arceus"),
 
-    @Comment("Prohibited items for Pokémon to carry / 禁止宝可梦携带的道具")
+    @Comment("Banned held items for Pokémon / 禁止宝可梦携带的道具")
     var bannedHeldItems: List<String> = listOf("cobblemon:leftovers"),
+
+    @Comment("Banned items in player's inventory / 禁止玩家背包携带的物品")
+    var bannedCarriedItems: List<String> = listOf("cobblemon:leftovers", "cobblemon:choice_band"),
 
     @Comment("Allowed battle formats: 'singles', 'doubles', '2v2singles' / 允许的战斗模式：‘singles’（单打）, ‘doubles’（双打）, '2v2singles'（2v2单打）")
     var allowedFormats: List<String> = listOf("singles", "doubles", "2v2singles"),

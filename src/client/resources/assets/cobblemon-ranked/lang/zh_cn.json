@@ -1,0 +1,23 @@
+{
+  "key.cobblemon_ranked.open_gui": "打开 Cobblemon 排位界面",
+  "category.cobblemon_ranked": "Cobblemon 排位",
+  "screen.cobblemon_ranked.title": "Cobblemon 排位系统",
+  "gui.cobblemon_ranked.button.gui": "主菜单",
+  "gui.cobblemon_ranked.button.season": "赛季信息",
+  "gui.cobblemon_ranked.button.leaderboard": "排行榜",
+  "gui.cobblemon_ranked.button.stats": "战绩查询",
+  "gui.cobblemon_ranked.button.join_singles": "加入 单打",
+  "gui.cobblemon_ranked.button.join_doubles": "加入 双打",
+  "gui.cobblemon_ranked.button.join_2v2singles": "加入 2v2单打",
+  "gui.cobblemon_ranked.button.leave": "退出匹配",
+  "gui.cobblemon_ranked.button.close": "关闭",
+  "tooltip.cobblemon_ranked.button.gui": "打开主菜单",
+  "tooltip.cobblemon_ranked.button.season": "查看赛季信息",
+  "tooltip.cobblemon_ranked.button.leaderboard": "查看排行榜",
+  "tooltip.cobblemon_ranked.button.stats": "查看你的战绩",
+  "tooltip.cobblemon_ranked.button.join_singles": "进入单打匹配",
+  "tooltip.cobblemon_ranked.button.join_doubles": "进入双打匹配",
+  "tooltip.cobblemon_ranked.button.join_2v2singles": "进入2v2单打匹配",
+  "tooltip.cobblemon_ranked.button.leave": "点击退出匹配",
+  "tooltip.cobblemon_ranked.button.close": "关闭界面"
+}

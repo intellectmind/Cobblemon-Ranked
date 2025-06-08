@@ -1,4 +1,4 @@
-// DuoBattleManager.kt（含轮战胜利处理）
+// DuoBattleManager.kt
 package cn.kurt6.cobblemon_ranked.battle
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
@@ -159,6 +159,15 @@ object DuoBattleManager {
                 !BattleHandler.validateTeam(p2, loserTeam.getActiveTeam(), BattleFormat.GEN_9_SINGLES)) {
                 RankUtils.sendMessage(p1, MessageConfig.get("queue.cancel_team_changed", lang))
                 RankUtils.sendMessage(p2, MessageConfig.get("queue.cancel_team_changed", lang))
+
+                // 直接结束战斗（判定 winnerTeam 获胜）
+                val failingTeam = if (!BattleHandler.validateTeam(p1, winnerTeam.getActiveTeam(), BattleFormat.GEN_9_SINGLES)) winnerTeam else loserTeam
+                val winningTeam = if (failingTeam == winnerTeam) loserTeam else winnerTeam
+
+                RankUtils.sendMessage(failingTeam.player1, MessageConfig.get("duo.disqualified", lang))
+                RankUtils.sendMessage(failingTeam.player2, MessageConfig.get("duo.disqualified", lang))
+
+                endBattle(winningTeam, failingTeam)
                 return
             }
         }
@@ -315,6 +324,17 @@ object DuoBattleManager {
     }
 
     fun isTeamInBattle(team: DuoTeam): Boolean = teamBattleIdMap.containsKey(team)
+
+    fun cleanupTeamData(vararg teams: DuoTeam) {
+        teams.forEach { team ->
+            activePlayers.remove(team.player1.uuid)
+            activePlayers.remove(team.player2.uuid)
+            activeBattles.entries.removeIf { (_, pair) -> pair.first == team || pair.second == team }
+            teamBattleIdMap.remove(team)
+            indices.remove(team)
+            arenaCache.remove(team)
+        }
+    }
 
     data class DuoTeam(
         val player1: ServerPlayerEntity,

@@ -81,6 +81,12 @@ class MatchmakingQueue {
             return
         }
 
+        // 检查模式是否禁用
+        if (!config.allowedFormats.contains(formatName.lowercase())) {
+            RankUtils.sendMessage(player, MessageConfig.get("queue.ban_format", lang, "format" to formatName))
+            return
+        }
+
         // 检查玩家是否已在战斗中
         if (Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player) != null) {
             RankUtils.sendMessage(player, MessageConfig.get("queue.already_in_battle", lang))
@@ -408,7 +414,7 @@ class MatchmakingQueue {
         // 重新初始化模式映射
         formatMap["singles"] = BattleFormat.GEN_9_SINGLES
         formatMap["doubles"] = BattleFormat.GEN_9_DOUBLES
-        // 可以根据配置动态添加更多模式
+        formatMap["2v2singles"] = BattleFormat.GEN_9_SINGLES
     }
 
     /**

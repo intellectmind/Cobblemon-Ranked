@@ -154,6 +154,21 @@ object BattleHandler {
             return false
         }
 
+        // 用玩家背包道具
+        val bannedItems = config.bannedCarriedItems.map { it.lowercase() }
+        val inventory = player.inventory
+
+        val violatedItems = inventory.main
+            .filterNot { it.isEmpty }
+            .map { Registries.ITEM.getId(it.item).toString().lowercase() }
+            .filter { it in bannedItems }
+
+        if (violatedItems.isNotEmpty()) {
+            val itemList = violatedItems.joinToString(", ")
+            RankUtils.sendMessage(player, MessageConfig.get("battle.player.banned_items", lang, "items" to itemList))
+            return false
+        }
+
         return true
     }
 
@@ -250,32 +265,108 @@ object BattleHandler {
      * @param disconnected 断线的玩家
      */
     private fun handleDisconnectAsFlee(battle: PokemonBattle, disconnected: ServerPlayerEntity) {
-        val fleeingActor = battle.sides
-            .flatMap { it.actors.toList() }
-            .firstOrNull {
-                (it as? PlayerBattleActor)?.entity?.uuid == disconnected.uuid
-            } as? PlayerBattleActor ?: return
-
         val lang = CobblemonRanked.config.defaultLang
         val battleId = battleToIdMap.remove(battle) ?: return
         val formatName = rankedBattles.remove(battleId) ?: return
+        val seasonId = seasonManager.currentSeasonId
+
+        val allPlayers = battle.sides
+            .flatMap { it.actors.toList() }
+            .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+
+        // 处理 2v2 单打
+        if (formatName == "2v2singles" && allPlayers.size == 4) {
+            // 广播断线通知
+            val disconnectMsg = MessageConfig.get("battle.disconnect.broadcast", lang, "player" to disconnected.name.string)
+            allPlayers.forEach {
+                RankUtils.sendMessage(it, disconnectMsg)
+            }
+
+            val loser = allPlayers.firstOrNull { it.getUuid() == disconnected.getUuid() } ?: return
+
+            val sidesList = battle.sides.toList()
+            val side1 = sidesList[0].actors.mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+            val side2 = sidesList[1].actors.mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+
+            val loserTeam = if (side1.any { it.getUuid() == loser.getUuid() }) side1 else side2
+            val winnerTeam = if (loserTeam == side1) side2 else side1
+
+            val loserData = loserTeam.map {
+                getOrCreatePlayerData(it.getUuid(), seasonId, formatName).apply {
+                    playerName = it.name.string
+                }
+            }
+            val winnerData = winnerTeam.map {
+                getOrCreatePlayerData(it.getUuid(), seasonId, formatName).apply {
+                    playerName = it.name.string
+                }
+            }
+
+            val loserAvgElo = loserData.map { it.elo }.average().toInt()
+            val winnerAvgElo = winnerData.map { it.elo }.average().toInt()
+
+            val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(
+                winnerAvgElo, loserAvgElo,
+                CobblemonRanked.config.eloKFactor,
+                CobblemonRanked.config.minElo
+            )
+
+            loserTeam.forEachIndexed { i, player ->
+                val data = loserData[i]
+                data.apply {
+                    elo = newLoserElo
+                    losses++
+                    winStreak = 0
+                    fleeCount++
+                }
+                rankDao.savePlayerData(data)
+                RankUtils.sendMessage(player, MessageConfig.get("battle.disconnect.loser", lang))
+                teleportBackIfPossible(player)
+            }
+
+            winnerTeam.forEachIndexed { i, player ->
+                val data = winnerData[i]
+                data.apply {
+                    elo = newWinnerElo
+                    wins++
+                    winStreak++
+                    if (winStreak > bestWinStreak) bestWinStreak = winStreak
+                }
+                rankDao.savePlayerData(data)
+                RankUtils.sendMessage(player, MessageConfig.get("battle.disconnect.winner", lang))
+                teleportBackIfPossible(player)
+            }
+
+            Cobblemon.battleRegistry.closeBattle(battle)
+
+            // 清理 Duo 战斗状态
+            DuoBattleManager.cleanupTeamData(
+                DuoBattleManager.DuoTeam(loserTeam[0], loserTeam[1], emptyList(), emptyList()),
+                DuoBattleManager.DuoTeam(winnerTeam[0], winnerTeam[1], emptyList(), emptyList())
+            )
+            return
+        }
+
+        // 1v1 处理逻辑
+        val fleeingActor = battle.sides
+            .flatMap { it.actors.toList() }
+            .firstOrNull {
+                (it as? PlayerBattleActor)?.entity?.getUuid() == disconnected.getUuid()
+            } as? PlayerBattleActor ?: return
 
         val loser: ServerPlayerEntity = fleeingActor.entity as? ServerPlayerEntity ?: return
 
-        // 找出另一个还在的玩家
         val winner: ServerPlayerEntity = battle.sides
             .flatMap { it.actors.toList() }
             .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
-            .firstOrNull { it.uuid != loser.uuid } ?: return
+            .firstOrNull { it.getUuid() != loser.getUuid() } ?: return
 
-        val seasonId = seasonManager.currentSeasonId
-        val loserData = getOrCreatePlayerData(loser.uuid, seasonId, formatName)
-        val winnerData = getOrCreatePlayerData(winner.uuid, seasonId, formatName)
+        val loserData = getOrCreatePlayerData(loser.getUuid(), seasonId, formatName)
+        val winnerData = getOrCreatePlayerData(winner.getUuid(), seasonId, formatName)
 
         loserData.playerName = loser.name.string
         winnerData.playerName = winner.name.string
 
-        // 正常 Elo 扣分
         val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(
             winnerData.elo,
             loserData.elo,
@@ -283,28 +374,37 @@ object BattleHandler {
             CobblemonRanked.config.minElo
         )
 
-        // Elo 和战绩更新（断线败方正常扣分 + 逃跑次数）
+        val eloDiffWinner = newWinnerElo - winnerData.elo
+        val eloDiffLoser = newLoserElo - loserData.elo
+
         loserData.apply {
             elo = newLoserElo
             losses++
             winStreak = 0
             fleeCount++
         }
+        winnerData.apply {
+            elo = newWinnerElo
+            wins++
+            winStreak++
+            if (winStreak > bestWinStreak) bestWinStreak = winStreak
+        }
 
         rankDao.savePlayerData(loserData)
         rankDao.savePlayerData(winnerData)
 
-        // 结束战斗
         Cobblemon.battleRegistry.closeBattle(battle)
 
-        // 通知
         RankUtils.sendMessage(loser, MessageConfig.get("battle.disconnect.loser", lang, "elo" to loserData.elo.toString()))
         RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", lang, "elo" to winnerData.elo.toString()))
 
-        // 回传送
+        sendBattleResultMessage(winner, winnerData, eloDiffWinner)
+        sendBattleResultMessage(loser, loserData, eloDiffLoser)
+
         teleportBackIfPossible(loser)
         teleportBackIfPossible(winner)
     }
+
 
     /**
      * 标记战斗为排位赛

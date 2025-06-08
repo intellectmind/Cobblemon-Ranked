@@ -12,6 +12,9 @@
   "entrypoints": {
     "main": [
       "cn.kurt6.cobblemon_ranked.CobblemonRanked"
+    ],
+    "client": [
+      "cn.kurt6.cobblemon_ranked.client.CobblemonRankedClient"
     ]
   },
   "mixins": [
