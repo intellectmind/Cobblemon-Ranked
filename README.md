@@ -23,11 +23,10 @@
 - Built-in season system with automatic rotation and data reset
 - Elo-based matchmaking queue with optional waiting-time-based relaxation
 - Disconnects are treated as losses; Elo is deducted
-- Fully GUI-driven with clickable menu entries
+- Fully GUI-driven with clickable text menus and graphical GUI
 
 ### 🔧 Planned Features
 
-- [ ] Client-side visual GUI
 - [ ] Cross-server matchmaking support
 
 ---
