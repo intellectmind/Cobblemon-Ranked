@@ -125,6 +125,6 @@ class SeasonManager(
         val hours: Long,
         val minutes: Long
     ) {
-        override fun toString() = "${days}天${hours}小时${minutes}分钟"
+        override fun toString() = "${days}d ${hours}h ${minutes}m"
     }
 }

@@ -2,6 +2,7 @@
 package cn.kurt6.cobblemon_ranked.config
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
+import kotlinx.serialization.json.JsonPrimitive
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -67,6 +68,86 @@ object ConfigManager {
                     ?.map { it.value as String }
                     ?: rawConfig.allowedFormats
 
+                // 解析 maxQueueTime
+                val rawMaxQueueTime = json.get("maxQueueTime") as? JsonPrimitive
+                val fixedMaxQueueTime = rawMaxQueueTime?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.maxQueueTime
+
+                // 解析 maxEloMultiplier
+                val rawMaxEloMultiplier = json.get("maxEloMultiplier") as? JsonPrimitive
+                val fixedMaxEloMultiplier = rawMaxEloMultiplier?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.maxEloMultiplier
+
+                // 解析 battleArenas
+                val rawBattleArenas = json.get("battleArenas") as? blue.endless.jankson.JsonArray
+                val fixedBattleArenas = rawBattleArenas?.mapNotNull { arenaElement ->
+                    val arenaObject = arenaElement as? blue.endless.jankson.JsonObject ?: return@mapNotNull null
+                    val world = (arenaObject["world"] as? blue.endless.jankson.JsonPrimitive)?.value as? String ?: "minecraft:overworld"
+                    val positionsArray = arenaObject["playerPositions"] as? blue.endless.jankson.JsonArray ?: return@mapNotNull null
+                    val positions = positionsArray.mapNotNull { posElement ->
+                        val posObject = posElement as? blue.endless.jankson.JsonObject ?: return@mapNotNull null
+                        val x = (posObject["x"] as? blue.endless.jankson.JsonPrimitive)?.value.toString().toDoubleOrNull() ?: return@mapNotNull null
+                        val y = (posObject["y"] as? blue.endless.jankson.JsonPrimitive)?.value.toString().toDoubleOrNull() ?: return@mapNotNull null
+                        val z = (posObject["z"] as? blue.endless.jankson.JsonPrimitive)?.value.toString().toDoubleOrNull() ?: return@mapNotNull null
+                        ArenaCoordinate(x, y, z)
+                    }
+                    if (positions.size == 2) BattleArena(world, positions) else null
+                } ?: rawConfig.battleArenas
+
+                // 解析 defaultLang
+                val rawDefaultLang = json.get("defaultLang")
+                val fixedDefaultLang = rawDefaultLang?.toString()?.removeSurrounding("\"") ?: rawConfig.defaultLang
+
+                // 解析 defaultFormat
+                val rawDefaultFormat = json.get("defaultFormat")
+                val fixedDefaultFormat = rawDefaultFormat?.toString()?.removeSurrounding("\"") ?: rawConfig.defaultFormat
+
+                // 解析 minTeamSize
+                val rawMinTeamSize = json.get("minTeamSize")
+                val fixedMinTeamSize = rawMinTeamSize?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.minTeamSize
+
+                // 解析 maxTeamSize
+                val rawMaxTeamSize = json.get("maxTeamSize")
+                val fixedMaxTeamSize = rawMaxTeamSize?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.maxTeamSize
+
+                // 解析 maxEloDiff
+                val rawMaxEloDiff = json.get("maxEloDiff")
+                val fixedMaxEloDiff = rawMaxEloDiff?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.maxEloDiff
+
+                // 解析 seasonDuration
+                val rawSeasonDuration = json.get("seasonDuration")
+                val fixedSeasonDuration = rawSeasonDuration?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.seasonDuration
+
+                // 解析 initialElo
+                val rawInitialElo = json.get("initialElo")
+                val fixedInitialElo = rawInitialElo?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.initialElo
+
+                // 解析 eloKFactor
+                val rawEloKFactor = json.get("eloKFactor")
+                val fixedEloKFactor = rawEloKFactor?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.eloKFactor
+
+                // 解析 minElo
+                val rawMinElo = json.get("minElo")
+                val fixedMinElo = rawMinElo?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.minElo
+
+                // 解析 maxLevel
+                val rawMaxLevel = json.get("maxLevel")
+                val fixedMaxLevel = rawMaxLevel?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.maxLevel
+
+                // 解析 allowDuplicateSpecies
+                val rawAllowDuplicateSpecies = json.get("allowDuplicateSpecies")
+                val fixedAllowDuplicateSpecies = rawAllowDuplicateSpecies?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.allowDuplicateSpecies
+
+                // 解析 rankRequirements
+                    val rawRankRequirementsElement = json.get("rankRequirements")
+                    val fixedRankRequirements: Map<String, Double> = if (rawRankRequirementsElement is blue.endless.jankson.JsonObject) {
+                        rawRankRequirementsElement.entries.mapNotNull { (rank, jsonValue) ->
+                            val primitive = jsonValue as? blue.endless.jankson.JsonPrimitive
+                            val number = primitive?.value?.toString()?.toDoubleOrNull()
+                            if (number != null) rank to number else null
+                        }.toMap()
+                    } else {
+                        rawConfig.rankRequirements
+                    }
+
                 // 替换字段并返回配置对象
                 rawConfig.copy(
                     rankTitles = fixedRankTitles,
@@ -74,7 +155,22 @@ object ConfigManager {
                     allowedFormats = fixedAllowedFormats,
                     bannedCarriedItems = fixedBannedCarriedItems,
                     bannedHeldItems = fixedBannedHeldItems,
-                    bannedPokemon = fixedBannedPokemon
+                    bannedPokemon = fixedBannedPokemon,
+                    maxQueueTime = fixedMaxQueueTime,
+                    maxEloMultiplier = fixedMaxEloMultiplier,
+                    battleArenas = fixedBattleArenas,
+                    defaultFormat = fixedDefaultFormat,
+                    defaultLang = fixedDefaultLang,
+                    minTeamSize = fixedMinTeamSize,
+                    maxTeamSize = fixedMaxTeamSize,
+                    maxEloDiff = fixedMaxEloDiff,
+                    seasonDuration = fixedSeasonDuration,
+                    initialElo = fixedInitialElo,
+                    eloKFactor = fixedEloKFactor,
+                    minElo = fixedMinElo,
+                    allowDuplicateSpecies = fixedAllowDuplicateSpecies,
+                    maxLevel = fixedMaxLevel,
+                    rankRequirements = fixedRankRequirements,
                 )
             } else {
                 val default = RankConfig()

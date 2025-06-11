@@ -209,7 +209,10 @@ class RankDao(dbFile: File) {
     // 参与人数统计
     fun getParticipationCount(seasonId: Int): Long {
         return transaction(database) {
-            PlayerRankTable.select { PlayerRankTable.seasonId eq seasonId }
+            PlayerRankTable
+                .slice(PlayerRankTable.playerId)
+                .select { PlayerRankTable.seasonId eq seasonId }
+                .withDistinct()
                 .count()
         }
     }

@@ -10,7 +10,7 @@ import java.nio.file.Paths
 
 object MessageConfig {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
-    private val path: Path = Paths.get("config/cobblemon-ranked/messages.json")
+    private val path: Path = Paths.get("config/cobblemon_ranked/messages.json")
     private val messages: Map<String, Map<String, String>> = loadOrCreate()
 
     private fun loadOrCreate(): Map<String, Map<String, String>> {
@@ -521,10 +521,30 @@ object MessageConfig {
                     "en" to "§e[Tip] This is a 2v2 round-robin mode: each team will send one Pokémon per round, and the winner will stay in the battle, while the loser will be replaced. The battle will end when all Pokémon are defeated."
                 ),
 
-                // DuoSpectatorManager
-                "duo.bossbar.title" to mapOf(
-                    "zh" to "§e2v2 车轮战对决: ",
-                    "en" to "§e2v2 Showdown: "
+                // ServerNetworking
+                "rank.not_found" to mapOf(
+                    "zh" to "§c未找到您的战绩数据。",
+                    "en" to "§cYour ranked data could not be found."
+                ),
+                "season.not_found" to mapOf(
+                    "zh" to "§c未找到赛季信息。",
+                    "en" to "§cNo season information found."
+                ),
+                "leaderboard.header" to mapOf(
+                    "zh" to "§6第{page}页（模式：{format}）\n",
+                    "en" to "§6Page {page} (Format: {format})\n"
+                ),
+                "leaderboard.entry" to mapOf(
+                    "zh" to "§e{rank}. §f{name} §7- §6ELO: {elo} §7(战绩: §a{wins}§7/§c{losses}§7) §7断线: {flees}\n",
+                    "en" to "§e{rank}. §f{name} §7- §6ELO: {elo} §7(Record: §a{wins}§7/§c{losses}§7) §7Flees: {flees}\n"
+                ),
+                "leaderboard.empty" to mapOf(
+                    "zh" to "§7暂无更多数据。",
+                    "en" to "§7No more data available."
+                ),
+                "season.info2" to mapOf(
+                    "zh" to "§6当前赛季: #{season}\n§f开始时间: §7{start}\n§f结束时间: §7{end}\n§f赛季时长: §e{duration}天\n§f剩余时间: §e{remaining}\n§f参与玩家: §a{players} 人",
+                    "en" to "§6Current Season: #{season}\n§fStart: §7{start}\n§fEnd: §7{end}\n§fDuration: §e{duration} days\n§fRemaining: §e{remaining}\n§fParticipants: §a{players}"
                 ),
             )
             val json = gson.toJson(defaultMessages)

@@ -2,6 +2,7 @@
 package cn.kurt6.cobblemon_ranked.matchmaking
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
+import cn.kurt6.cobblemon_ranked.CobblemonRanked.Companion.config
 import cn.kurt6.cobblemon_ranked.battle.BattleHandler
 import cn.kurt6.cobblemon_ranked.battle.DuoBattleManager
 import cn.kurt6.cobblemon_ranked.battle.DuoBattleManager.DuoTeam
@@ -9,6 +10,7 @@ import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.util.RankUtils
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.battles.BattleFormat
+import com.cobblemon.mod.fabric.CobblemonFabric.server
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
@@ -89,7 +91,21 @@ object DuoMatchmakingQueue {
                         if (!isEloCompatible(teamA, teamB)) continue
 
                         queuedPlayers.removeAll(listOf(p1, p2, p3, p4))
-                        startNextBattle(teamA, teamB)
+
+                        val lang = config.defaultLang
+                        RankUtils.sendMessage(p1.player, MessageConfig.get("queue.match_success", lang))
+                        RankUtils.sendMessage(p2.player, MessageConfig.get("queue.match_success", lang))
+                        RankUtils.sendMessage(p3.player, MessageConfig.get("queue.match_success", lang))
+                        RankUtils.sendMessage(p4.player, MessageConfig.get("queue.match_success", lang))
+
+                        // 5秒后开始传送和战斗
+                        val server = p1.player.server
+                        scheduler.schedule({
+                            server.execute {
+                                startNextBattle(teamA, teamB)
+                            }
+                        }, 5, TimeUnit.SECONDS)
+
                         return
                     }
                 }

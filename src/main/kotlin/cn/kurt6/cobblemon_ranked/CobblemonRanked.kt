@@ -11,10 +11,13 @@ import cn.kurt6.cobblemon_ranked.data.RewardManager
 import cn.kurt6.cobblemon_ranked.data.SeasonManager
 import cn.kurt6.cobblemon_ranked.matchmaking.DuoMatchmakingQueue
 import cn.kurt6.cobblemon_ranked.matchmaking.MatchmakingQueue
+import cn.kurt6.cobblemon_ranked.network.*
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
@@ -41,6 +44,31 @@ class CobblemonRanked : ModInitializer {
         registerCommands()
         registerEvents()
         setupSeasonCheck()
+
+        // 注册客户端到服务器负载 (C2S)
+        PayloadTypeRegistry.playC2S().register(
+            RequestPlayerRankPayload.ID,
+            RequestPlayerRankPayload.CODEC
+        )
+
+        // 注册服务器到客户端负载 (S2C)
+        PayloadTypeRegistry.playS2C().register(
+            PlayerRankDataPayload.ID,
+            PlayerRankDataPayload.CODEC
+        )
+        PayloadTypeRegistry.playS2C().register(
+            SeasonInfoTextPayload.ID,
+            SeasonInfoTextPayload.CODEC
+        )
+        PayloadTypeRegistry.playS2C().register(
+            LeaderboardPayload.ID,
+            LeaderboardPayload.CODEC
+        )
+
+        // ======== 注册网络处理器 ========
+        ServerPlayNetworking.registerGlobalReceiver(RequestPlayerRankPayload.ID) { payload, context ->
+            ServerNetworking.handle(payload, context)
+        }
 
         logger.info("Cobblemon Ranked Mod initialized")
     }
@@ -76,7 +104,7 @@ class CobblemonRanked : ModInitializer {
     }
 
     companion object {
-        const val MOD_ID = "cobblemon-ranked"
+        const val MOD_ID = "cobblemon_ranked"
         private val logger = LoggerFactory.getLogger(MOD_ID)
 
         lateinit var INSTANCE: CobblemonRanked

@@ -53,7 +53,6 @@ data class RankConfig(
     val minElo: Int = 0,
 
     @Comment("Banned Pokémon / 禁止使用的宝可梦")
-
     var bannedPokemon: List<String> = listOf("Mewtwo", "Arceus"),
 
     @Comment("Banned held items for Pokémon / 禁止宝可梦携带的道具")

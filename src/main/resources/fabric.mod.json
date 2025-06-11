@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "cobblemon-ranked",
+  "id": "cobblemon_ranked",
   "version": "${version}",
   "name": "Cobblemon Ranked",
   "description": "Adds competitive ranked battles to Cobblemo",

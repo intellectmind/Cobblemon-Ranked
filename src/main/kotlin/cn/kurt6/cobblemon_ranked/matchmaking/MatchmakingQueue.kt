@@ -4,6 +4,7 @@ package cn.kurt6.cobblemon_ranked.matchmaking
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
 import cn.kurt6.cobblemon_ranked.CobblemonRanked.Companion.config
+import cn.kurt6.cobblemon_ranked.CobblemonRanked.Companion.matchmakingQueue
 import cn.kurt6.cobblemon_ranked.battle.BattleHandler
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.config.RankConfig
@@ -15,6 +16,7 @@ import com.cobblemon.mod.common.battles.BattleSide
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import com.cobblemon.mod.common.pokemon.Pokemon
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.Identifier
 import net.minecraft.registry.RegistryKey
@@ -40,6 +42,8 @@ class MatchmakingQueue {
     // 初始化方法：设置定时任务和模式映射
     init {
         // 每5秒执行一次队列处理
+        registerDisconnectHandler()
+
         scheduler.scheduleAtFixedRate(::processQueue, 5, 5, TimeUnit.SECONDS)
         initializeFormatMap()
     }
@@ -56,6 +60,22 @@ class MatchmakingQueue {
     private val cooldownMap = mutableMapOf<UUID, Long>()
     companion object {
         private const val BATTLE_COOLDOWN_MS = 10_000L // 战斗冷却时间10秒
+
+        // 断线处理
+        fun registerDisconnectHandler() {
+            ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
+                val player = handler.player
+                val uuid = player.uuid
+
+                // 从单人匹配队列中移除
+                matchmakingQueue.removePlayer(uuid)
+
+                // 从 2v2 匹配队列中移除
+                DuoMatchmakingQueue.removePlayer(player)
+
+                logger.info("玩家 ${player.name.string} 断线，已移出匹配队列")
+            }
+        }
     }
 
     /**

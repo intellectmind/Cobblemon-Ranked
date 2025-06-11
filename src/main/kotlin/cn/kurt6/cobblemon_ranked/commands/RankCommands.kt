@@ -110,9 +110,19 @@ object RankCommands {
                 .then(CommandManager.literal("reload")
                     .requires { source -> source.hasPermissionLevel(4) }
                     .executes {
-                        ConfigManager.reload()
-                        val lang = CobblemonRanked.config.defaultLang
+                        val newConfig = ConfigManager.reload()
+                        val lang = newConfig.defaultLang
+
                         it.source.sendMessage(Text.literal(MessageConfig.get("config.reloaded", lang)))
+
+//                        val jankson = blue.endless.jankson.Jankson.builder().build()
+//                        val configJson = jankson.toJson(newConfig).toJson(true, true)
+//
+//                        // 将配置每行逐条发送
+//                        configJson.lines().forEach { line ->
+//                            it.source.sendMessage(Text.literal(line))
+//                        }
+
                         1
                     }
                 )
