@@ -1,0 +1,20 @@
+{
+  "key.cobblemon_ranked.open_gui": "Open Ranked GUI",
+  "category.cobblemon_ranked": "Cobblemon Ranked",
+  "cobblemon_ranked.info.title": "§6%s's %s Data (Season #%d)",
+  "cobblemon_ranked.info.rank": "§fRank: %s §7(ELO: %d)",
+  "cobblemon_ranked.info.global_rank": "§fGlobal Rank: §b%s",
+  "cobblemon_ranked.info.record": "§fecord: §a%d§7/§c%d §7(Win rate: %.2f%%)",
+  "cobblemon_ranked.info.streak": "§fStreak: §6%d §7(Best: %d)",
+  "cobblemon_ranked.info.flee": "§fFlee Count: §c%d",
+  "cobblemon_ranked.not_ranked": "Unranked",
+  "cobblemon_ranked.cross_server.title": "Cross-server Matchmaking",
+  "cobblemon_ranked.cross_server.developing": "In Development...",
+  "screen.cobblemon_ranked.loading.player_info": "§7Loading personal info...",
+  "screen.cobblemon_ranked.loading.season_info": "§7Loading season info...",
+  "screen.cobblemon_ranked.loading.leaderboard": "§7Loading leaderboard...",
+  "screen.cobblemon_ranked.title": "Cobblemon Ranked Menu",
+  "cobblemon_ranked.mode.singles": "Singles",
+  "cobblemon_ranked.mode.doubles": "Doubles",
+  "cobblemon_ranked.mode.2v2singles": "2v2 Singles"
+}

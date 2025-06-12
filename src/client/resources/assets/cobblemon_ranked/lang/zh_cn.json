@@ -1,0 +1,20 @@
+{
+  "key.cobblemon_ranked.open_gui": "打开 Cobblemon 排位界面",
+  "category.cobblemon_ranked": "Cobblemon 排位",
+  "cobblemon_ranked.info.title": "§6%s 的 %s 数据（赛季 #%d）",
+  "cobblemon_ranked.info.rank": "§f段位: §e%s §7(ELO: %d)",
+  "cobblemon_ranked.info.global_rank": "§f全球排名: §b%s",
+  "cobblemon_ranked.info.record": "§f战绩: §a%d§7/§c%d §7(胜率: %.2f%%)",
+  "cobblemon_ranked.info.streak": "§f连胜: §6%d §7(最高: %d)",
+  "cobblemon_ranked.info.flee": "§f断线次数: §c%d",
+  "cobblemon_ranked.not_ranked": "未上榜",
+  "cobblemon_ranked.cross_server.title": "跨服匹配",
+  "cobblemon_ranked.cross_server.developing": "开发中...",
+  "screen.cobblemon_ranked.loading.player_info": "§7加载个人信息中...",
+  "screen.cobblemon_ranked.loading.season_info": "§7加载赛季信息中...",
+  "screen.cobblemon_ranked.loading.leaderboard": "§7加载排行榜中...",
+  "screen.cobblemon_ranked.title": "Cobblemon 排位主菜单",
+  "cobblemon_ranked.mode.singles": "单打",
+  "cobblemon_ranked.mode.doubles": "双打",
+  "cobblemon_ranked.mode.2v2singles": "2v2 单打"
+}
