@@ -4,6 +4,7 @@ package cn.kurt6.cobblemon_ranked.commands
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
 import cn.kurt6.cobblemon_ranked.config.ConfigManager
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
+import cn.kurt6.cobblemon_ranked.data.RankDao
 import cn.kurt6.cobblemon_ranked.matchmaking.DuoMatchmakingQueue
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
@@ -284,7 +285,47 @@ object RankCommands {
                         1
                     }
                 )
+                .then(CommandManager.literal("setseasonname")
+                    .then(CommandManager.argument("seasonId", IntegerArgumentType.integer(1))
+                        .then(CommandManager.argument("name", StringArgumentType.string())
+                            .requires { it.hasPermissionLevel(4) }
+                            .executes { ctx ->
+                                val seasonId = IntegerArgumentType.getInteger(ctx, "seasonId")
+                                val name = StringArgumentType.getString(ctx, "name")
+                                setSeasonName(ctx.source, seasonId, name)
+                                1
+                            }
+                        )
+                    )
+                )
         )
+    }
+
+    fun setSeasonName(source: ServerCommandSource, seasonId: Int, name: String) {
+        val manager = CobblemonRanked.seasonManager
+        val lang = CobblemonRanked.config.defaultLang
+
+        // 正确查找任意赛季
+        val season = manager.rankDao.getSeasonInfo(seasonId)
+            ?: run {
+                source.sendMessage(Text.literal(MessageConfig.get("setSeasonName.error", lang, "seasonId" to seasonId)))
+                return
+            }
+
+        // 写入数据库
+        manager.rankDao.saveSeasonInfo(
+            seasonId = seasonId,
+            startDate = season.startDate,
+            endDate = season.endDate,
+            ended = season.ended,
+            name = name
+        )
+
+        if (seasonId == manager.currentSeasonId) {
+            manager.currentSeasonName = name
+        }
+
+        source.sendMessage(Text.literal(MessageConfig.get("setSeasonName.success", lang, "seasonId" to seasonId, "name" to name)))
     }
 
     /**
@@ -390,6 +431,7 @@ object RankCommands {
             "player" to player.name.string,
             "format" to format,
             "season" to seasonId.toString(),
+            "name" to CobblemonRanked.seasonManager.currentSeasonName,
             "title" to data.getRankTitle(),
             "elo" to data.elo.toString(),
             "rank" to rankString,
@@ -411,7 +453,7 @@ object RankCommands {
         val fullLeaderboard = CobblemonRanked.rankDao.getLeaderboard(seasonId, format)
 
         if (fullLeaderboard.isEmpty()) {
-            source.sendMessage(Text.literal(MessageConfig.get("leaderboard.empty", lang, "season" to seasonId.toString(), "format" to format)))
+            source.sendMessage(Text.literal(MessageConfig.get("leaderboard.empty", lang, "season" to seasonId.toString(), "name" to CobblemonRanked.seasonManager.currentSeasonName, "format" to format)))
             return 1
         }
 
@@ -425,6 +467,7 @@ object RankCommands {
         val header = MessageConfig.get("leaderboard.header", lang,
             "format" to format,
             "season" to seasonId.toString(),
+            "name" to CobblemonRanked.seasonManager.currentSeasonName,
             "page" to currentPage.toString(),
             "total" to totalPages.toString()
         )
@@ -464,6 +507,7 @@ object RankCommands {
 
         val message = MessageConfig.get("season.info", lang,
             "season" to season.currentSeasonId.toString(),
+            "name" to season.currentSeasonName,
             "start" to season.formatDate(season.startDate),
             "end" to season.formatDate(season.endDate),
             "duration" to CobblemonRanked.config.seasonDuration.toString(),
@@ -683,7 +727,7 @@ object RankCommands {
         val lang = CobblemonRanked.config.defaultLang
         for (s in season downTo maxOf(1, season - 4)) {
             val row1 = Text.empty()
-                .append(MessageConfig.get("gui.info_target.season", lang, "season" to s.toString()))
+                .append(MessageConfig.get("gui.info_target.season", lang, "season" to s.toString(), "name" to CobblemonRanked.seasonManager.currentSeasonName))
                 .append(space())
                 .append(link(MessageConfig.get("gui.myinfo.1v1", lang), "/rank info ${player.name.string} singles $s"))
                 .append(space())

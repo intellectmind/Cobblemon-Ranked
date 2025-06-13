@@ -11,6 +11,14 @@ object ConfigManager {
     private val path: Path = CobblemonRanked.dataPath.resolve("cobblemon_ranked.json")
     private val jankson = blue.endless.jankson.Jankson.builder().build()
 
+    fun decodeUnicode(input: String): String {
+        val regex = Regex("""\\u([0-9a-fA-F]{4})""")
+        return regex.replace(input) {
+            val hex = it.groupValues[1]
+            hex.toInt(16).toChar().toString()
+        }
+    }
+
     fun load(): RankConfig {
         return try {
             if (Files.exists(path)) {
@@ -22,7 +30,8 @@ object ConfigManager {
                 val rawTitlesJson = json.getObject("rankTitles")
                 val fixedRankTitles = rawTitlesJson?.entries?.mapNotNull { (k, v) ->
                     k.toIntOrNull()?.let { elo ->
-                        elo to v.toString().trim('"')
+                        val encoded = v.toString().trim('"')
+                        elo to decodeUnicode(encoded)
                     }
                 }?.toMap() ?: emptyMap()
 
@@ -148,6 +157,32 @@ object ConfigManager {
                         rawConfig.rankRequirements
                     }
 
+                // 解析 bannedMoves
+                val rawBannedMoves = json.get("bannedMoves") as? blue.endless.jankson.JsonArray
+                val fixedBannedMoves = rawBannedMoves
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.bannedMoves
+
+                // 解析 bannedNatures
+                val rawBannedNatures = json.get("bannedNatures") as? blue.endless.jankson.JsonArray
+                val fixedBannedNatures = rawBannedNatures
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.bannedCarriedItems
+
+                // 解析 bannedGenders
+                val rawBannedGenders = json.get("bannedGenders") as? blue.endless.jankson.JsonArray
+                val fixedBannedGenders = rawBannedGenders
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.bannedGenders
+
+                // 解析 bannedShiny
+                val rawBannedShiny = json.get("bannedShiny")
+                val fixedBannedShiny = rawBannedShiny?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.bannedShiny
+
+
                 // 替换字段并返回配置对象
                 rawConfig.copy(
                     rankTitles = fixedRankTitles,
@@ -171,6 +206,10 @@ object ConfigManager {
                     allowDuplicateSpecies = fixedAllowDuplicateSpecies,
                     maxLevel = fixedMaxLevel,
                     rankRequirements = fixedRankRequirements,
+                    bannedMoves = fixedBannedMoves,
+                    bannedNatures = fixedBannedNatures,
+                    bannedGenders = fixedBannedGenders,
+                    bannedShiny = fixedBannedShiny
                 )
             } else {
                 val default = RankConfig()

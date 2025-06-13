@@ -113,9 +113,8 @@ class RankDao(dbFile: File) {
     }
 
     // 赛季信息操作
-    fun saveSeasonInfo(seasonId: Int, startDate: String, endDate: String, ended: Boolean = false) {
+    fun saveSeasonInfo(seasonId: Int, startDate: String, endDate: String, ended: Boolean = false, name: String = "") {
         transaction(database) {
-            // 更新或插入赛季信息
             val existing = SeasonInfoTable.select { SeasonInfoTable.seasonId eq seasonId }.firstOrNull()
 
             if (existing != null) {
@@ -123,6 +122,7 @@ class RankDao(dbFile: File) {
                     it[SeasonInfoTable.startDate] = startDate
                     it[SeasonInfoTable.endDate] = endDate
                     it[SeasonInfoTable.ended] = ended
+                    it[SeasonInfoTable.seasonName] = name
                 }
             } else {
                 SeasonInfoTable.insert {
@@ -130,6 +130,7 @@ class RankDao(dbFile: File) {
                     it[SeasonInfoTable.startDate] = startDate
                     it[SeasonInfoTable.endDate] = endDate
                     it[SeasonInfoTable.ended] = ended
+                    it[SeasonInfoTable.seasonName] = name
                 }
             }
         }
@@ -146,12 +147,12 @@ class RankDao(dbFile: File) {
                         seasonId = it[SeasonInfoTable.seasonId],
                         startDate = it[SeasonInfoTable.startDate],
                         endDate = it[SeasonInfoTable.endDate],
-                        ended = it[SeasonInfoTable.ended]
+                        ended = it[SeasonInfoTable.ended],
+                        seasonName = it[SeasonInfoTable.seasonName]
                     )
                 }
         }
     }
-
 
     fun markSeasonEnded(seasonId: Int) {
         transaction(database) {
@@ -166,8 +167,26 @@ class RankDao(dbFile: File) {
         val seasonId: Int,
         val startDate: String,
         val endDate: String,
-        val ended: Boolean
+        val ended: Boolean,
+        val seasonName: String
     )
+
+    fun getSeasonInfo(seasonId: Int): SeasonInfo? {
+        return transaction(database) {
+            SeasonInfoTable
+                .select { SeasonInfoTable.seasonId eq seasonId }
+                .firstOrNull()
+                ?.let {
+                    SeasonInfo(
+                        seasonId = it[SeasonInfoTable.seasonId],
+                        startDate = it[SeasonInfoTable.startDate],
+                        endDate = it[SeasonInfoTable.endDate],
+                        ended = it[SeasonInfoTable.ended],
+                        seasonName = it[SeasonInfoTable.seasonName]
+                    )
+                }
+        }
+    }
 
     fun close() {
         // 清理资源
@@ -196,6 +215,7 @@ class RankDao(dbFile: File) {
         val startDate = varchar("start_date", 30)
         val endDate = varchar("end_date", 30)
         val ended = bool("ended").default(false) // 标记赛季是否已结束
+        val seasonName = varchar("season_name", 50).default("")
     }
 
     // 获取所有玩家数据

@@ -75,6 +75,7 @@ class ServerNetworking {
                 val lang = config.defaultLang
                 val text = MessageConfig.get("season.info2", lang,
                         "season" to season.seasonId,
+                        "name" to CobblemonRanked.seasonManager.currentSeasonName,
                         "start" to season.startDate,
                         "end" to season.endDate,
                         "duration" to totalDurationDays,
@@ -108,7 +109,7 @@ class ServerNetworking {
                 currentPageList.forEachIndexed { index, data ->
                     val rank = fromIndex + index + 1
                     append(
-                        MessageConfig.get("leaderboard.entry", lang,
+                        MessageConfig.get("leaderboard.entry2", lang,
                             "rank" to rank,
                             "name" to data.playerName,
                             "elo" to data.elo,

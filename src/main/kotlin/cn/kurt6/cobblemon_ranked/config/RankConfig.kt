@@ -61,6 +61,18 @@ data class RankConfig(
     @Comment("Banned items in player's inventory / 禁止玩家背包携带的物品")
     var bannedCarriedItems: List<String> = listOf("cobblemon:leftovers", "cobblemon:choice_band"),
 
+    @Comment("禁止使用的技能")
+    var bannedMoves: List<String> = listOf("leechseed"),
+
+    @Comment("禁止使用的性格")
+    var bannedNatures: List<String> = listOf("cobblemon:naughty"),
+
+    @Comment("禁止使用的特性")
+    var bannedGenders: List<String> = listOf("MALE"),
+
+    @Comment("是否禁止闪光宝可梦参战")
+    var bannedShiny: Boolean = false,
+
     @Comment("Allowed battle formats: 'singles', 'doubles', '2v2singles' / 允许的战斗模式：‘singles’（单打）, ‘doubles’（双打）, '2v2singles'（2v2单打）")
     var allowedFormats: List<String> = listOf("singles", "doubles", "2v2singles"),
 

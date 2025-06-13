@@ -139,8 +139,8 @@ object MessageConfig {
                     "en" to "§6New Season Started!"
                 ),
                 "season.start.subtitle" to mapOf(
-                    "zh" to "§f赛季 #{season} ({start} - {end})",
-                    "en" to "§fSeason #{season} ({start} - {end})"
+                    "zh" to "§f赛季 #{season} {name} ({start} - {end})",
+                    "en" to "§fSeason #{season} {name}  ({start} - {end})"
                 ),
 
                 // RewardManager
@@ -162,6 +162,14 @@ object MessageConfig {
                 ),
 
                 // RankCommands
+                "setSeasonName.error" to mapOf(
+                    "zh" to "§c找不到编号为 {seasonId} 的赛季记录。",
+                    "en" to "§cCould not find season record with ID {seasonId}."
+                ),
+                "setSeasonName.success" to mapOf(
+                    "zh" to "§a已将第 {seasonId} 赛季名称设置为：§f{name}",
+                    "en" to "§aSeason name has been set to §f{name}"
+                ),
                 "status.2v2.singles" to mapOf(
                     "zh" to "§a你当前在 §e2v2单打 §a匹配队列中。",
                     "en" to "§aYou are currently in the §e2v2singles §amatchmaking queue."
@@ -223,15 +231,15 @@ object MessageConfig {
                     "en" to "Unranked"
                 ),
                 "rank.summary" to mapOf(
-                    "zh" to "§6{player} 的 {format} 数据（赛季 #{season})\\n§f段位: §e{title} §8(ELO: {elo})\\n§f全球排名: §b{rank}\\n§f战绩: §a{wins}§7/§c{losses} §8(胜率: {rate}%)\\n§f连胜: §6{streak} §8(最高: {best})\\n§f断线次数: §c{flee}",
-                    "en" to "§6{player}'s {format} Stats (Season #{season})\\n§fRank: §e{title} §8(ELO: {elo})\\n§fGlobal Rank: §b{rank}\\n§fRecord: §a{wins}§7/§c{losses} §8(Win Rate: {rate}%)\\n§fStreak: §6{streak} §8(Best: {best})\\n§fDisconnection: §c{flee}"
+                    "zh" to "§6{player} 的 {format} 数据（赛季 #{season} {name})\\n§f段位: §e{title} §8(ELO: {elo})\\n§f全球排名: §b{rank}\\n§f战绩: §a{wins}§7/§c{losses} §8(胜率: {rate}%)\\n§f连胜: §6{streak} §8(最高: {best})\\n§f断线次数: §c{flee}",
+                    "en" to "§6{player}'s {format} Stats (Season #{season} {name})\\n§fRank: §e{title} §8(ELO: {elo})\\n§fGlobal Rank: §b{rank}\\n§fRecord: §a{wins}§7/§c{losses} §8(Win Rate: {rate}%)\\n§fStreak: §6{streak} §8(Best: {best})\\n§fDisconnection: §c{flee}"
                 ),"leaderboard.empty" to mapOf(
-                    "zh" to "§7赛季 #{season} [{format}] 暂无排位数据",
-                    "en" to "§7No ranking data for season #{season} [{format}]"
+                    "zh" to "§7赛季 #{season} {name} [{format}] 暂无排位数据",
+                    "en" to "§7No ranking data for season #{season} {name} [{format}]"
                 ),
                 "leaderboard.header" to mapOf(
-                    "zh" to "§6===== [{format} - 赛季 #{season}] 排行榜 ({page}/{total}) =====",
-                    "en" to "§6===== [{format} - Season #{season}] Leaderboard ({page}/{total}) ====="
+                    "zh" to "§6===== [{format} - 赛季 #{season} {name}] 排行榜 ({page}/{total}) =====",
+                    "en" to "§6===== [{format} - Season #{season} {name}] Leaderboard ({page}/{total}) ====="
                 ),
                 "leaderboard.entry" to mapOf(
                     "zh" to "§e{rank}. §f{name} §7- §6ELO: {elo} §7(战绩: §a{wins}§7/§c{losses}§7) §8断线: {flee}",
@@ -242,8 +250,8 @@ object MessageConfig {
                     "en" to "§eUse /rank top {format} {season} <page> [count] to view more"
                 ),
                 "season.info" to mapOf(
-                    "zh" to "§6当前赛季: #{season}\\n§f开始时间: §7{start}\\n§f结束时间: §7{end}\\n§f赛季时长: §e{duration}天\\n§f剩余时间: §e{remaining}\\n§f参与玩家: §a{players} 人",
-                    "en" to "§6Current Season: #{season}\\n§fStart: §7{start}\\n§fEnd: §7{end}\\n§fDuration: §e{duration} days\\n§fRemaining: §e{remaining}\\n§fParticipants: §a{players}"
+                    "zh" to "§6当前赛季: #{season} {name}\\n§f开始时间: §7{start}\\n§f结束时间: §7{end}\\n§f赛季时长: §e{duration}天\\n§f剩余时间: §e{remaining}\\n§f参与玩家: §a{players} 人",
+                    "en" to "§6Current Season: #{season} {name}\\n§fStart: §7{start}\\n§fEnd: §7{end}\\n§fDuration: §e{duration} days\\n§fRemaining: §e{remaining}\\n§fParticipants: §a{players}"
                 ),
                 "rank.reset.success" to mapOf(
                     "zh" to "§a已清除 {player} 在 {format} 模式下的排位数据。",
@@ -348,8 +356,8 @@ object MessageConfig {
                     "en" to "§6§l▶ {player}'s Rank - {format} - Select Season"
                 ),
                 "gui.info_target.season" to mapOf(
-                    "zh" to "§a[赛季 #{season}]",
-                    "en" to "§a[Season #{season}]"
+                    "zh" to "§a[赛季 #{season} {name}]",
+                    "en" to "§a[Season #{season} {name}]"
                 ),
                 "gui.myinfo.1v1" to mapOf(
                     "zh" to "§b[查看单打]",
@@ -365,6 +373,22 @@ object MessageConfig {
                 ),
 
                 // BattleHandler
+                "battle.team.banned_nature" to mapOf(
+                    "zh" to "队伍中有宝可梦使用了被禁止的性格: {names}",
+                    "en" to "Your team contains Pokémon with banned natures: {names}"
+                ),
+                "battle.team.banned_gender" to mapOf(
+                    "zh" to "队伍中有宝可梦使用了被禁止的特性: {names}",
+                    "en" to "Your team contains Pokémon with banned genders: {names}"
+                ),
+                "battle.team.banned_moves" to mapOf(
+                    "zh" to "队伍中有宝可梦使用了被禁止的招式: {names}",
+                    "en" to "Your team contains banned moves: {names}"
+                ),
+                "battle.team.banned_shiny" to mapOf(
+                    "zh" to "队伍中有宝可梦使用了被禁止的闪光个体: {names}",
+                    "en" to "§cYour team contains shiny Pokémon: {names}"
+                ),
                 "battle.player.banned_items" to mapOf(
                     "zh" to "§c你的背包中含有被禁止的物品: {items}",
                     "en" to "§cYour inventory contains banned items: {items}"
@@ -534,7 +558,7 @@ object MessageConfig {
                     "zh" to "§6第{page}页（模式：{format}）\n",
                     "en" to "§6Page {page} (Format: {format})\n"
                 ),
-                "leaderboard.entry" to mapOf(
+                "leaderboard.entry2" to mapOf(
                     "zh" to "§e{rank}. §f{name} §7- §6ELO: {elo} §7(战绩: §a{wins}§7/§c{losses}§7) §7断线: {flees}\n",
                     "en" to "§e{rank}. §f{name} §7- §6ELO: {elo} §7(Record: §a{wins}§7/§c{losses}§7) §7Flees: {flees}\n"
                 ),
@@ -543,8 +567,8 @@ object MessageConfig {
                     "en" to "§7No more data available."
                 ),
                 "season.info2" to mapOf(
-                    "zh" to "§6当前赛季: #{season}\n§f开始时间: §7{start}\n§f结束时间: §7{end}\n§f赛季时长: §e{duration}天\n§f剩余时间: §e{remaining}\n§f参与玩家: §a{players} 人",
-                    "en" to "§6Current Season: #{season}\n§fStart: §7{start}\n§fEnd: §7{end}\n§fDuration: §e{duration} days\n§fRemaining: §e{remaining}\n§fParticipants: §a{players}"
+                    "zh" to "§6当前赛季: #{season} {name}\n§f开始时间: §7{start}\n§f结束时间: §7{end}\n§f赛季时长: §e{duration}天\n§f剩余时间: §e{remaining}\n§f参与玩家: §a{players} 人",
+                    "en" to "§6Current Season: #{season} {name}\n§fStart: §7{start}\n§fEnd: §7{end}\n§fDuration: §e{duration} days\n§fRemaining: §e{remaining}\n§fParticipants: §a{players}"
                 ),
             )
             val json = gson.toJson(defaultMessages)

@@ -73,6 +73,16 @@ object BattleHandler {
         val pokemonList = teamUuids.mapNotNull { uuid -> getPokemonFromPlayer(player, uuid) }
         val config = CobblemonRanked.config
 
+//        println("=== 获取队伍原始数据 ===")
+//        pokemonList.forEachIndexed { index, p ->
+//            println("[$index] ${p.species.name} (Lv.${p.level})")
+//            println("  UUID: ${p.uuid}")
+//            println("  特性: ${p.gender}, 闪光: ${p.shiny}, 性格: ${p.nature.name}")
+//            println("  技能: ${p.moveSet.getMovesWithNulls().map { it?.name ?: "null" }}")
+//            println("  持有物: ${getHeldItemReflectively(p)?.item}")
+//        }
+//        println("=== 结束 ===")
+
         // doubles 模式下检查至少需要 2 只宝可梦
         if (format == BattleFormat.GEN_9_DOUBLES && pokemonList.size < 2) {
             RankUtils.sendMessage(player, MessageConfig.get("battle.team.too_small", lang, "min" to "2"))
@@ -154,7 +164,7 @@ object BattleHandler {
             return false
         }
 
-        // 用玩家背包道具
+        // 禁用玩家背包道具
         val bannedItems = config.bannedCarriedItems.map { it.lowercase() }
         val inventory = player.inventory
 
@@ -167,6 +177,62 @@ object BattleHandler {
             val itemList = violatedItems.joinToString(", ")
             RankUtils.sendMessage(player, MessageConfig.get("battle.player.banned_items", lang, "items" to itemList))
             return false
+        }
+
+        // 禁用性格
+        val bannedNatures = config.bannedNatures.map { it.lowercase() }
+        val hasBannedNature = pokemonList.filter {
+            it.nature.name.toString().lowercase() in bannedNatures
+        }
+        if (hasBannedNature.isNotEmpty()) {
+            val names = hasBannedNature.joinToString(", ") {
+                "${it.species.name}(${it.nature.name})"
+            }
+            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_nature", lang, "names" to names))
+            return false
+        }
+
+
+        // 禁用特性
+        val bannedGenders = config.bannedGenders.map { it.uppercase() }
+        val hasBannedGender = pokemonList.filter {
+            it.gender.name.uppercase() in bannedGenders
+        }
+        if (hasBannedGender.isNotEmpty()) {
+            val names = hasBannedGender.joinToString(", ") {
+                "${it.species.name}(${it.gender.name})"
+            }
+            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_gender", lang, "names" to names))
+            return false
+        }
+
+        // 禁用技能
+        val bannedMoves = config.bannedMoves.map { it.lowercase().trim() }
+        val hasBannedMoves = pokemonList.mapNotNull { poke ->
+            val banned = poke.moveSet.getMovesWithNulls()
+                .mapNotNull { move ->
+                    val moveName = move?.name?.toString()?.lowercase()
+                    if (moveName in bannedMoves) moveName else null
+                }
+
+            if (banned.isNotEmpty()) {
+                "${poke.species.name}(${banned.joinToString(", ")})"
+            } else null
+        }
+        if (hasBannedMoves.isNotEmpty()) {
+            val names = hasBannedMoves.joinToString(", ")
+            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_moves", lang, "names" to names))
+            return false
+        }
+
+        // 禁用闪光
+        if (config.bannedShiny) {
+            val shinyPokemon = pokemonList.filter { it.shiny }
+            if (shinyPokemon.isNotEmpty()) {
+                val names = shinyPokemon.joinToString(", ") { it.species.name }
+                RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_shiny", lang, "names" to names))
+                return false
+            }
         }
 
         return true

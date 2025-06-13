@@ -12,10 +12,12 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 class SeasonManager(
-    private val rankDao: RankDao,
+    val rankDao: RankDao,
     private val rewardManager: RewardManager
 ) {
     private val logger = LoggerFactory.getLogger(SeasonManager::class.java)
+    var currentSeasonName: String = ""
+
     private val config = CobblemonRanked.config
 
     var currentSeasonId: Int = 1
@@ -34,6 +36,7 @@ class SeasonManager(
 
     private fun initializeSeasonDates() {
         val lastSeason = rankDao.getLastSeasonInfo()
+        currentSeasonName = lastSeason?.seasonName ?: ""
 
         if (lastSeason == null) {
             // 全新安装，创建第一个赛季
@@ -41,12 +44,14 @@ class SeasonManager(
             startDate = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS)
             endDate = startDate.plusDays(config.seasonDuration.toLong())
                 .withHour(23).withMinute(59).withSecond(59)
+            currentSeasonName = ""
             saveSeasonInfo()
         } else {
             // 加载现有赛季
             currentSeasonId = lastSeason.seasonId
             startDate = LocalDateTime.parse(lastSeason.startDate, dateFormatter)
             endDate = LocalDateTime.parse(lastSeason.endDate, dateFormatter)
+            currentSeasonName = lastSeason.seasonName
 
             // 如果赛季已结束但未处理，自动结束赛季
             if (lastSeason.ended) {
@@ -81,6 +86,7 @@ class SeasonManager(
             .withSecond(59)
 
         // 保存赛季信息到数据库
+        currentSeasonName = ""
         saveSeasonInfo()
         announceNewSeason(server)
     }
@@ -90,17 +96,19 @@ class SeasonManager(
             seasonId = currentSeasonId,
             startDate = formatDate(startDate),
             endDate = formatDate(endDate),
-            ended = false
+            ended = false,
+            name = currentSeasonName
         )
     }
 
     private fun announceNewSeason(server: MinecraftServer) {
         val lang = config.defaultLang
+
         server.playerManager.playerList.forEach { player ->
             RankUtils.sendTitle(
                 player,
                 MessageConfig.get("season.start.title", lang),
-                MessageConfig.get("season.start.subtitle", lang, "season" to currentSeasonId.toString(), "start" to formatDate(startDate), "end" to formatDate(endDate)),
+                MessageConfig.get("season.start.subtitle", lang, "season" to currentSeasonId.toString(),"name" to currentSeasonName, "start" to formatDate(startDate), "end" to formatDate(endDate)),
                 20, 100, 20
             )
         }
