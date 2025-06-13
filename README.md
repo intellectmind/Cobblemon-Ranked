@@ -69,6 +69,7 @@
 | `/rank reward <player> <format> <rank>` | Grant a reward to a player for a specific rank |
 | `/rank season end` | Force-end the current season |
 | `/rank reload` | Reload config files (language, rank settings, etc.) |
+| `/rank setseasonname <seasonId> <name>` | Set Season Name |
 
 ---
 
@@ -90,9 +91,13 @@
   "initialElo": 1000,                      // Elo at the beginning of a season
   "eloKFactor": 32,                        // Elo K-factor (affects Elo change magnitude)
   "minElo": 0,                             // Minimum Elo floor
-  "bannedPokemon": ["Mewtwo", "Arceus"],  // Banned Pokémon (e.g., legendaries)
+  "bannedPokemon": ["Mewtwo", "Arceus"],   // Banned Pokémon (e.g., legendaries)
   "bannedHeldItems": ["cobblemon:leftovers"], // Banned held items for Pokémon
   "bannedCarriedItems": ["cobblemon:leftovers"], // Banned items in player's inventory
+	"bannedMoves": ["leechseed"],            // Banned moves for Pokémon
+	"bannedNatures": ["cobblemon:naughty"],  // Banned personalities for Pokémon
+	"bannedGenders": ["MALE"],               // Banned Abilities for Pokémon
+	"bannedShiny": false,                    // Banned shiny Pokémon from participating in battles
   "allowedFormats": ["singles", "doubles", "2v2singles"], // Supported battle formats
   "maxLevel": 0,                           // Max Pokémon level (0 = no limit)
   "allowDuplicateSpecies": false,         // Whether duplicate Pokémon species are allowed
