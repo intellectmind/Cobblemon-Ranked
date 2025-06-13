@@ -70,6 +70,7 @@
 | `/rank reward <player> <format> <rank>` | 发放指定段位奖励 |
 | `/rank season end` | 结束当前赛季 |
 | `/rank reload` | 重新加载配置文件与语言包 |
+| `/rank setseasonname <seasonId> <name>` | 设置赛季名称 |
 
 ---
 
@@ -94,6 +95,10 @@
   "bannedPokemon": ["Mewtwo", "Arceus"], // 禁用宝可梦列表
   "bannedHeldItems": ["cobblemon:leftovers"], // 禁止宝可梦携带的道具
   "bannedCarriedItems": ["cobblemon:leftovers"], // 禁止玩家背包携带的物品
+  "bannedMoves": ["leechseed"], // 禁止宝可梦使用的技能
+  "bannedNatures": ["cobblemon:naughty"], // 禁止宝可梦使用的性格
+  "bannedGenders": ["MALE"], // 禁止宝可梦使用的特性
+  "bannedShiny": false, // 是否禁止闪光宝可梦参战
   "allowedFormats": ["singles", "doubles", "2v2singles"], // 支持的对战模式
   "maxLevel": 0, // 宝可梦最大等级（0 表示不限制）
   "allowDuplicateSpecies": false, // 是否允许重复宝可梦
