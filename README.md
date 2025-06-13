@@ -94,13 +94,13 @@
   "bannedPokemon": ["Mewtwo", "Arceus"],   // Banned Pokémon (e.g., legendaries)
   "bannedHeldItems": ["cobblemon:leftovers"], // Banned held items for Pokémon
   "bannedCarriedItems": ["cobblemon:leftovers"], // Banned items in player's inventory
-	"bannedMoves": ["leechseed"],            // Banned moves for Pokémon
-	"bannedNatures": ["cobblemon:naughty"],  // Banned personalities for Pokémon
-	"bannedGenders": ["MALE"],               // Banned Abilities for Pokémon
-	"bannedShiny": false,                    // Banned shiny Pokémon from participating in battles
+  "bannedMoves": ["leechseed"],            // Banned moves for Pokémon
+  "bannedNatures": ["cobblemon:naughty"],  // Banned personalities for Pokémon
+  "bannedGenders": ["MALE"],               // Banned Abilities for Pokémon
+  "bannedShiny": false,                    // Banned shiny Pokémon from participating in battles
   "allowedFormats": ["singles", "doubles", "2v2singles"], // Supported battle formats
   "maxLevel": 0,                           // Max Pokémon level (0 = no limit)
-  "allowDuplicateSpecies": false,         // Whether duplicate Pokémon species are allowed
+  "allowDuplicateSpecies": false,          // Whether duplicate Pokémon species are allowed
   "battleArenas": [                        // List of arenas (teleport locations for battles)
     {
       "world": "minecraft:overworld",
