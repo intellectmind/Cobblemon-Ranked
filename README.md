@@ -1,4 +1,6 @@
-**Other languages: [English](README.md)｜[中文](README_zh.md)**         [FAQ](https://github.com/intellectmind/Cobblemon-Ranked/wiki/FAQ)
+**Other languages: [English](README.md)｜[中文](README_zh.md)**
+
+[FAQ](https://github.com/intellectmind/Cobblemon-Ranked/wiki/FAQ)
 
 ---
 
