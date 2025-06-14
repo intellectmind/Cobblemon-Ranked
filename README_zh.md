@@ -1,5 +1,7 @@
 **其他语言版本: [English](README.md)｜[中文](README_zh.md)**
 
+[常见问题解答（FAQ）](https://github.com/intellectmind/Cobblemon-Ranked/wiki/FAQ)
+
 ---
 
 # 📊 CobblemonRanked 排位系统说明文档
