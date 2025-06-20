@@ -1,6 +1,6 @@
 **其他语言版本: [English](README.md)｜[中文](README_zh.md)**
 
-[常见问题解答（FAQ）](https://github.com/intellectmind/Cobblemon-Ranked/wiki/FAQ)
+[常见问题解答（FAQ）](https://github.com/intellectmind/Cobblemon-Ranked/wiki/FAQ) Q群：974025587
 
 ---
 
