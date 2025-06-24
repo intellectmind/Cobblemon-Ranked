@@ -578,418 +578,418 @@ object MessageConfig {
                     "en" to "§cCross-server matching is disabled"
                 ),
                 "cross.unknown" to mapOf(
-                    "zh" to "未知",
-                    "en" to "Unknown"
+                    "zh" to "§7未知",
+                    "en" to "§7Unknown"
                 ),
                 "cross.unknown_opponent" to mapOf(
-                    "zh" to "未知对手",
-                    "en" to "Unknown opponent"
+                    "zh" to "§7未知对手",
+                    "en" to "§7Unknown opponent"
                 ),
                 "cross.unknown_pokemon" to mapOf(
-                    "zh" to "未知宝可梦",
-                    "en" to "Unknown Pokemon"
+                    "zh" to "§7未知宝可梦",
+                    "en" to "§7Unknown Pokemon"
                 ),
                 "cross.unknown_move" to mapOf(
-                    "zh" to "未知技能",
-                    "en" to "Unknown move"
+                    "zh" to "§7未知技能",
+                    "en" to "§7Unknown move"
                 ),
                 "cross.error.unknown" to mapOf(
-                    "zh" to "未知错误",
-                    "en" to "Unknown error"
+                    "zh" to "§c未知错误",
+                    "en" to "§cUnknown error"
                 ),
 
-                // 状态/方向
+// 状态/方向
                 "cross.status.normal" to mapOf(
-                    "zh" to "正常",
-                    "en" to "Normal"
+                    "zh" to "§a正常",
+                    "en" to "§aNormal"
                 ),
                 "cross.status.par" to mapOf(
-                    "zh" to "麻痹",
-                    "en" to "Paralyzed"
+                    "zh" to "§e麻痹",
+                    "en" to "§eParalyzed"
                 ),
                 "cross.status.brn" to mapOf(
-                    "zh" to "灼伤",
-                    "en" to "Burned"
+                    "zh" to "§6灼伤",
+                    "en" to "§6Burned"
                 ),
                 "cross.status.psn" to mapOf(
-                    "zh" to "中毒",
-                    "en" to "Poisoned"
+                    "zh" to "§d中毒",
+                    "en" to "§dPoisoned"
                 ),
                 "cross.status.badpsn" to mapOf(
-                    "zh" to "剧毒",
-                    "en" to "Badly Poisoned"
+                    "zh" to "§5剧毒",
+                    "en" to "§5Badly Poisoned"
                 ),
                 "cross.status.slp" to mapOf(
-                    "zh" to "睡眠",
-                    "en" to "Asleep"
+                    "zh" to "§9睡眠",
+                    "en" to "§9Asleep"
                 ),
                 "cross.status.frz" to mapOf(
-                    "zh" to "冰冻",
-                    "en" to "Frozen"
+                    "zh" to "§b冰冻",
+                    "en" to "§bFrozen"
                 ),
                 "cross.direction.up" to mapOf(
-                    "zh" to "提升",
-                    "en" to "rose"
+                    "zh" to "§a提升",
+                    "en" to "§arose"
                 ),
                 "cross.direction.down" to mapOf(
-                    "zh" to "下降",
-                    "en" to "fell"
+                    "zh" to "§c下降",
+                    "en" to "§cfell"
                 ),
 
-                // 日志
+// 日志
                 "cross.log.heartbeat_start" to mapOf(
-                    "zh" to "开始心跳",
-                    "en" to "Heartbeat started"
+                    "zh" to "§8开始心跳",
+                    "en" to "§8Heartbeat started"
                 ),
                 "cross.log.heartbeat_failed" to mapOf(
-                    "zh" to "发送心跳失败: {error}",
-                    "en" to "Failed to send heartbeat: {error}"
+                    "zh" to "§c发送心跳失败: {error}",
+                    "en" to "§cFailed to send heartbeat: {error}"
                 ),
                 "cross.log.connected" to mapOf(
-                    "zh" to "连接成功",
-                    "en" to "Connected successfully"
+                    "zh" to "§a连接成功",
+                    "en" to "§aConnected successfully"
                 ),
                 "cross.log.message_received" to mapOf(
-                    "zh" to "收到服务器消息: {message}...",
-                    "en" to "Received server message: {message}..."
+                    "zh" to "§7收到服务器消息: {message}...",
+                    "en" to "§7Received server message: {message}..."
                 ),
                 "cross.log.unknown_message_type" to mapOf(
-                    "zh" to "未知消息类型: {type}",
-                    "en" to "Unknown message type: {type}"
+                    "zh" to "§e未知消息类型: {type}",
+                    "en" to "§eUnknown message type: {type}"
                 ),
                 "cross.log.parse_failed" to mapOf(
-                    "zh" to "解析失败: {error} | 原始消息: {raw}",
-                    "en" to "Parse failed: {error} | Raw message: {raw}"
+                    "zh" to "§c解析失败: {error} | 原始消息: {raw}",
+                    "en" to "§cParse failed: {error} | Raw message: {raw}"
                 ),
                 "cross.log.closing" to mapOf(
-                    "zh" to "连接正在关闭: code={code}, reason={reason}",
-                    "en" to "Connection closing: code={code}, reason={reason}"
+                    "zh" to "§e连接正在关闭: code={code}, reason={reason}",
+                    "en" to "§eConnection closing: code={code}, reason={reason}"
                 ),
                 "cross.log.connection_failed" to mapOf(
-                    "zh" to "WebSocket连接失败: {error}",
-                    "en" to "WebSocket connection failed: {error}"
+                    "zh" to "§cWebSocket连接失败: {error}",
+                    "en" to "§cWebSocket connection failed: {error}"
                 ),
                 "cross.log.connection_closed" to mapOf(
-                    "zh" to "WebSocket连接已关闭: {code} - {reason}",
-                    "en" to "WebSocket connection closed: {code} - {reason}"
+                    "zh" to "§eWebSocket连接已关闭: {code} - {reason}",
+                    "en" to "§eWebSocket connection closed: {code} - {reason}"
                 ),
                 "cross.log.reconnect_attempt" to mapOf(
-                    "zh" to "尝试重连 (尝试次数: {attempts})",
-                    "en" to "Attempting reconnect (attempt: {attempts})"
+                    "zh" to "§6尝试重连 (尝试次数: {attempts})",
+                    "en" to "§6Attempting reconnect (attempt: {attempts})"
                 ),
                 "cross.log.request_battle_state" to mapOf(
-                    "zh" to "请求战斗状态更新: {battleId}",
-                    "en" to "Requesting battle state update: {battleId}"
+                    "zh" to "§7请求战斗状态更新: {battleId}",
+                    "en" to "§7Requesting battle state update: {battleId}"
                 ),
                 "cross.log.send_battle_command" to mapOf(
-                    "zh" to "发送战斗指令: battle_id = {battleId}, player_id = {playerId}, command = {command}",
-                    "en" to "Sending battle command: battle_id = {battleId}, player_id = {playerId}, command = {command}"
+                    "zh" to "§7发送战斗指令: battle_id = {battleId}, player_id = {playerId}, command = {command}",
+                    "en" to "§7Sending battle command: battle_id = {battleId}, player_id = {playerId}, command = {command}"
                 ),
                 "cross.log.disconnected" to mapOf(
-                    "zh" to "连接已断开",
-                    "en" to "Disconnected"
+                    "zh" to "§e连接已断开",
+                    "en" to "§eDisconnected"
                 ),
                 "cross.log.missing_opponent_team" to mapOf(
-                    "zh" to "匹配成功消息中缺少对手队伍信息",
-                    "en" to "Missing opponent team information in match found message"
+                    "zh" to "§c匹配成功消息中缺少对手队伍信息",
+                    "en" to "§cMissing opponent team information in match found message"
                 ),
                 "cross.log.player_not_found" to mapOf(
-                    "zh" to "未找到玩家 {playerId}，无法发送 Elo 更新消息",
-                    "en" to "Player {playerId} not found, cannot send Elo update"
+                    "zh" to "§c未找到玩家 {playerId}，无法发送 Elo 更新消息",
+                    "en" to "§cPlayer {playerId} not found, cannot send Elo update"
                 ),
                 "cross.log.auto_forfeit" to mapOf(
-                    "zh" to "玩家 {player} 断线，自动发送投降指令: battle_id = {battleId}",
-                    "en" to "Player {player} disconnected, auto-sending forfeit: battle_id = {battleId}"
+                    "zh" to "§e玩家 {player} 断线，自动发送投降指令: battle_id = {battleId}",
+                    "en" to "§ePlayer {player} disconnected, auto-sending forfeit: battle_id = {battleId}"
                 ),
 
-                // 队列
+// 队列
                 "cross.queue.already_in_queue" to mapOf(
-                    "zh" to "你已在匹配队列中",
-                    "en" to "You are already in the queue"
+                    "zh" to "§e你已在匹配队列中",
+                    "en" to "§eYou are already in the queue"
                 ),
                 "cross.queue.join_success" to mapOf(
-                    "zh" to "你已成功加入 {mode} 匹配队列",
-                    "en" to "You have joined the {mode} queue"
+                    "zh" to "§a你已成功加入 {mode} 匹配队列",
+                    "en" to "§aYou have joined the {mode} queue"
                 ),
                 "cross.queue.join_failed" to mapOf(
-                    "zh" to "加入匹配失败：{error}",
-                    "en" to "Failed to join queue: {error}"
+                    "zh" to "§c加入匹配失败：{error}",
+                    "en" to "§cFailed to join queue: {error}"
                 ),
                 "cross.queue.leave_success" to mapOf(
-                    "zh" to "你已成功离开匹配队列",
-                    "en" to "You have left the queue"
+                    "zh" to "§a你已成功离开匹配队列",
+                    "en" to "§aYou have left the queue"
                 ),
                 "cross.queue.leave_failed" to mapOf(
-                    "zh" to "离开匹配失败：{error}",
-                    "en" to "Failed to leave queue: {error}"
+                    "zh" to "§c离开匹配失败：{error}",
+                    "en" to "§cFailed to leave queue: {error}"
                 ),
 
-                // 对战
+// 对战
                 "cross.battle.match_found" to mapOf(
-                    "zh" to "===== 匹配成功! =====",
-                    "en" to "===== MATCH FOUND! ====="
+                    "zh" to "§6===== §a匹配成功! §6=====",
+                    "en" to "§6===== §aMATCH FOUND! §6====="
                 ),
                 "cross.battle.opponent" to mapOf(
-                    "zh" to "对手: {name}",
-                    "en" to "Opponent: {name}"
+                    "zh" to "§c对手: {name}",
+                    "en" to "§cOpponent: {name}"
                 ),
                 "cross.battle.opponent_lead" to mapOf(
-                    "zh" to "对手首发: {pokemon}",
-                    "en" to "Opponent lead: {pokemon}"
+                    "zh" to "§c对手首发: {pokemon}",
+                    "en" to "§cOpponent lead: {pokemon}"
                 ),
                 "cross.battle.your_team" to mapOf(
-                    "zh" to "你的队伍:",
-                    "en" to "Your team:"
+                    "zh" to "§a你的队伍:",
+                    "en" to "§aYour team:"
                 ),
                 "cross.battle.pokemon_info" to mapOf(
-                    "zh" to "宝可梦: {name} | HP: {hp}/{maxHp}",
-                    "en" to "Pokemon: {name} | HP: {hp}/{maxHp}"
+                    "zh" to "§7宝可梦: {name} | §cHP: {hp}/{maxHp}",
+                    "en" to "§7Pokemon: {name} | §cHP: {hp}/{maxHp}"
                 ),
                 "cross.battle.current_moves" to mapOf(
-                    "zh" to "当前宝可梦技能:",
-                    "en" to "Current moves:"
+                    "zh" to "§b当前宝可梦技能:",
+                    "en" to "§bCurrent moves:"
                 ),
                 "cross.battle.move_info" to mapOf(
-                    "zh" to "{index}. {name} ({pp}/{pp})",
-                    "en" to "{index}. {name} ({pp}/{pp})"
+                    "zh" to "§7{index}. {name} (§d{pp}/{pp}§7)",
+                    "en" to "§7{index}. {name} (§d{pp}/{pp}§7)"
                 ),
                 "cross.battle.move_command" to mapOf(
-                    "zh" to "使用技能: /rank cross battle move <技能名称或编号>",
-                    "en" to "Use move: /rank cross battle move <move name or number>"
+                    "zh" to "§e使用技能: /rank cross battle move <技能名称或编号>",
+                    "en" to "§eUse move: /rank cross battle move <move name or number>"
                 ),
                 "cross.battle.switch_command" to mapOf(
-                    "zh" to "更换宝可梦: /rank cross battle switch <1-6>",
-                    "en" to "Switch Pokemon: /rank cross battle switch <1-6>"
+                    "zh" to "§e更换宝可梦: /rank cross battle switch <1-6>",
+                    "en" to "§eSwitch Pokemon: /rank cross battle switch <1-6>"
                 ),
                 "cross.battle.forfeit_command" to mapOf(
-                    "zh" to "投降: /rank cross battle forfeit",
-                    "en" to "Forfeit: /rank cross battle forfeit"
+                    "zh" to "§c投降: /rank cross battle forfeit",
+                    "en" to "§cForfeit: /rank cross battle forfeit"
                 ),
                 "cross.battle.turn_start" to mapOf(
-                    "zh" to "[回合 {turn}] 开始！请输入你的指令",
-                    "en" to "[Turn {turn}] Begin! Please enter your command"
+                    "zh" to "§e[回合 {turn}] §a开始！请输入你的指令",
+                    "en" to "§e[Turn {turn}] §aBegin! Please enter your command"
                 ),
                 "cross.battle.start" to mapOf(
-                    "zh" to "===== 战斗开始! =====",
-                    "en" to "===== BATTLE START! ====="
+                    "zh" to "§6===== §c战斗开始! §6=====",
+                    "en" to "§6===== §cBATTLE START! §6====="
                 ),
                 "cross.battle.players" to mapOf(
-                    "zh" to "对战双方: {player1} vs {player2}",
-                    "en" to "Players: {player1} vs {player2}"
+                    "zh" to "§a对战双方: {player1} §fvs §c{player2}",
+                    "en" to "§aPlayers: {player1} §fvs §c{player2}"
                 ),
                 "cross.battle.lead" to mapOf(
-                    "zh" to "{player} 派出了 {pokemon}",
-                    "en" to "{player} sent out {pokemon}"
+                    "zh" to "§f{player} §7派出了 §e{pokemon}",
+                    "en" to "§f{player} §7sent out §e{pokemon}"
                 ),
                 "cross.battle.move_used" to mapOf(
-                    "zh" to "{playerName} 的 {pokemon} 使用了 {move}!",
-                    "en" to "{playerName}'s {pokemon} used {move}!"
+                    "zh" to "§f{playerName} §7的 §e{pokemon} §7使用了 §b{move}§7!",
+                    "en" to "§f{playerName}§7's §e{pokemon} §7used §b{move}§7!"
                 ),
                 "cross.battle.move_missed" to mapOf(
-                    "zh" to "但是没有命中!",
-                    "en" to "But it missed!"
+                    "zh" to "§7但是没有命中!",
+                    "en" to "§7But it missed!"
                 ),
                 "cross.battle.damage_dealt" to mapOf(
-                    "zh" to "对 {targetPlayer} 的 {targetPokemon} 造成了 {damage} 伤害!",
-                    "en" to "Dealt {damage} damage to {targetPlayer}'s {targetPokemon}!"
+                    "zh" to "§7对 §c{targetPlayer} §7的 §e{targetPokemon} §c造成了 {damage} 伤害!",
+                    "en" to "§7Dealt §c{damage} damage §7to §c{targetPlayer}§7's §e{targetPokemon}§7!"
                 ),
                 "cross.battle.critical_hit" to mapOf(
-                    "zh" to "击中要害!",
-                    "en" to "A critical hit!"
+                    "zh" to "§c击中要害!",
+                    "en" to "§cA critical hit!"
                 ),
                 "cross.battle.effectiveness.none" to mapOf(
-                    "zh" to "没有效果!",
-                    "en" to "It doesn't affect..."
+                    "zh" to "§8没有效果!",
+                    "en" to "§8It doesn't affect..."
                 ),
                 "cross.battle.effectiveness.very_bad" to mapOf(
-                    "zh" to "效果非常差...",
-                    "en" to "It's not very effective..."
+                    "zh" to "§7效果非常差...",
+                    "en" to "§7It's not very effective..."
                 ),
                 "cross.battle.effectiveness.bad" to mapOf(
-                    "zh" to "效果不太好...",
-                    "en" to "It's not very effective..."
+                    "zh" to "§7效果不太好...",
+                    "en" to "§7It's not very effective..."
                 ),
                 "cross.battle.effectiveness.good" to mapOf(
-                    "zh" to "效果不错!",
-                    "en" to "It's effective!"
+                    "zh" to "§a效果不错!",
+                    "en" to "§aIt's effective!"
                 ),
                 "cross.battle.effectiveness.super" to mapOf(
-                    "zh" to "效果拔群!",
-                    "en" to "It's super effective!"
+                    "zh" to "§6效果拔群!",
+                    "en" to "§6It's super effective!"
                 ),
                 "cross.battle.effectiveness.very_super" to mapOf(
-                    "zh" to "效果非常拔群!",
-                    "en" to "It's extremely effective!"
+                    "zh" to "§c效果非常拔群!",
+                    "en" to "§cIt's extremely effective!"
                 ),
                 "cross.battle.status_applied" to mapOf(
-                    "zh" to "{pokemon} 陷入了{status} 状态!",
-                    "en" to "{pokemon} was inflicted with {status}!"
+                    "zh" to "§e{pokemon} §7陷入了{status} §7状态!",
+                    "en" to "§e{pokemon} §7was inflicted with {status}§7!"
                 ),
                 "cross.battle.status_damage" to mapOf(
-                    "zh" to "{pokemon} 因{status} 损失了 {damage} HP!",
-                    "en" to "{pokemon} lost {damage} HP due to {status}!"
+                    "zh" to "§e{pokemon} §7因{status} §c损失了 {damage} HP!",
+                    "en" to "§e{pokemon} §7lost §c{damage} HP §7due to {status}!"
                 ),
                 "cross.battle.pokemon_fainted" to mapOf(
-                    "zh" to "{playerName} 的 {pokemon} 倒下了!",
-                    "en" to "{playerName}'s {pokemon} fainted!"
+                    "zh" to "§8{playerName} §7的 §e{pokemon} §8倒下了!",
+                    "en" to "§8{playerName}§7's §e{pokemon} §8fainted!"
                 ),
                 "cross.battle.switch_out" to mapOf(
-                    "zh" to "{playerName} 收回了 {pokemon}!",
-                    "en" to "{playerName} withdrew {pokemon}!"
+                    "zh" to "§f{playerName} §7收回了 §e{pokemon}§7!",
+                    "en" to "§f{playerName} §7withdrew §e{pokemon}§7!"
                 ),
                 "cross.battle.switch_in" to mapOf(
-                    "zh" to "{playerName} 派出了 {pokemon}!",
-                    "en" to "{playerName} sent out {pokemon}!"
+                    "zh" to "§f{playerName} §7派出了 §e{pokemon}§7!",
+                    "en" to "§f{playerName} §7sent out §e{pokemon}§7!"
                 ),
                 "cross.battle.stat_change" to mapOf(
-                    "zh" to "{pokemon} 的 {stat} {direction}了!",
-                    "en" to "{pokemon}'s {stat} {direction}!"
+                    "zh" to "§e{pokemon} §7的 §6{stat} {direction}§7了!",
+                    "en" to "§e{pokemon}§7's §6{stat} {direction}§7!"
                 ),
                 "cross.battle.ability_triggered" to mapOf(
-                    "zh" to "{pokemon} 触发了特性 [{ability}]!",
-                    "en" to "{pokemon}'s ability [{ability}] triggered!"
+                    "zh" to "§e{pokemon} §7触发了特性 §d[{ability}]§7!",
+                    "en" to "§e{pokemon}§7's ability §d[{ability}] §7triggered!"
                 ),
                 "cross.battle.move_unusable" to mapOf(
-                    "zh" to "{pokemon} 无法使用 {move} (PP 不足)",
-                    "en" to "{pokemon} can't use {move} (no PP left)"
+                    "zh" to "§e{pokemon} §7无法使用 §b{move} §7(PP 不足)",
+                    "en" to "§e{pokemon} §7can't use §b{move} §7(no PP left)"
                 ),
                 "cross.battle.ended" to mapOf(
-                    "zh" to "===== 战斗结束! =====",
-                    "en" to "===== BATTLE ENDED! ====="
+                    "zh" to "§6===== §e战斗结束! §6=====",
+                    "en" to "§6===== §eBATTLE ENDED! §6====="
                 ),
                 "cross.battle.forfeit_self" to mapOf(
-                    "zh" to "你已投降认输",
-                    "en" to "You forfeited the match"
+                    "zh" to "§c你已投降认输",
+                    "en" to "§cYou forfeited the match"
                 ),
                 "cross.battle.win" to mapOf(
-                    "zh" to "恭喜你赢得了对战!",
-                    "en" to "Congratulations! You won the battle!"
+                    "zh" to "§a§l恭喜你赢得了对战!",
+                    "en" to "§a§lCongratulations! You won the battle!"
                 ),
                 "cross.battle.lose" to mapOf(
-                    "zh" to "很遗憾，你输掉了对战",
-                    "en" to "Unfortunately, you lost the battle"
+                    "zh" to "§c很遗憾，你输掉了对战",
+                    "en" to "§cUnfortunately, you lost the battle"
                 ),
                 "cross.battle.slow_start_ended" to mapOf(
-                    "zh" to "{pokemon} 摆脱了缓慢启动的影响!",
-                    "en" to "{pokemon} ended Slow Start!"
+                    "zh" to "§e{pokemon} §a摆脱了缓慢启动的影响!",
+                    "en" to "§e{pokemon} §aended Slow Start!"
                 ),
                 "cross.battle.your_pokemon" to mapOf(
-                    "zh" to "你的宝可梦{index}",
-                    "en" to "Your Pokemon {index}"
+                    "zh" to "§a你的宝可梦 {name}",
+                    "en" to "§aYour Pokemon {name}"
                 ),
                 "cross.battle.opponent_pokemon" to mapOf(
-                    "zh" to "对手的宝可梦{index}",
-                    "en" to "Opponent's Pokemon {index}"
+                    "zh" to "§c对手的宝可梦 {name}",
+                    "en" to "§cOpponent's Pokemon {name}"
                 ),
                 "cross.battle.state_title" to mapOf(
-                    "zh" to "===== 战斗状态 [回合 {turn}] =====",
-                    "en" to "===== BATTLE STATE [Turn {turn}] ====="
+                    "zh" to "§6===== §e战斗状态 [回合 {turn}] §6=====",
+                    "en" to "§6===== §eBATTLE STATE [Turn {turn}] §6====="
                 ),
                 "cross.battle.hp" to mapOf(
-                    "zh" to "HP: {current}/{max}",
-                    "en" to "HP: {current}/{max}"
+                    "zh" to "§cHP: {current}/{max}",
+                    "en" to "§cHP: {current}/{max}"
                 ),
                 "cross.battle.status" to mapOf(
-                    "zh" to "状态: {status}",
-                    "en" to "Status: {status}"
+                    "zh" to "§d状态: {status}",
+                    "en" to "§dStatus: {status}"
                 ),
                 "cross.battle.current_pp" to mapOf(
-                    "zh" to "当前技能PP:",
-                    "en" to "Current PP:"
+                    "zh" to "§b当前技能PP:",
+                    "en" to "§bCurrent PP:"
                 ),
                 "cross.battle.move_pp" to mapOf(
-                    "zh" to "{index}. {name}: {currentPP}/{maxPP}",
-                    "en" to "{index}. {name}: {currentPP}/{maxPP}"
+                    "zh" to "§7{index}. {name}: §d{currentPP}/{maxPP}",
+                    "en" to "§7{index}. {name}: §d{currentPP}/{maxPP}"
                 ),
                 "cross.battle.hp_percent" to mapOf(
-                    "zh" to "HP: {percent}%",
-                    "en" to "HP: {percent}%"
+                    "zh" to "§cHP: {percent}%",
+                    "en" to "§cHP: {percent}%"
                 ),
                 "cross.battle.no_active" to mapOf(
-                    "zh" to "你当前没有进行中的对战",
-                    "en" to "You don't have an active battle"
+                    "zh" to "§e你当前没有进行中的对战",
+                    "en" to "§eYou don't have an active battle"
                 ),
                 "cross.battle.command_sent" to mapOf(
-                    "zh" to "指令已发送: {command}",
-                    "en" to "Command sent: {command}"
+                    "zh" to "§a指令已发送: {command}",
+                    "en" to "§aCommand sent: {command}"
                 ),
                 "cross.battle.opponent_action_taken" to mapOf(
-                    "zh" to "对手 {playerName} 已选择行动",
-                    "en" to "Opponent {playerName} has chosen an action"
+                    "zh" to "§7玩家 {playerName} 已选择行动",
+                    "en" to "§7Player {playerName} has chosen an action"
                 ),
                 "cross.battle.timeout_move" to mapOf(
-                    "zh" to "玩家 {playerName} 未及时选择行动，已默认使用 {move}",
-                    "en" to "Player {playerName} did not select an action in time. Defaulting to {move}"
+                    "zh" to "§e玩家 {playerName} 未及时选择行动，已默认使用 {move}",
+                    "en" to "§ePlayer {playerName} did not select an action in time. Defaulting to {move}"
                 ),
 
-                // ELO系统
+// ELO系统
                 "cross.elo.update" to mapOf(
-                    "zh" to "你的 Elo 分数更新: {oldRating} → {newRating} ({change})",
-                    "en" to "Your Elo rating updated: {oldRating} → {newRating} ({change})"
+                    "zh" to "§6你的 Elo 分数更新: §f{oldRating} §7→ §e{newRating} §a({change})",
+                    "en" to "§6Your Elo rating updated: §f{oldRating} §7→ §e{newRating} §a({change})"
                 ),
 
-                // 聊天
+// 聊天
                 "cross.chat.message" to mapOf(
-                    "zh" to "[跨服匹配消息 {opponentName}] {message}",
-                    "en" to "[Cross-Battle {opponentName}] {message}"
+                    "zh" to "§b[跨服匹配消息 {opponentName}] §f{message}",
+                    "en" to "§b[Cross-Battle {opponentName}] §f{message}"
                 ),
 
-                // CrossCommand 消息
+// CrossCommand 消息
                 "command.only_player" to mapOf(
-                    "zh" to "[跨服匹配] 命令只能由玩家执行",
-                    "en" to "[CrossServer] Only players can use this command"
+                    "zh" to "§c[跨服匹配] 命令只能由玩家执行",
+                    "en" to "§c[CrossServer] Only players can use this command"
                 ),
                 "command.join.empty_team" to mapOf(
-                    "zh" to "[跨服匹配] 队伍为空，无法加入匹配",
-                    "en" to "[CrossServer] Your team is empty, cannot join queue"
+                    "zh" to "§c[跨服匹配] 队伍为空，无法加入匹配",
+                    "en" to "§c[CrossServer] Your team is empty, cannot join queue"
                 ),
                 "command.join.invalid_size" to mapOf(
-                    "zh" to "[跨服匹配] 只能带一只宝可梦加入匹配",
-                    "en" to "[CrossServer] You can only bring one Pokemon"
+                    "zh" to "§c[跨服匹配] 只能带一只宝可梦加入匹配",
+                    "en" to "§c[CrossServer] You can only bring one Pokemon"
                 ),
                 "command.join.inventory_not_empty" to mapOf(
-                    "zh" to "[跨服匹配] 背包不为空，无法加入匹配",
-                    "en" to "[CrossServer] Your inventory must be empty"
+                    "zh" to "§c[跨服匹配] 背包不为空，无法加入匹配",
+                    "en" to "§c[CrossServer] Your inventory must be empty"
                 ),
                 "command.join.success" to mapOf(
-                    "zh" to "你已成功加入 {mode} 匹配队列",
-                    "en" to "Joined {mode} matchmaking queue"
+                    "zh" to "§a你已成功加入 {mode} 匹配队列",
+                    "en" to "§aJoined {mode} matchmaking queue"
                 ),
                 "command.join.fail" to mapOf(
-                    "zh" to "加入匹配失败：{error}",
-                    "en" to "Failed to join queue: {error}"
+                    "zh" to "§c加入匹配失败：{error}",
+                    "en" to "§cFailed to join queue: {error}"
                 ),
                 "command.leave.success" to mapOf(
-                    "zh" to "你已成功离开匹配队列",
-                    "en" to "Left matchmaking queue"
+                    "zh" to "§a你已成功离开匹配队列",
+                    "en" to "§aLeft matchmaking queue"
                 ),
                 "command.leave.fail" to mapOf(
-                    "zh" to "离开匹配失败：{error}",
-                    "en" to "Failed to leave queue: {error}"
+                    "zh" to "§c离开匹配失败：{error}",
+                    "en" to "§cFailed to leave queue: {error}"
                 ),
                 "command.connect.start" to mapOf(
-                    "zh" to "[跨服匹配] 正在尝试连接云服务...",
-                    "en" to "[CrossServer] Connecting to cloud service..."
+                    "zh" to "§e[跨服匹配] 正在尝试连接云服务...",
+                    "en" to "§e[CrossServer] Connecting to cloud service..."
                 ),
                 "command.connect.stop" to mapOf(
-                    "zh" to "[跨服匹配] 云服务连接已断开",
-                    "en" to "[CrossServer] Cloud connection stopped"
+                    "zh" to "§e[跨服匹配] 云服务连接已断开",
+                    "en" to "§e[CrossServer] Cloud connection stopped"
                 ),
                 "command.battle.no_active" to mapOf(
-                    "zh" to "[战斗] 你当前没有进行中的对战",
-                    "en" to "[Battle] You don't have an active battle"
+                    "zh" to "§e[战斗] 你当前没有进行中的对战",
+                    "en" to "§e[Battle] You don't have an active battle"
                 ),
                 "command.battle.invalid_move_slot" to mapOf(
-                    "zh" to "[战斗] 招式槽位无效，槽位必须在 1 到 4 之间",
-                    "en" to "[Battle] Invalid move slot (must be 1-4)"
+                    "zh" to "§c[战斗] 招式槽位无效，槽位必须在 1 到 4 之间",
+                    "en" to "§c[Battle] Invalid move slot (must be 1-4)"
                 ),
                 "command.battle.sent" to mapOf(
-                    "zh" to "指令已发送: {command}",
-                    "en" to "Command sent: {command}"
+                    "zh" to "§a指令已发送: {command}",
+                    "en" to "§aCommand sent: {command}"
                 ),
                 "command.chat.sent" to mapOf(
-                    "zh" to "聊天消息已发送",
-                    "en" to "Chat message sent"
+                    "zh" to "§a聊天消息已发送",
+                    "en" to "§aChat message sent"
                 )
             )
             val json = gson.toJson(defaultMessages)
