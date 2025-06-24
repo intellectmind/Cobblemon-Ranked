@@ -5,6 +5,7 @@ import cn.kurt6.cobblemon_ranked.*
 import cn.kurt6.cobblemon_ranked.config.ArenaCoordinate
 import cn.kurt6.cobblemon_ranked.config.BattleArena
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
+import cn.kurt6.cobblemon_ranked.crossserver.CrossServerSocket
 import cn.kurt6.cobblemon_ranked.data.PlayerRankData
 import cn.kurt6.cobblemon_ranked.util.RankUtils
 import com.cobblemon.mod.common.Cobblemon
@@ -192,7 +193,6 @@ object BattleHandler {
             return false
         }
 
-
         // 禁用特性
         val bannedGenders = config.bannedGenders.map { it.uppercase() }
         val hasBannedGender = pokemonList.filter {
@@ -316,6 +316,10 @@ object BattleHandler {
         // 断线处理逻辑
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             val player = handler.player
+
+            // 跨服匹配移除队列
+            CrossServerSocket.handlePlayerDisconnect(player)
+
             val battle = Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player) ?: return@register
             val battleId = battleToIdMap[battle] ?: return@register
 

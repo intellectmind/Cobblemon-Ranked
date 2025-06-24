@@ -146,5 +146,21 @@ data class RankConfig(
         "Platinum" to 0.3,
         "Diamond" to 0.3,
         "Master" to 0.3
-    )
+    ),
+
+    @Comment("Enable cross-server matchmaking / 是否启用跨服匹配")
+    var enableCrossServer: Boolean = false,
+
+    @Comment("Cloud server ID for this server / 本服的云端标识")
+    var cloudServerId: String = "server-a",
+
+    @Comment("Cloud server auth token / 云端验证用密钥 【暂时无效】")
+    var cloudToken: String = "abc123",
+
+    @Comment("Base URL of cloud FastAPI API / 云端 API 地址 (例如 http://ip:port) 【暂时无效】")
+    var cloudApiUrl: String = "http://127.0.0.1:8000",
+
+    @Comment("Cloud websocket URL / 云端 WebSocket 地址 (例如 ws://ip:port/ws/) 【暂时无效】")
+    var cloudWebSocketUrl: String = "ws://127.0.0.1:8000/ws/"
+
 )

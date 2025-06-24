@@ -6,6 +6,8 @@ import cn.kurt6.cobblemon_ranked.commands.RankCommands
 import cn.kurt6.cobblemon_ranked.config.ConfigManager
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.config.RankConfig
+import cn.kurt6.cobblemon_ranked.crossserver.CrossCommand
+import cn.kurt6.cobblemon_ranked.crossserver.CrossServerSocket
 import cn.kurt6.cobblemon_ranked.data.RankDao
 import cn.kurt6.cobblemon_ranked.data.RewardManager
 import cn.kurt6.cobblemon_ranked.data.SeasonManager
@@ -76,6 +78,7 @@ class CobblemonRanked : ModInitializer {
     private fun registerCommands() {
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
             RankCommands.register(dispatcher)
+            dispatcher.register(CrossCommand.register()) // 注册跨服命令
         }
     }
 
@@ -86,6 +89,7 @@ class CobblemonRanked : ModInitializer {
             matchmakingQueue.shutdown()
             DuoMatchmakingQueue.shutdown()
             rankDao.close()
+            CrossServerSocket.disconnect() // 跨服断开连接
         }
     }
 
@@ -105,7 +109,7 @@ class CobblemonRanked : ModInitializer {
 
     companion object {
         const val MOD_ID = "cobblemon_ranked"
-        private val logger = LoggerFactory.getLogger(MOD_ID)
+        val logger = LoggerFactory.getLogger(MOD_ID)
 
         lateinit var INSTANCE: CobblemonRanked
         lateinit var config: RankConfig
