@@ -60,6 +60,7 @@ dependencies {
     mappings("net.fabricmc:yarn:${project.property("yarn_mappings")}:v2")
     modImplementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${project.property("kotlin_loader_version")}")
+    modImplementation("net.fabricmc.fabric-api:fabric-networking-api-v1:${project.property("fabric_version")}")
 
     modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
     // Cobblemon
@@ -77,6 +78,11 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:0.49.0")
     include("org.jetbrains.exposed:exposed-core:0.49.0")
     include("org.jetbrains.exposed:exposed-jdbc:0.49.0")
+
+    implementation("com.squareup.okhttp3:okhttp:4.12.0") // For WebSocket
+    include("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okio:okio:3.9.0") // For WebSocket
+    include("com.squareup.okio:okio:3.9.0")
 }
 
 tasks.processResources {
