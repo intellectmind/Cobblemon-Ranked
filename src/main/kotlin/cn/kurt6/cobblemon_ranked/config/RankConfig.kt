@@ -148,7 +148,7 @@ data class RankConfig(
         "Master" to 0.3
     ),
 
-    @Comment("Enable cross-server matchmaking / 是否启用跨服匹配")
+    @Comment("https://modrinth.com/mod/cobblemon-ranked/changelog | Enable cross-server matchmaking / 是否启用跨服匹配")
     var enableCrossServer: Boolean = false,
 
     @Comment("Cloud server ID for this server / 本服的云端标识")

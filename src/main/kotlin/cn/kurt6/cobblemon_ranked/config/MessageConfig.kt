@@ -914,27 +914,27 @@ object MessageConfig {
                     "en" to "§aCommand sent: {command}"
                 ),
                 "cross.battle.opponent_action_taken" to mapOf(
-                    "zh" to "§7玩家 {playerName} 已选择行动",
-                    "en" to "§7Player {playerName} has chosen an action"
+                    "zh" to "§7玩家 {playerName} 已选择行动，2分钟内未选将默认执行招式1",
+                    "en" to "§7Player {playerName} has chosen an action.Defaulting to Move 1 in 2min"
                 ),
                 "cross.battle.timeout_move" to mapOf(
                     "zh" to "§e玩家 {playerName} 未及时选择行动，已默认使用 {move}",
                     "en" to "§ePlayer {playerName} did not select an action in time. Defaulting to {move}"
                 ),
 
-// ELO系统
+                // ELO系统
                 "cross.elo.update" to mapOf(
                     "zh" to "§6你的 Elo 分数更新: §f{oldRating} §7→ §e{newRating} §a({change})",
                     "en" to "§6Your Elo rating updated: §f{oldRating} §7→ §e{newRating} §a({change})"
                 ),
 
-// 聊天
+                // 聊天
                 "cross.chat.message" to mapOf(
                     "zh" to "§b[跨服匹配消息 {opponentName}] §f{message}",
                     "en" to "§b[Cross-Battle {opponentName}] §f{message}"
                 ),
 
-// CrossCommand 消息
+                // CrossCommand 消息
                 "command.only_player" to mapOf(
                     "zh" to "§c[跨服匹配] 命令只能由玩家执行",
                     "en" to "§c[CrossServer] Only players can use this command"
