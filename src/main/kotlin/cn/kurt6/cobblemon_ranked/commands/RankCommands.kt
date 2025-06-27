@@ -23,6 +23,22 @@ object RankCommands {
     fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
         dispatcher.register(
             CommandManager.literal("rank")
+                .then(CommandManager.literal("pokemon_usage")
+                    .executes { showPokemonUsage(it, CobblemonRanked.seasonManager.currentSeasonId, 1) }
+                        .then(CommandManager.argument("season", IntegerArgumentType.integer(1))
+                            .executes { ctx ->
+                                val season = IntegerArgumentType.getInteger(ctx, "season")
+                                showPokemonUsage(ctx, season, 1)
+                            }
+                            .then(CommandManager.argument("page", IntegerArgumentType.integer(1))
+                                .executes { ctx ->
+                                    val season = IntegerArgumentType.getInteger(ctx, "season")
+                                    val page = IntegerArgumentType.getInteger(ctx, "page")
+                                    showPokemonUsage(ctx, season, page)
+                                }
+                            )
+                        )
+                )
                 .then(CommandManager.literal("gui")
                     .executes { ctx ->
                         val player = ctx.source.player ?: return@executes 0
@@ -562,6 +578,8 @@ object RankCommands {
             .append(link(MessageConfig.get("gui.status", lang), "/rank status"))
             .append(space())
             .append(link(MessageConfig.get("gui.queue_leave", lang), "/rank queue leave"))
+            .append(space())
+            .append(link(MessageConfig.get("pokemon_usage.statistics", lang), "/rank pokemon_usage"))
 
         player.sendMessage(row1)
         player.sendMessage(row2)
@@ -753,6 +771,67 @@ object RankCommands {
                 .withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
                 .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hoverText)))
         )
+    }
+
+    private fun showPokemonUsage(ctx: CommandContext<ServerCommandSource>, seasonId: Int, page: Int): Int {
+        val source = ctx.source
+        val lang = CobblemonRanked.config.defaultLang
+        val dao = CobblemonRanked.rankDao
+
+        val pageSize = 10
+        val offset = (page - 1) * pageSize
+        val usageList = dao.getPokemonUsage(seasonId, pageSize, offset)
+        val total = dao.getTotalPokemonUsage(seasonId)
+        val totalPages = (total + pageSize - 1) / pageSize
+
+        if (usageList.isEmpty()) {
+            source.sendMessage(Text.literal(MessageConfig.get("pokemon_usage.empty", lang, "season" to seasonId.toString(), "name" to CobblemonRanked.seasonManager.currentSeasonName)))
+            return 1
+        }
+
+        // 获取总使用次数用于计算使用率
+        val totalUsageCount = dao.getTotalPokemonUsageCount(seasonId)
+
+        val header = MessageConfig.get("pokemon_usage.header", lang,
+            "season" to seasonId.toString(),
+            "page" to page.toString(),
+            "total" to totalPages.toString(),
+            "name" to CobblemonRanked.seasonManager.currentSeasonName
+        )
+        source.sendMessage(Text.literal(header))
+
+        usageList.forEachIndexed { index, (species, count) ->
+            // 计算使用率
+            val usageRate = if (totalUsageCount > 0) {
+                String.format("%.2f", count.toDouble() / totalUsageCount * 100)
+            } else {
+                "0.00"
+            }
+
+            val entry = MessageConfig.get("pokemon_usage.entry", lang,
+                "rank" to (offset + index + 1).toString(),
+                "species" to species,
+                "count" to count.toString(),
+                "rate" to usageRate
+            )
+            source.sendMessage(Text.literal(entry))
+        }
+
+        // 添加分页导航
+        val nav = Text.empty()
+        if (page > 1) {
+            nav.append(link("« 上一页", "/rank pokemon_usage $seasonId ${page - 1}"))
+        }
+        if (page < totalPages) {
+            if (nav.siblings.isNotEmpty()) nav.append(Text.literal(" "))
+            nav.append(link("下一页 »", "/rank pokemon_usage $seasonId ${page + 1}"))
+        }
+
+        if (nav.siblings.isNotEmpty()) {
+            source.sendMessage(nav)
+        }
+
+        return 1
     }
 
     private fun space(): Text = Text.literal(" ")

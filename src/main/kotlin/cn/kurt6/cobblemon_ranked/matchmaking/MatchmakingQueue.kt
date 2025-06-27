@@ -73,7 +73,7 @@ class MatchmakingQueue {
                 // 从 2v2 匹配队列中移除
                 DuoMatchmakingQueue.removePlayer(player)
 
-                logger.info("玩家 ${player.name.string} 断线，已移出匹配队列")
+//                logger.info("玩家 ${player.name.string} 断线，已移出匹配队列")
             }
         }
     }

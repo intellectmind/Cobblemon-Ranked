@@ -414,6 +414,8 @@ object BattleHandler {
                 DuoBattleManager.DuoTeam(loserTeam[0], loserTeam[1], emptyList(), emptyList()),
                 DuoBattleManager.DuoTeam(winnerTeam[0], winnerTeam[1], emptyList(), emptyList())
             )
+            // 在战斗结束后记录宝可梦使用
+            recordPokemonUsage(allPlayers, seasonId)
             return
         }
 
@@ -464,6 +466,9 @@ object BattleHandler {
         rankDao.savePlayerData(winnerData)
 
         Cobblemon.battleRegistry.closeBattle(battle)
+
+        // 在战斗结束后记录宝可梦使用
+        recordPokemonUsage(allPlayers, seasonId)
 
         RankUtils.sendMessage(loser, MessageConfig.get("battle.disconnect.loser", lang, "elo" to loserData.elo.toString()))
         RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", lang, "elo" to winnerData.elo.toString()))
@@ -553,6 +558,9 @@ object BattleHandler {
         // 保存数据
         rankDao.savePlayerData(winnerData)
         rankDao.savePlayerData(loserData)
+
+        // 在战斗结束后记录宝可梦使用
+        recordPokemonUsage(listOf(winner, loser), seasonId)
 
         // 发送战斗结果消息
         sendBattleResultMessage(winner, winnerData, eloDiffWinner)
@@ -731,5 +739,16 @@ object BattleHandler {
             .replace("{player}", player.name.string)
             .replace("{uuid}", player.uuid.toString())
         server.commandManager.executeWithPrefix(server.commandSource, formattedCommand)
+    }
+
+    private fun recordPokemonUsage(players: List<ServerPlayerEntity>, seasonId: Int) {
+        val dao = CobblemonRanked.rankDao
+        players.forEach { player ->
+            Cobblemon.storage.getParty(player).forEach { pokemon ->
+                pokemon?.species?.name?.toString()?.let { speciesName ->
+                    dao.incrementPokemonUsage(seasonId, speciesName)
+                }
+            }
+        }
     }
 }

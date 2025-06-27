@@ -17,6 +17,22 @@ object MessageConfig {
         if (!Files.exists(path)) {
             Files.createDirectories(path.parent)
             val defaultMessages = mapOf(
+                "pokemon_usage.header" to mapOf(
+                    "zh" to "§e===== 赛季 §6{season} {name} §e宝可梦使用统计 (第 §6{page}§e/§6{total}§e 页) =====",
+                    "en" to "§e===== Season §6{season} {name} §ePokemon Usage Statistics (Page §6{page}§e/§6{total}§e) ====="
+                ),
+                "pokemon_usage.entry" to mapOf(
+                    "zh" to "§e#%rank% §a%species% §f- 使用次数: §b%count% §f(使用率: §b%rate%%§f)",
+                    "en" to "§e#%rank% §a%species% §f- Usage: §b%count% §f(Usage Rate: §b%rate%%§f)"
+                ),
+                "pokemon_usage.empty" to mapOf(
+                    "zh" to "§c赛季 {season} {name} 没有宝可梦使用记录",
+                    "en" to "§cSeason {season} {name} has no pokemon usage records"
+                ),
+                "pokemon_usage.statistics" to mapOf(
+                    "zh" to "§e[宝可梦统计]",
+                    "en" to "§e[Pokemon Statistics]"
+                ),
                 // MatchmakingQueue (单人匹配)
                 "queue.cooldown" to mapOf(
                     "zh" to "§c你刚刚匹配失败，请等待 {seconds} 秒后再尝试加入。",
@@ -766,8 +782,8 @@ object MessageConfig {
                     "en" to "§cForfeit: /rank cross battle forfeit"
                 ),
                 "cross.battle.turn_start" to mapOf(
-                    "zh" to "§e[回合 {turn}] §a开始！请输入你的指令",
-                    "en" to "§e[Turn {turn}] §aBegin! Please enter your command"
+                    "zh" to "§e[回合 {turn}] §a开始！请输入你的指令,3分钟内未选将弃权",
+                    "en" to "§e[Turn {turn}] §aBegin! Please enter your command.Abstain if not selected within 3 minutes."
                 ),
                 "cross.battle.start" to mapOf(
                     "zh" to "§6===== §c战斗开始! §6=====",
@@ -914,8 +930,8 @@ object MessageConfig {
                     "en" to "§aCommand sent: {command}"
                 ),
                 "cross.battle.opponent_action_taken" to mapOf(
-                    "zh" to "§7玩家 {playerName} 已选择行动，2分钟内未选将默认执行招式1",
-                    "en" to "§7Player {playerName} has chosen an action.Defaulting to Move 1 in 2min"
+                    "zh" to "§7玩家 {playerName} 已选择行动",
+                    "en" to "§7Player {playerName} has chosen an action"
                 ),
                 "cross.battle.timeout_move" to mapOf(
                     "zh" to "§e玩家 {playerName} 未及时选择行动，已默认使用 {move}",
@@ -939,6 +955,10 @@ object MessageConfig {
                     "zh" to "§c[跨服匹配] 命令只能由玩家执行",
                     "en" to "§c[CrossServer] Only players can use this command"
                 ),
+                "command.join.authenticated_only" to mapOf(
+                    "zh" to "§c[跨服匹配] 非正版账号玩家不可加入匹配",
+                    "en" to "§c[CrossServer] Only official accounts can join matchmaking"
+                ),
                 "command.join.empty_team" to mapOf(
                     "zh" to "§c[跨服匹配] 队伍为空，无法加入匹配",
                     "en" to "§c[CrossServer] Your team is empty, cannot join queue"
@@ -947,25 +967,21 @@ object MessageConfig {
                     "zh" to "§c[跨服匹配] 只能带一只宝可梦加入匹配",
                     "en" to "§c[CrossServer] You can only bring one Pokemon"
                 ),
-                "command.join.inventory_not_empty" to mapOf(
-                    "zh" to "§c[跨服匹配] 背包不为空，无法加入匹配",
-                    "en" to "§c[CrossServer] Your inventory must be empty"
-                ),
                 "command.join.success" to mapOf(
-                    "zh" to "§a你已成功加入 {mode} 匹配队列",
-                    "en" to "§aJoined {mode} matchmaking queue"
+                    "zh" to "§a[跨服匹配]你已成功加入 {mode} 匹配队列",
+                    "en" to "§a[CrossServer]Joined {mode} matchmaking queue"
                 ),
                 "command.join.fail" to mapOf(
-                    "zh" to "§c加入匹配失败：{error}",
-                    "en" to "§cFailed to join queue: {error}"
+                    "zh" to "§c[跨服匹配]加入匹配失败：{error}",
+                    "en" to "§c[CrossServer]Failed to join queue: {error}"
                 ),
                 "command.leave.success" to mapOf(
-                    "zh" to "§a你已成功离开匹配队列",
-                    "en" to "§aLeft matchmaking queue"
+                    "zh" to "§a[跨服匹配]你已成功离开匹配队列",
+                    "en" to "§a[CrossServer]Left matchmaking queue"
                 ),
                 "command.leave.fail" to mapOf(
-                    "zh" to "§c离开匹配失败：{error}",
-                    "en" to "§cFailed to leave queue: {error}"
+                    "zh" to "§c[跨服匹配]离开匹配失败：{error}",
+                    "en" to "§c[CrossServer]Failed to leave queue: {error}"
                 ),
                 "command.connect.start" to mapOf(
                     "zh" to "§e[跨服匹配] 正在尝试连接云服务...",
@@ -988,8 +1004,8 @@ object MessageConfig {
                     "en" to "§aCommand sent: {command}"
                 ),
                 "command.chat.sent" to mapOf(
-                    "zh" to "§a聊天消息已发送",
-                    "en" to "§aChat message sent"
+                    "zh" to "§a[跨服匹配]聊天消息已发送",
+                    "en" to "§a[CrossServer]Chat message sent"
                 )
             )
             val json = gson.toJson(defaultMessages)

@@ -18,7 +18,7 @@ class RankDao(dbFile: File) {
 
         transaction(database) {
             addLogger(StdOutSqlLogger) // 调试时开启
-            SchemaUtils.createMissingTablesAndColumns(PlayerRankTable, SeasonInfoTable)
+            SchemaUtils.createMissingTablesAndColumns(PlayerRankTable, SeasonInfoTable, PokemonUsageTable)
         }
     }
 
@@ -264,6 +264,75 @@ class RankDao(dbFile: File) {
                         (PlayerRankTable.format eq format)
             }
             rowsDeleted > 0
+        }
+    }
+
+    // 宝可梦使用统计
+    object PokemonUsageTable : Table("pokemon_usage") {
+        val id = long("id").autoIncrement()
+        val seasonId = integer("season_id")
+        val pokemonSpecies = varchar("pokemon_species", 50)
+        val count = integer("count")
+
+        override val primaryKey = PrimaryKey(id)
+    }
+
+    // 统计方法
+    fun incrementPokemonUsage(seasonId: Int, pokemonSpecies: String) {
+        transaction(database) {
+            // 查找现有记录
+            val existing = PokemonUsageTable.select {
+                (PokemonUsageTable.seasonId eq seasonId) and
+                        (PokemonUsageTable.pokemonSpecies eq pokemonSpecies.lowercase())
+            }.firstOrNull()
+
+            if (existing != null) {
+                // 更新计数
+                PokemonUsageTable.update({
+                    (PokemonUsageTable.seasonId eq seasonId) and
+                            (PokemonUsageTable.pokemonSpecies eq pokemonSpecies.lowercase())
+                }) { row ->
+                    row[count] = existing[PokemonUsageTable.count] + 1
+                }
+            } else {
+                // 插入新记录
+                PokemonUsageTable.insert { row ->
+                    row[PokemonUsageTable.seasonId] = seasonId
+                    row[PokemonUsageTable.pokemonSpecies] = pokemonSpecies.lowercase()
+                    row[count] = 1
+                }
+            }
+        }
+    }
+
+    // 查询方法
+    fun getPokemonUsage(seasonId: Int, limit: Int, offset: Int): List<Pair<String, Int>> {
+        return transaction(database) {
+            PokemonUsageTable
+                .select { PokemonUsageTable.seasonId eq seasonId }
+                .orderBy(PokemonUsageTable.count to SortOrder.DESC)
+                .limit(limit, offset.toLong()) // 将 offset 转换为 Long
+                .map {
+                    it[PokemonUsageTable.pokemonSpecies] to it[PokemonUsageTable.count]
+                }
+        }
+    }
+
+    // 总数查询
+    fun getTotalPokemonUsage(seasonId: Int): Int {
+        return transaction(database) {
+            PokemonUsageTable
+                .select { PokemonUsageTable.seasonId eq seasonId }
+                .count().toInt() // 添加 .toInt() 转换
+        }
+    }
+
+    // 获取所有宝可梦使用次数的总和
+    fun getTotalPokemonUsageCount(seasonId: Int): Int {
+        return transaction(database) {
+            PokemonUsageTable
+                .select { PokemonUsageTable.seasonId eq seasonId }
+                .sumOf { it[PokemonUsageTable.count] }
         }
     }
 }
