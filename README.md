@@ -46,8 +46,8 @@
 ### ⚠️ Current Limitations
 
 - Only **singles** mode is supported  
-- Certain abilities, items, and effects may not work properly  
-- Players from the same server **won’t be matched together**
+- Certain items and skill effects may not take effect  
+- Players from the same server **won’t be matched together**  
 
 ### 🌐 Cross-Server Commands
 
