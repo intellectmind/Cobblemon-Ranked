@@ -182,6 +182,24 @@ object ConfigManager {
                 val rawBannedShiny = json.get("bannedShiny")
                 val fixedBannedShiny = rawBannedShiny?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.bannedShiny
 
+                // 解析 enableCrossServer
+                val rawEnableCrossServer = json.get("enableCrossServer")
+                val fixedEnableCrossServer = rawEnableCrossServer?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.enableCrossServer
+
+                // 解析 cloudServerId
+                val fixedCloudServerId = getStringValue(json.get("cloudServerId")) ?: rawConfig.cloudServerId
+
+                // 解析 cloudToken
+                val rawcloudToken = json.get("cloudToken")
+                val fixedcloudToken = rawcloudToken?.toString()?.removeSurrounding("\"") ?: rawConfig.cloudToken
+
+                // 解析 cloudApiUrl
+                val rawcloudApiUrl = json.get("cloudApiUrl")
+                val fixedcloudApiUrl = rawcloudApiUrl?.toString()?.removeSurrounding("\"") ?: rawConfig.cloudApiUrl
+
+                // 解析 cloudWebSocketUrl
+                val rawcloudWebSocketUrl = json.get("cloudWebSocketUrl")
+                val fixedcloudWebSocketUrl = rawcloudWebSocketUrl?.toString()?.removeSurrounding("\"") ?: rawConfig.cloudWebSocketUrl
 
                 // 替换字段并返回配置对象
                 rawConfig.copy(
@@ -209,7 +227,12 @@ object ConfigManager {
                     bannedMoves = fixedBannedMoves,
                     bannedNatures = fixedBannedNatures,
                     bannedGenders = fixedBannedGenders,
-                    bannedShiny = fixedBannedShiny
+                    bannedShiny = fixedBannedShiny,
+                    enableCrossServer = fixedEnableCrossServer,
+                    cloudServerId = fixedCloudServerId,
+                    cloudToken = fixedcloudToken,
+                    cloudApiUrl = fixedcloudApiUrl,
+                    cloudWebSocketUrl = fixedcloudWebSocketUrl
                 )
             } else {
                 val default = RankConfig()
@@ -233,5 +256,17 @@ object ConfigManager {
         CobblemonRanked.matchmakingQueue.reloadConfig(newConfig)
 
         return newConfig
+    }
+
+    // 安全获取字符串值（带Unicode解码）
+    private fun getStringValue(element: Any?): String? {
+        return when (element) {
+            is blue.endless.jankson.JsonPrimitive -> {
+                val raw = element.asString()
+                decodeUnicode(raw)
+            }
+            is String -> decodeUnicode(element)
+            else -> null
+        }
     }
 }

@@ -282,7 +282,7 @@ class ModeScreen(private val mode: String) : RankedBaseScreen(Text.literal("Cobb
             width = playerInfoRegionWidth,
             height = playerInfoRegionHeight,
             scale = textScale,
-            lineSpacing = 3,
+            lineSpacing = 5,
             alignCenter = false,
             drawShadow = true,
             scrollOffset = playerScrollOffset
@@ -297,7 +297,7 @@ class ModeScreen(private val mode: String) : RankedBaseScreen(Text.literal("Cobb
             width = seasonInfoRegionWidth,
             height = seasonInfoRegionHeight,
             scale = textScale,
-            lineSpacing = 3,
+            lineSpacing = 5,
             alignCenter = false,
             drawShadow = true,
             scrollOffset = seasonScrollOffset
@@ -312,7 +312,7 @@ class ModeScreen(private val mode: String) : RankedBaseScreen(Text.literal("Cobb
             width = leaderboardRegionWidth,
             height = leaderboardRegionHeight,
             scale = textScale,
-            lineSpacing = 3,
+            lineSpacing = 5,
             alignCenter = false,
             drawShadow = true,
             scrollOffset = leaderboardScrollOffset
@@ -322,6 +322,20 @@ class ModeScreen(private val mode: String) : RankedBaseScreen(Text.literal("Cobb
         super.render(context, mouseX, mouseY, delta)
 
         NotificationManager.render(context, client!!.window.scaledWidth, client.window.scaledHeight, textRenderer)
+
+        // 添加右下角制作信息
+        val scaleFactor = 0.5f
+        val madeByText = Text.literal("By Kurt")
+        val textWidth = (textRenderer.getWidth(madeByText) * scaleFactor).toInt()
+        val textHeight = (textRenderer.fontHeight * scaleFactor).toInt()
+        val madeByX = width - textWidth - (10 * scaleX).toInt() - 2
+        val madeByY = height - textHeight - (10 * scaleY).toInt() - 2
+
+        context.matrices.push()
+        context.matrices.translate(madeByX.toFloat(), madeByY.toFloat(), 0f)
+        context.matrices.scale(scaleFactor, scaleFactor, 1f)
+        context.drawText(textRenderer, madeByText, 0, 0, 0xAAAAAA, true)
+        context.matrices.pop()
     }
 
     private fun requestInfo(type: RequestType) {

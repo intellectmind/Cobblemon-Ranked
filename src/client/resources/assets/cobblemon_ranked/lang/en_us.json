@@ -16,5 +16,7 @@
   "screen.cobblemon_ranked.title": "Cobblemon Ranked Menu",
   "cobblemon_ranked.mode.singles": "Singles",
   "cobblemon_ranked.mode.doubles": "Doubles",
-  "cobblemon_ranked.mode.2v2singles": "2v2 Singles"
+  "cobblemon_ranked.mode.2v2singles": "2v2 Singles",
+  "cobblemon_ranked.cross_server.web_portal": "Online website(Click to open): %s",
+  "cobblemon_ranked.cross_server.auth_key": "Authentication Key(Click to copy): %s"
 }

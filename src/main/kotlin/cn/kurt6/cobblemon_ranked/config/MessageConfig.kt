@@ -22,8 +22,8 @@ object MessageConfig {
                     "en" to "§e===== Season §6{season} {name} §ePokemon Usage Statistics (Page §6{page}§e/§6{total}§e) ====="
                 ),
                 "pokemon_usage.entry" to mapOf(
-                    "zh" to "§e#%rank% §a%species% §f- 使用次数: §b%count% §f(使用率: §b%rate%%§f)",
-                    "en" to "§e#%rank% §a%species% §f- Usage: §b%count% §f(Usage Rate: §b%rate%%§f)"
+                    "zh" to "§e#{rank} §a{species} §f- 使用次数: §b{count} §f(使用率: §b{rate}%)",
+                    "en" to "§e#{rank} §a{species} §f- Usage: §b{count} §f(Usage Rate: §b{rate}%)"
                 ),
                 "pokemon_usage.empty" to mapOf(
                     "zh" to "§c赛季 {season} {name} 没有宝可梦使用记录",
@@ -178,6 +178,14 @@ object MessageConfig {
                 ),
 
                 // RankCommands
+                "gui.op.cross_start" to mapOf(
+                    "zh" to "§c[连接云服]",
+                    "en" to "§c[Connect to Cloud]"
+                ),
+                "gui.op.cross_stop" to mapOf(
+                    "zh" to "§c[断开云服]",
+                    "en" to "§c[Disconnect from Cloud]"
+                ),
                 "setSeasonName.error" to mapOf(
                     "zh" to "§c找不到编号为 {seasonId} 的赛季记录。",
                     "en" to "§cCould not find season record with ID {seasonId}."
@@ -292,6 +300,8 @@ object MessageConfig {
                 "gui.queue_join" to mapOf("zh" to "§b[加入匹配]", "en" to "§b[Join Queue]"),
                 "gui.status" to mapOf("zh" to "§b[匹配状态]", "en" to "§b[Match State]"),
                 "gui.queue_leave" to mapOf("zh" to "§c[退出匹配]", "en" to "§c[Leave Queue]"),
+                "gui.cross_join_singles" to mapOf("zh" to "§a[加入跨服单打匹配]", "en" to "§a[Join Cross Server Singles]"),
+                "gui.cross_leave" to mapOf("zh" to "§a[离开跨服匹配]", "en" to "§a[Leave Cross Server]"),
                 "gui.op.title" to mapOf("zh" to "§6§l管理员功能：", "en" to "§6§lAdmin Functions:"),
                 "gui.op.reward" to mapOf("zh" to "§c[获取奖励]", "en" to "§c[Gain Rewards]"),
                 "gui.op.season_end" to mapOf("zh" to "§c[结束赛季]", "en" to "§c[End Season]"),
@@ -601,20 +611,12 @@ object MessageConfig {
                     "zh" to "§7未知对手",
                     "en" to "§7Unknown opponent"
                 ),
-                "cross.unknown_pokemon" to mapOf(
-                    "zh" to "§7未知宝可梦",
-                    "en" to "§7Unknown Pokemon"
-                ),
-                "cross.unknown_move" to mapOf(
-                    "zh" to "§7未知技能",
-                    "en" to "§7Unknown move"
-                ),
                 "cross.error.unknown" to mapOf(
                     "zh" to "§c未知错误",
                     "en" to "§cUnknown error"
                 ),
 
-// 状态/方向
+                // 状态/方向
                 "cross.status.normal" to mapOf(
                     "zh" to "§a正常",
                     "en" to "§aNormal"
@@ -652,7 +654,7 @@ object MessageConfig {
                     "en" to "§cfell"
                 ),
 
-// 日志
+                // 日志
                 "cross.log.heartbeat_start" to mapOf(
                     "zh" to "§8开始心跳",
                     "en" to "§8Heartbeat started"
@@ -693,6 +695,10 @@ object MessageConfig {
                     "zh" to "§6尝试重连 (尝试次数: {attempts})",
                     "en" to "§6Attempting reconnect (attempt: {attempts})"
                 ),
+                "cross.log.reconnect_stop" to mapOf(
+                    "zh" to "§6已达到最大重连次数次)，停止重连",
+                    "en" to "§6Reached maximum reconnect attempts attempts), stopping"
+                ),
                 "cross.log.request_battle_state" to mapOf(
                     "zh" to "§7请求战斗状态更新: {battleId}",
                     "en" to "§7Requesting battle state update: {battleId}"
@@ -718,29 +724,37 @@ object MessageConfig {
                     "en" to "§ePlayer {player} disconnected, auto-sending forfeit: battle_id = {battleId}"
                 ),
 
-// 队列
+                // 队列
                 "cross.queue.already_in_queue" to mapOf(
-                    "zh" to "§e你已在匹配队列中",
-                    "en" to "§eYou are already in the queue"
+                    "zh" to "§e[跨服匹配]你已在匹配队列中",
+                    "en" to "§e[CrossServer]You are already in the queue"
                 ),
                 "cross.queue.join_success" to mapOf(
-                    "zh" to "§a你已成功加入 {mode} 匹配队列",
-                    "en" to "§aYou have joined the {mode} queue"
+                    "zh" to "§a[跨服匹配]你已成功加入 {mode} 匹配队列",
+                    "en" to "§a[CrossServer]You have joined the {mode} queue"
                 ),
                 "cross.queue.join_failed" to mapOf(
-                    "zh" to "§c加入匹配失败：{error}",
-                    "en" to "§cFailed to join queue: {error}"
+                    "zh" to "§c[跨服匹配]加入匹配失败：{error}",
+                    "en" to "§c[CrossServer]Failed to join queue: {error}"
                 ),
                 "cross.queue.leave_success" to mapOf(
-                    "zh" to "§a你已成功离开匹配队列",
-                    "en" to "§aYou have left the queue"
+                    "zh" to "§a[跨服匹配]你已成功离开匹配队列",
+                    "en" to "§a[CrossServer]You have left the queue"
                 ),
                 "cross.queue.leave_failed" to mapOf(
-                    "zh" to "§c离开匹配失败：{error}",
-                    "en" to "§cFailed to leave queue: {error}"
+                    "zh" to "§c[跨服匹配]离开匹配失败：{error}",
+                    "en" to "§c[CrossServer]Failed to leave queue: {error}"
+                ),
+                "cross.queue.join_failed.authenticated_only" to mapOf(
+                    "zh" to "§c[跨服匹配]仅限正版玩家参与匹配",
+                    "en" to "§c[CrossServer]Only authentic players can join the queue"
+                ),
+                "cross.queue.join_failed.battles_exceeds" to mapOf(
+                    "zh" to "§c[跨服匹配]当前战斗数量超出了限制，请稍后再试。",
+                    "en" to "§c[CrossServer]Current battle count exceeds the limit, please try again later."
                 ),
 
-// 对战
+                // 对战
                 "cross.battle.match_found" to mapOf(
                     "zh" to "§6===== §a匹配成功! §6=====",
                     "en" to "§6===== §aMATCH FOUND! §6====="
@@ -749,13 +763,17 @@ object MessageConfig {
                     "zh" to "§c对手: {name}",
                     "en" to "§cOpponent: {name}"
                 ),
-                "cross.battle.opponent_lead" to mapOf(
-                    "zh" to "§c对手首发: {pokemon}",
-                    "en" to "§cOpponent lead: {pokemon}"
+                "cross.battle.opponent_team" to mapOf(
+                    "zh" to "§c对手队伍:",
+                    "en" to "§cOpponent Team: "
+                ),
+                "cross.lead" to mapOf(
+                    "zh" to "§c首发: ",
+                    "en" to "§cLead: "
                 ),
                 "cross.battle.your_team" to mapOf(
-                    "zh" to "§a你的队伍:",
-                    "en" to "§aYour team:"
+                    "zh" to "§a你的首发:",
+                    "en" to "§aYour lead:"
                 ),
                 "cross.battle.pokemon_info" to mapOf(
                     "zh" to "§7宝可梦: {name} | §cHP: {hp}/{maxHp}",
@@ -765,21 +783,53 @@ object MessageConfig {
                     "zh" to "§b当前宝可梦技能:",
                     "en" to "§bCurrent moves:"
                 ),
+                "cross.battle.move_pp" to mapOf(
+                    "zh" to "§e{index}§r: {name} §7(PP: {currentPP}/{maxPP})",
+                    "en" to "§e{index}§r: {name} §7(PP: {currentPP}/{maxPP})"
+                ),
+                "cross.battle.click_hint" to mapOf(
+                    "zh" to "§7点击§e[数字]§7可直接使用技能，悬浮查看描述",
+                    "en" to "§7Click §e[number]§7 to use move, Suspended View Description"
+                ),
+                "cross.move.type" to mapOf(
+                    "zh" to "类型: {type}",
+                    "en" to "Type: {type}"
+                ),
+                "cross.move.power" to mapOf(
+                    "zh" to "威力: {power}",
+                    "en" to "Power: {power}"
+                ),
+                "cross.move.accuracy" to mapOf(
+                    "zh" to "命中: {accuracy}%",
+                    "en" to "Accuracy: {accuracy}%"
+                ),
+                "cross.move.accuracy.sure_hit" to mapOf(
+                    "zh" to "命中: 必中",
+                    "en" to "Accuracy: Sure Hit"
+                ),
+                "cross.move.category" to mapOf(
+                    "zh" to "类别: {category}",
+                    "en" to "Category: {category}"
+                ),
                 "cross.battle.move_info" to mapOf(
                     "zh" to "§7{index}. {name} (§d{pp}/{pp}§7)",
                     "en" to "§7{index}. {name} (§d{pp}/{pp}§7)"
                 ),
-                "cross.battle.move_command" to mapOf(
-                    "zh" to "§e使用技能: /rank cross battle move <技能名称或编号>",
-                    "en" to "§eUse move: /rank cross battle move <move name or number>"
+                "cross.battle.switch_options" to mapOf(
+                    "zh" to "§b更换宝可梦:",
+                    "en" to "§bSwitch Pokemon:"
                 ),
-                "cross.battle.switch_command" to mapOf(
-                    "zh" to "§e更换宝可梦: /rank cross battle switch <1-6>",
-                    "en" to "§eSwitch Pokemon: /rank cross battle switch <1-6>"
+                "command.battle.invalid_switch_slot" to mapOf(
+                    "zh" to "§c无效的宝可梦槽位，请输入1-6之间的数字",
+                    "en" to "§cInvalid Pokemon slot, please enter a number between 1-6"
                 ),
                 "cross.battle.forfeit_command" to mapOf(
                     "zh" to "§c投降: /rank cross battle forfeit",
                     "en" to "§cForfeit: /rank cross battle forfeit"
+                ),
+                "cross.battle.chat" to mapOf(
+                    "zh" to "§7与对手聊天: /rank cross chat <message>",
+                    "en" to "§7Chat with opponent: /rank cross chat <message>"
                 ),
                 "cross.battle.turn_start" to mapOf(
                     "zh" to "§e[回合 {turn}] §a开始！请输入你的指令,3分钟内未选将弃权",
@@ -910,12 +960,8 @@ object MessageConfig {
                     "en" to "§dStatus: {status}"
                 ),
                 "cross.battle.current_pp" to mapOf(
-                    "zh" to "§b当前技能PP:",
-                    "en" to "§bCurrent PP:"
-                ),
-                "cross.battle.move_pp" to mapOf(
-                    "zh" to "§7{index}. {name}: §d{currentPP}/{maxPP}",
-                    "en" to "§7{index}. {name}: §d{currentPP}/{maxPP}"
+                    "zh" to "§b当前技能:(§7点击§e[数字]§7可直接使用，悬浮查看描述)",
+                    "en" to "§bCurrent moves: (§7Click §e[number]§7 to use, Suspended View Description)"
                 ),
                 "cross.battle.hp_percent" to mapOf(
                     "zh" to "§cHP: {percent}%",
@@ -933,10 +979,6 @@ object MessageConfig {
                     "zh" to "§7玩家 {playerName} 已选择行动",
                     "en" to "§7Player {playerName} has chosen an action"
                 ),
-                "cross.battle.timeout_move" to mapOf(
-                    "zh" to "§e玩家 {playerName} 未及时选择行动，已默认使用 {move}",
-                    "en" to "§ePlayer {playerName} did not select an action in time. Defaulting to {move}"
-                ),
 
                 // ELO系统
                 "cross.elo.update" to mapOf(
@@ -951,6 +993,22 @@ object MessageConfig {
                 ),
 
                 // CrossCommand 消息
+                "cross.queue.not_connected" to mapOf(
+                    "zh" to "§c跨服连接尚未建立，请稍后再试或联系管理员",
+                    "en" to "§cThe cross-server connection is not established. Please try again later or contact an administrator"
+                ),
+                "cross.queue.connection_restored" to mapOf(
+                    "zh" to "§a跨服连接已恢复",
+                    "en" to "§aCross-server connection restored"
+                ),
+                "cross.queue.connection_lost" to mapOf(
+                    "zh" to "§c云服务器连接已断开，您已从队列中移除",
+                    "en" to "§cConnection to cloud server lost. You have been removed from the queue"
+                ),
+                "cross.battle.no_moves_available" to mapOf(
+                    "zh" to "§c没有可用技能",
+                    "en" to "§cNo skills available"
+                ),
                 "command.only_player" to mapOf(
                     "zh" to "§c[跨服匹配] 命令只能由玩家执行",
                     "en" to "§c[CrossServer] Only players can use this command"
@@ -992,12 +1050,12 @@ object MessageConfig {
                     "en" to "§e[CrossServer] Cloud connection stopped"
                 ),
                 "command.battle.no_active" to mapOf(
-                    "zh" to "§e[战斗] 你当前没有进行中的对战",
-                    "en" to "§e[Battle] You don't have an active battle"
+                    "zh" to "§e[跨服匹配] 你当前没有进行中的对战",
+                    "en" to "§e[CrossServer] You don't have an active battle"
                 ),
                 "command.battle.invalid_move_slot" to mapOf(
-                    "zh" to "§c[战斗] 招式槽位无效，槽位必须在 1 到 4 之间",
-                    "en" to "§c[Battle] Invalid move slot (must be 1-4)"
+                    "zh" to "§c招式槽位无效，槽位必须在 1 到 4 之间",
+                    "en" to "§cInvalid move slot (must be 1-4)"
                 ),
                 "command.battle.sent" to mapOf(
                     "zh" to "§a指令已发送: {command}",
@@ -1006,6 +1064,26 @@ object MessageConfig {
                 "command.chat.sent" to mapOf(
                     "zh" to "§a[跨服匹配]聊天消息已发送",
                     "en" to "§a[CrossServer]Chat message sent"
+                ),
+                "cross.battle.already_chosen" to mapOf(
+                    "zh" to "§c你已在本回合选择过行动，请等待下一回合",
+                    "en" to "§cYou have already chosen an action in this turn, please wait for the next turn"
+                ),
+                "cross.log.localize_string_failed" to mapOf(
+                    "zh" to "§c本地化字符串失败: 键={key}, 语言={lang}, 错误={error}",
+                    "en" to "§cFailed to localize string: key={key}, lang={lang}, error={error}"
+                ),
+                "command.join.duplicate_pokemon" to mapOf(
+                    "zh" to "§c无法加入匹配队列：队伍中包含重复宝可梦 - {species}",
+                    "en" to "§cUnable to join the match queue: Your team contains duplicate Pokémon - {species}"
+                ),
+                "command.not_in_queue" to mapOf(
+                    "zh" to "§c当前不在跨服匹配队列中",
+                    "en" to "§cCurrently not in the cross server matching queue"
+                ),
+                "command.battle.in_queue_or_battle" to mapOf(
+                    "zh" to "§c已在跨服队列或战斗中",
+                    "en" to "§cAlready in cross server queue or battle"
                 )
             )
             val json = gson.toJson(defaultMessages)

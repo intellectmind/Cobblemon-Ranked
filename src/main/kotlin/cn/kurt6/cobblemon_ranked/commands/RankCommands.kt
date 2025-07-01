@@ -581,8 +581,15 @@ object RankCommands {
             .append(space())
             .append(link(MessageConfig.get("pokemon_usage.statistics", lang), "/rank pokemon_usage"))
 
+        val row3 = Text.empty()
+            .append(link(MessageConfig.get("gui.cross_join_singles", lang), "/rank cross join singles"))
+            .append(space())
+            .append(link(MessageConfig.get("gui.cross_leave", lang), "/rank cross leave"))
+            .append(space())
+
         player.sendMessage(row1)
         player.sendMessage(row2)
+        player.sendMessage(row3)
 
         if (isOp) {
             val opRow = Text.empty()
@@ -593,6 +600,10 @@ object RankCommands {
                 .append(link(MessageConfig.get("gui.op.reload", lang), "/rank reload"))
                 .append(space())
                 .append(link(MessageConfig.get("gui.op.reset", lang), "/rank gui_reset"))
+                .append(space())
+                .append(link(MessageConfig.get("gui.op.cross_start", lang), "/rank cross start"))
+                .append(space())
+                .append(link(MessageConfig.get("gui.op.cross_stop", lang), "/rank cross stop"))
 
             player.sendMessage(Text.literal(MessageConfig.get("gui.op.title", lang)))
             player.sendMessage(opRow)

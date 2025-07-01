@@ -148,19 +148,19 @@ data class RankConfig(
         "Master" to 0.3
     ),
 
-    @Comment("https://modrinth.com/mod/cobblemon-ranked/changelog | Enable cross-server matchmaking / 是否启用跨服匹配")
-    var enableCrossServer: Boolean = false,
+    @Comment("Enable cross-server matchmaking / 是否启用跨服匹配")
+    var enableCrossServer: Boolean = true,
 
-    @Comment("Cloud server ID for this server / 本服的云端标识")
-    var cloudServerId: String = "server-a",
+    @Comment("Cloud server ID for this server(Cannot be repeated with others) / 本服的云端标识(不可与他人重复)")
+    var cloudServerId: String = "server",
 
-    @Comment("Cloud server auth token / 云端验证用密钥 【暂时无效】")
-    var cloudToken: String = "abc123",
+    @Comment("Cloud server auth token(Leave blank for the public cloud server) / 云端验证用密钥(公开云服留空即可)")
+    var cloudToken: String = "",
 
-    @Comment("Base URL of cloud FastAPI API / 云端 API 地址 (例如 http://ip:port) 【暂时无效】")
-    var cloudApiUrl: String = "http://127.0.0.1:8000",
+    @Comment("Cloud API address(Either IP or domain name is acceptable) / 云端 API 地址(ip或者域名都可以)")
+    var cloudApiUrl: String = "http://139.196.103.55:8000",
 
-    @Comment("Cloud websocket URL / 云端 WebSocket 地址 (例如 ws://ip:port/ws/) 【暂时无效】")
-    var cloudWebSocketUrl: String = "ws://127.0.0.1:8000/ws/"
+    @Comment("Cloud WebSocket Address(Either IP or domain name is acceptable) / 云端 WebSocket 地址(ip或者域名都可以)")
+    var cloudWebSocketUrl: String = "ws://139.196.103.55:8000/ws/"
 
 )

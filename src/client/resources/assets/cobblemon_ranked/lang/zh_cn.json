@@ -16,5 +16,7 @@
   "screen.cobblemon_ranked.title": "Cobblemon 排位主菜单",
   "cobblemon_ranked.mode.singles": "单打",
   "cobblemon_ranked.mode.doubles": "双打",
-  "cobblemon_ranked.mode.2v2singles": "2v2 单打"
+  "cobblemon_ranked.mode.2v2singles": "2v2 单打",
+  "cobblemon_ranked.cross_server.web_portal": "在线网站(点击打开): %s",
+  "cobblemon_ranked.cross_server.auth_key": "认证密钥(点击复制): %s"
 }

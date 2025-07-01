@@ -95,5 +95,19 @@ class RankedMainMenuScreen : RankedBaseScreen(Text.literal("Cobblemon")) {
         val titleX = uiX + uiWidth / 2 - textRenderer.getWidth(title) / 2
         val titleY = uiY + (30 * (MinecraftClient.getInstance().window.scaledHeight / 1080f)).toInt()
         context.drawText(textRenderer, title, titleX, titleY, 0xFFFFFF, true)
+
+        // 添加右下角制作信息
+        val scaleFactor = 0.5f
+        val madeByText = Text.literal("By Kurt")
+        val textWidth = (textRenderer.getWidth(madeByText) * scaleFactor).toInt()
+        val textHeight = (textRenderer.fontHeight * scaleFactor).toInt()
+        val madeByX = width - textWidth - 3
+        val madeByY = height - textHeight - 3
+
+        context.matrices.push()
+        context.matrices.translate(madeByX.toFloat(), madeByY.toFloat(), 0f)
+        context.matrices.scale(scaleFactor, scaleFactor, 1f)
+        context.drawText(textRenderer, madeByText, 0, 0, 0xAAAAAA, false)
+        context.matrices.pop()
     }
 }
