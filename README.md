@@ -16,20 +16,56 @@
 
 ### ✅ Completed Features
 
-- Built-in multi-language support (Chinese & English), easy to extend
-- Configurable battle arenas with auto-teleport and return
-- Customizable rank titles and Elo thresholds
-- Supports three modes: Singles, Doubles, and 2v2singles
-- Elo ranking system calculated independently per format
-- Independent reward system per format with customizable commands
-- Built-in season system with automatic rotation and data reset
-- Elo-based matchmaking queue with optional waiting-time-based relaxation
-- Disconnects are treated as losses; Elo is deducted
-- Fully GUI-driven with clickable text menus and graphical GUI
+- Built-in multi-language support (Chinese & English), easy to extend  
+- Configurable battle arenas with auto-teleport and return  
+- Customizable rank titles and Elo thresholds  
+- Supports three modes: **Singles**, **Doubles**, and **2v2singles**  
+- Elo ranking system calculated independently per format  
+- Independent reward system per format with customizable commands  
+- Built-in season system with automatic rotation and data reset  
+- Elo-based matchmaking queue with optional waiting-time-based relaxation  
+- Disconnects are treated as losses; Elo is deducted  
+- Fully GUI-driven with clickable text menus and graphical GUI  
+- 🌐 Cross-server matchmaking support 
 
-### 🔧 Planned Features
+---
 
-- [ ] Cross-server matchmaking support
+## 🌐 Cross-Server Matchmaking
+
+> Available from v1.2.0+ — Supports connecting from **any server or single-player world** (requires **official Minecraft account**)
+
+> If you encounter an abnormal match, you can report it to us on [Discord](https://discord.gg/guTkeS8wEE)
+
+> Cloud server support guaranteed until at least 2026-01-01.  
+
+### ✅ How to Use
+
+1. Enable `enableCrossServer` in the config  
+2. Set a unique `cloudServerId` (must not duplicate other servers)  
+3. Use public cloud or configure your own API/WS endpoint
+
+> 🌍 Public server:  
+> Website: [http://139.196.103.55](http://139.196.103.55)  
+> Token: `cobblemonranked`
+
+### ⚠️ Current Limitations
+
+- Only **singles** mode is supported  
+- Certain abilities, items, and effects may not work properly  
+- Players from the same server **won’t be matched together**
+
+### 🌐 Cross-Server Commands
+
+| Command | Description | Permission |
+|--------|-------------|------------|
+| `/rank cross start` | Connect to the cloud server | OP |
+| `/rank cross stop` | Disconnect from the cloud | OP |
+| `/rank cross chat` | Chat with your opponent | All |
+| `/rank cross join singles` | Enter singles matchmaking | All |
+| `/rank cross leave` | Leave matchmaking queue | All |
+| `/rank cross battle move [1-4]` | Use move in battle | All |
+| `/rank cross battle switch [1-6]` | Switch Pokémon | All |
+| `/rank cross battle forfeit` | Surrender the battle | All |
 
 ---
 
@@ -58,6 +94,7 @@
 | `/rank top` | View leaderboard for default format and current season |
 | `/rank top <format> [season] [page] [count]` | Paginated leaderboard for given format and season |
 | `/rank season` | View current season info (start/end time, participation, etc.) |
+| `/rank pokemon_usage <season> <page>` | view the usage statistics of Pokémon |
 
 ---
 
@@ -160,5 +197,10 @@
     "Platinum": 0.3,
     "Diamond": 0.3,
     "Master": 0.3
-  }
+  },
+  "enableCrossServer": true,  // Enable cross-server matchmaking
+  "cloudServerId": "server",  // Cloud server ID for this server(Cannot be repeated with others)
+  "cloudToken": "",  // Cloud server auth token(Leave blank for the public cloud server)
+  "cloudApiUrl": "http://139.196.103.55:8000",  // Cloud API address(Either IP or domain name is acceptable)
+  "cloudWebSocketUrl": "ws://139.196.103.55:8000/ws/" //Cloud WebSocket Address(Either IP or domain name is acceptable)
 }
