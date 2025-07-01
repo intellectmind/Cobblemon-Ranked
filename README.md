@@ -6,15 +6,12 @@
 
 # 📊 CobblemonRanked Ranked System Documentation
 
-> 💡 This mod only needs to be installed on the server side.
-
-> Starting from v1.0.3, after installing the client, pressing the Z key by default will open the GUI
+> 💡 This mod only needs to be installed on the server side.  
+> Starting from v1.0.3, after installing the client, pressing the Z key by default will open the GUI  
 
 ---
 
 ## 🎯 Features Overview
-
-### ✅ Completed Features
 
 - Built-in multi-language support (Chinese & English), easy to extend  
 - Configurable battle arenas with auto-teleport and return  
@@ -32,10 +29,8 @@
 
 ## 🌐 Cross-Server Matchmaking
 
-> Available from v1.2.0+ — Supports connecting from **any server or single-player world** (requires **official Minecraft account**)
-
-> If you encounter an abnormal match, you can report it to us on [Discord](https://discord.gg/guTkeS8wEE)
-
+> Available from v1.2.0+ — Supports connecting from **any server or single-player world** (requires **official Minecraft account**)  
+> If you encounter an abnormal match, you can report it to us on [Discord](https://discord.gg/guTkeS8wEE)  
 > Cloud server support guaranteed until at least 2026-01-01.  
 
 ### ✅ How to Use
