@@ -56,7 +56,7 @@
 |`/rank cross chat` |与对手聊天|全部|
 |`/rank cross join singles`|进入单打配对|全部|
 |`/rank cross leave`|离开配对队列|全部|
-|`/rank cross battle move [1-4]`|在战斗中使用移动|全部|
+|`/rank cross battle move [1-4]`|使用技能|全部|
 |`/rank cross battle switch [1-6]	`|切换宝可梦|全部|
 |`/rank cross battle forfeit`|放弃战斗|全部|
 
