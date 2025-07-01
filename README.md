@@ -193,9 +193,9 @@
     "Diamond": 0.3,
     "Master": 0.3
   },
-  "enableCrossServer": true,  // Enable cross-server matchmaking
-  "cloudServerId": "server",  // Cloud server ID for this server(Cannot be repeated with others)
-  "cloudToken": "",  // Cloud server auth token(Leave blank for the public cloud server)
+  "enableCrossServer": true,       // Enable cross-server matchmaking
+  "cloudServerId": "server",       // Cloud server ID for this server(Cannot be repeated with others)
+  "cloudToken": "",                // Cloud server auth token(Leave blank for the public cloud server)
   "cloudApiUrl": "http://139.196.103.55:8000",  // Cloud API address(Either IP or domain name is acceptable)
-  "cloudWebSocketUrl": "ws://139.196.103.55:8000/ws/" //Cloud WebSocket Address(Either IP or domain name is acceptable)
+  "cloudWebSocketUrl": "ws://139.196.103.55:8000/ws/" // Cloud WebSocket Address(Either IP or domain name is acceptable)
 }
