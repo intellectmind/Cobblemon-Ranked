@@ -13,6 +13,7 @@ import cn.kurt6.cobblemon_ranked.data.RewardManager
 import cn.kurt6.cobblemon_ranked.data.SeasonManager
 import cn.kurt6.cobblemon_ranked.matchmaking.DuoMatchmakingQueue
 import cn.kurt6.cobblemon_ranked.matchmaking.MatchmakingQueue
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import cn.kurt6.cobblemon_ranked.network.*
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -46,6 +47,16 @@ class CobblemonRanked : ModInitializer {
         registerCommands()
         registerEvents()
         setupSeasonCheck()
+
+        // 注册玩家登录事件
+        ServerPlayConnectionEvents.JOIN.register { handler, sender, server ->
+            CrossServerSocket.handlePlayerJoin(handler.player)
+        }
+
+        // 注册玩家退出事件
+        ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
+            CrossServerSocket.handlePlayerDisconnect(handler.player)
+        }
 
         // 注册客户端到服务器负载 (C2S)
         PayloadTypeRegistry.playC2S().register(

@@ -1021,10 +1021,6 @@ object MessageConfig {
                     "zh" to "§c[跨服匹配] 队伍为空，无法加入匹配",
                     "en" to "§c[CrossServer] Your team is empty, cannot join queue"
                 ),
-                "command.join.invalid_size" to mapOf(
-                    "zh" to "§c[跨服匹配] 只能带一只宝可梦加入匹配",
-                    "en" to "§c[CrossServer] You can only bring one Pokemon"
-                ),
                 "command.join.success" to mapOf(
                     "zh" to "§a[跨服匹配]你已成功加入 {mode} 匹配队列",
                     "en" to "§a[CrossServer]Joined {mode} matchmaking queue"
