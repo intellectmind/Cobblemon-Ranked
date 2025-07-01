@@ -190,5 +190,10 @@
     "白金": 0.3,
     "钻石": 0.3,
     "大师": 0.3
-  }
+  },
+  "enableCrossServer": true,       // 是否启用跨服匹配
+  "cloudServerId": "server",       // 本服的云端标识(不可与他人重复)
+  "cloudToken": "",                // 云端验证用密钥(公开云服留空即可)
+  "cloudApiUrl": "http://139.196.103.55:8000",  // 云端 API 地址(ip或者域名都可以)
+  "cloudWebSocketUrl": "ws://139.196.103.55:8000/ws/" // 云端 WebSocket 地址(ip或者域名都可以)
 }
