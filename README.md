@@ -35,7 +35,7 @@
 
 ### ✅ How to Use
 
-1. Enable `enableCrossServer` in the config  
+1. Enable `enableCrossServer` in the config(default already Ture)  
 2. Modify `cloudServerId`, which should not be duplicated with other servers (the default `server` may already be used by someone)  
 3. Enter `/rank cross start` to connect to the cloud server  
 
