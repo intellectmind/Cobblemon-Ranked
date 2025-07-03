@@ -36,7 +36,7 @@
 ### ✅ How to Use
 
 1. Enable `enableCrossServer` in the config  
-2. Modifying cloudServerId requires non duplication with others
+2. Modify `cloudServerId`, which should not be duplicated with other servers (the default `server` may already be used by someone)  
 
 > 🌍 Public server:  
 > Website: [http://139.196.103.55](http://139.196.103.55)  
