@@ -33,7 +33,7 @@
 
 ### ✅ 如何使用
 
-1.在配置中启用`enableCrossServer`  
+1.在配置中启用`enableCrossServer`(默认Ture)  
 2.修改`cloudServerId`，不应与其他服务器重复（默认的`server`可能已被某人使用）  
 3. 输入`/rank cross start`连接云服  
 > 🌍 公共服务器：  
