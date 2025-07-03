@@ -36,8 +36,7 @@
 ### ✅ How to Use
 
 1. Enable `enableCrossServer` in the config  
-2. Set a unique `cloudServerId` (must not duplicate other servers)  
-3. Use public cloud or configure your own API/WS endpoint
+2. Modifying cloudServerId requires non duplication with others
 
 > 🌍 Public server:  
 > Website: [http://139.196.103.55](http://139.196.103.55)  
