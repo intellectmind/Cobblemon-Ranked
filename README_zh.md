@@ -33,9 +33,10 @@
 
 ### ✅ 如何使用
 
-1.在配置中启用`enableCrossServer`(默认Ture)  
+1.在配置中启用`enableCrossServer`  
 2.修改`cloudServerId`，不应与其他服务器重复（默认的`server`可能已被某人使用）  
-3. 重启服务器后输入`/rank cross start`连接云服  
+3.输入`/rank reload`重新加载配置或者重新启动服务器  
+4.输入`/rank cross start`连接云服  
 
 > 🌍 公共服务器：  
 > 网址：[http://139.196.103.55](http://139.196.103.55)  
@@ -127,11 +128,14 @@
   "bannedCarriedItems": ["cobblemon:leftovers"], // 禁止玩家背包携带的物品
   "bannedMoves": ["leechseed"], // 禁止宝可梦使用的技能
   "bannedNatures": ["cobblemon:naughty"], // 禁止宝可梦使用的性格
-  "bannedGenders": ["MALE"], // 禁止宝可梦使用的特性
+  "bannedAbilities": [], // 禁止宝可梦使用的特性
+  "bannedGenders": ["MALE"], // 禁止宝可梦使用的性别
   "bannedShiny": false, // 是否禁止闪光宝可梦参战
   "allowedFormats": ["singles", "doubles", "2v2singles"], // 支持的对战模式
   "maxLevel": 0, // 宝可梦最大等级（0 表示不限制）
   "allowDuplicateSpecies": false, // 是否允许重复宝可梦
+  "enableCustomLevel": false, // 是否启用强制修改宝可梦等级
+  "customBattleLevel": 50, // 设置强制修改宝可梦的等级
   "battleArenas": [ // 战斗场地配置
     {
       "world": "minecraft:overworld",
