@@ -35,9 +35,10 @@
 
 ### ✅ How to Use
 
-1. Enable `enableCrossServer` in the config(default already Ture)  
+1. Enable `enableCrossServer` in the config  
 2. Modify `cloudServerId`, which should not be duplicated with other servers (the default `server` may already be used by someone)  
-3. Restart the server.Enter `/rank cross start` to connect to the cloud server  
+3. Enter `/rank reload` to reload the configuration or restart the server.  
+4. Enter `/rank cross start` to connect to the cloud server  
 
 > 🌍 Public server:  
 > Website: [http://139.196.103.55](http://139.196.103.55)  
@@ -130,11 +131,14 @@
   "bannedCarriedItems": ["cobblemon:leftovers"], // Banned items in player's inventory
   "bannedMoves": ["leechseed"],            // Banned moves for Pokémon
   "bannedNatures": ["cobblemon:naughty"],  // Banned personalities for Pokémon
-  "bannedGenders": ["MALE"],               // Banned Abilities for Pokémon
+  "bannedAbilities": [],                   // Banned abilities for Pokémon
+  "bannedGenders": ["MALE"],               // Banned gender for Pokémon
   "bannedShiny": false,                    // Banned shiny Pokémon from participating in battles
   "allowedFormats": ["singles", "doubles", "2v2singles"], // Supported battle formats
   "maxLevel": 0,                           // Max Pokémon level (0 = no limit)
   "allowDuplicateSpecies": false,          // Whether duplicate Pokémon species are allowed
+  "enableCustomLevel": false,              // Enable forced modification of Pokémon levels
+  "customBattleLevel": 50,                 // Forcefully modify the level of Pokémon
   "battleArenas": [                        // List of arenas (teleport locations for battles)
     {
       "world": "minecraft:overworld",
