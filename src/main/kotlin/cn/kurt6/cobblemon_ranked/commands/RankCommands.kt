@@ -4,7 +4,6 @@ package cn.kurt6.cobblemon_ranked.commands
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
 import cn.kurt6.cobblemon_ranked.config.ConfigManager
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
-import cn.kurt6.cobblemon_ranked.data.RankDao
 import cn.kurt6.cobblemon_ranked.matchmaking.DuoMatchmakingQueue
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
@@ -585,11 +584,12 @@ object RankCommands {
             .append(link(MessageConfig.get("gui.cross_join_singles", lang), "/rank cross join singles"))
             .append(space())
             .append(link(MessageConfig.get("gui.cross_leave", lang), "/rank cross leave"))
-            .append(space())
 
         player.sendMessage(row1)
         player.sendMessage(row2)
-        player.sendMessage(row3)
+        if (CobblemonRanked.config.enableCrossServer) {
+            player.sendMessage(row3)
+        }
 
         if (isOp) {
             val opRow = Text.empty()
@@ -600,13 +600,17 @@ object RankCommands {
                 .append(link(MessageConfig.get("gui.op.reload", lang), "/rank reload"))
                 .append(space())
                 .append(link(MessageConfig.get("gui.op.reset", lang), "/rank gui_reset"))
-                .append(space())
+
+            val opRow2 = Text.empty()
                 .append(link(MessageConfig.get("gui.op.cross_start", lang), "/rank cross start"))
                 .append(space())
                 .append(link(MessageConfig.get("gui.op.cross_stop", lang), "/rank cross stop"))
 
             player.sendMessage(Text.literal(MessageConfig.get("gui.op.title", lang)))
             player.sendMessage(opRow)
+            if (CobblemonRanked.config.enableCrossServer) {
+                player.sendMessage(opRow2)
+            }
         }
     }
 

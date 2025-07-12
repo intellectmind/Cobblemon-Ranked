@@ -145,6 +145,14 @@ object ConfigManager {
                 val rawAllowDuplicateSpecies = json.get("allowDuplicateSpecies")
                 val fixedAllowDuplicateSpecies = rawAllowDuplicateSpecies?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.allowDuplicateSpecies
 
+                // 解析 customBattleLevel
+                val rawCustomBattleLevel = json.get("customBattleLevel")
+                val fixedCustomBattleLevel = rawCustomBattleLevel?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.customBattleLevel
+
+                // 解析 enableCustomLevel
+                val rawEnableCustomLevel = json.get("enableCustomLevel")
+                val fixedEnableCustomLevel = rawEnableCustomLevel?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.enableCustomLevel
+
                 // 解析 rankRequirements
                     val rawRankRequirementsElement = json.get("rankRequirements")
                     val fixedRankRequirements: Map<String, Double> = if (rawRankRequirementsElement is blue.endless.jankson.JsonObject) {
@@ -171,6 +179,13 @@ object ConfigManager {
                     ?.map { it.value as String }
                     ?: rawConfig.bannedCarriedItems
 
+                // 解析 bannedAbilities
+                val rawBannedAbilities = json.get("bannedAbilities") as? blue.endless.jankson.JsonArray
+                val fixedBannedAbilities = rawBannedAbilities
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.bannedAbilities
+
                 // 解析 bannedGenders
                 val rawBannedGenders = json.get("bannedGenders") as? blue.endless.jankson.JsonArray
                 val fixedBannedGenders = rawBannedGenders
@@ -187,7 +202,15 @@ object ConfigManager {
                 val fixedEnableCrossServer = rawEnableCrossServer?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.enableCrossServer
 
                 // 解析 cloudServerId
-                val fixedCloudServerId = getStringValue(json.get("cloudServerId")) ?: rawConfig.cloudServerId
+                val fixedCloudServerId = when (val element = json.get("cloudServerId")) {
+                    is blue.endless.jankson.JsonPrimitive -> {
+                        // 处理可能的 Unicode 转义
+                        decodeUnicode(element.asString().trim('"'))
+                    }
+                    is blue.endless.jankson.JsonNull -> rawConfig.cloudServerId
+                    null -> rawConfig.cloudServerId
+                    else -> element.toString().trim('"')
+                }
 
                 // 解析 cloudToken
                 val rawcloudToken = json.get("cloudToken")
@@ -223,9 +246,12 @@ object ConfigManager {
                     minElo = fixedMinElo,
                     allowDuplicateSpecies = fixedAllowDuplicateSpecies,
                     maxLevel = fixedMaxLevel,
+                    customBattleLevel = fixedCustomBattleLevel,
+                    enableCustomLevel = fixedEnableCustomLevel,
                     rankRequirements = fixedRankRequirements,
                     bannedMoves = fixedBannedMoves,
                     bannedNatures = fixedBannedNatures,
+                    bannedAbilities = fixedBannedAbilities,
                     bannedGenders = fixedBannedGenders,
                     bannedShiny = fixedBannedShiny,
                     enableCrossServer = fixedEnableCrossServer,

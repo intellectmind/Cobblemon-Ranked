@@ -19,8 +19,9 @@ class RewardManager(private val rankDao: RankDao) {
         val lang = CobblemonRanked.config.defaultLang
 
         // 获取玩家数据
-        val playerData = BattleHandler.rankDao.getPlayerData(uuid, seasonId, format) ?: return
+        val playerData = rankDao.getPlayerData(uuid, seasonId, format) ?: return
 
+        // 检查时传入当前格式
         if (!playerData.hasClaimedReward(rank, format)) {
             // 胜率判断逻辑
             val requiredWinRate = CobblemonRanked.config.rankRequirements[rank] ?: 0.0
@@ -33,8 +34,11 @@ class RewardManager(private val rankDao: RankDao) {
                 player.sendMessage(Text.literal(denyMsg))
                 return
             }
-
             BattleHandler.grantRankReward(player, rank, format, server)
+
+            // 标记时传入当前格式
+            playerData.markRewardClaimed(rank, format)
+            rankDao.savePlayerData(playerData)
 
             // 广播全服首次领取该段位奖励
             val name = player.name.string

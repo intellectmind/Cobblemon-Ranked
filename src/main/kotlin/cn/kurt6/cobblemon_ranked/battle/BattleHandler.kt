@@ -2,6 +2,7 @@
 package cn.kurt6.cobblemon_ranked.battle
 
 import cn.kurt6.cobblemon_ranked.*
+import cn.kurt6.cobblemon_ranked.CobblemonRanked.Companion
 import cn.kurt6.cobblemon_ranked.config.ArenaCoordinate
 import cn.kurt6.cobblemon_ranked.config.BattleArena
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
@@ -193,13 +194,26 @@ object BattleHandler {
         }
 
         // 禁用特性
+        val bannedAbilities = config.bannedAbilities.map { it.uppercase() }
+        val hasBannedAbility = pokemonList.filter {
+            it.ability.name.uppercase() in bannedAbilities
+        }
+        if (hasBannedAbility.isNotEmpty()) {
+            val names = hasBannedAbility.joinToString(", ") {
+                "${it.species.name}(${it.ability.name})"
+            }
+            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_ability", lang, "names" to names))
+            return false
+        }
+
+        // 禁用性别
         val bannedGenders = config.bannedGenders.map { it.uppercase() }
         val hasBannedGender = pokemonList.filter {
-            it.gender.name.uppercase() in bannedGenders
+            it.gender?.name?.uppercase() in bannedGenders
         }
         if (hasBannedGender.isNotEmpty()) {
             val names = hasBannedGender.joinToString(", ") {
-                "${it.species.name}(${it.gender.name})"
+                "${it.species.name}(${it.gender?.name})"
             }
             RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_gender", lang, "names" to names))
             return false
@@ -231,6 +245,13 @@ object BattleHandler {
                 val names = shinyPokemon.joinToString(", ") { it.species.name }
                 RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_shiny", lang, "names" to names))
                 return false
+            }
+        }
+
+        // 在验证通过后准备等级调整（只记录原始数据）
+        if (CobblemonRanked.config.enableCustomLevel) {
+            pokemonList.forEach { pokemon ->
+                prepareLevelAdjustment(player, pokemon)
             }
         }
 
@@ -336,6 +357,7 @@ object BattleHandler {
         val formatName = rankedBattles.remove(battleId) ?: return
         val seasonId = seasonManager.currentSeasonId
 
+        // 获取所有参与战斗的玩家
         val allPlayers = battle.sides
             .flatMap { it.actors.toList() }
             .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
@@ -410,6 +432,12 @@ object BattleHandler {
                 DuoBattleManager.DuoTeam(loserTeam[0], loserTeam[1], emptyList(), emptyList()),
                 DuoBattleManager.DuoTeam(winnerTeam[0], winnerTeam[1], emptyList(), emptyList())
             )
+
+            // 恢复所有玩家的宝可梦等级
+            allPlayers.forEach { player ->
+                restoreLevelAdjustments(player)
+            }
+
             // 在战斗结束后记录宝可梦使用
             recordPokemonUsage(allPlayers, seasonId)
             return
@@ -463,6 +491,10 @@ object BattleHandler {
 
         Cobblemon.battleRegistry.closeBattle(battle)
 
+        // 恢复所有玩家的宝可梦等级
+        restoreLevelAdjustments(winner)
+        restoreLevelAdjustments(loser)
+
         // 在战斗结束后记录宝可梦使用
         recordPokemonUsage(allPlayers, seasonId)
 
@@ -503,6 +535,16 @@ object BattleHandler {
         val battle = event.battle
         val battleId = battleToIdMap.remove(battle) ?: return
         val formatName = rankedBattles.remove(battleId) ?: return
+
+        // 获取所有参与战斗的玩家
+        val allPlayers = battle.sides
+            .flatMap { it.actors.toList() }
+            .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+
+        // 恢复所有玩家的宝可梦等级
+        allPlayers.forEach { player ->
+            restoreLevelAdjustments(player)
+        }
 
         val playerWinners = extractPlayerActors(event.winners)
         val playerLosers = extractPlayerActors(event.losers)
@@ -746,5 +788,115 @@ object BattleHandler {
                 }
             }
         }
+    }
+
+    private data class OriginalLevelData(val originalLevel: Int, val originalExp: Int)
+    private val pendingLevelAdjustments = mutableMapOf<UUID, MutableMap<UUID, OriginalLevelData>>()
+    /**
+     * 准备调整宝可梦等级（只记录原始数据，不实际修改）
+     */
+    private fun prepareLevelAdjustment(player: ServerPlayerEntity, pokemon: Pokemon) {
+        if (!CobblemonRanked.config.enableCustomLevel) return
+
+        val playerAdjustments = pendingLevelAdjustments.getOrPut(player.uuid) { mutableMapOf() }
+        if (!playerAdjustments.containsKey(pokemon.uuid)) {
+            // 记录原始等级和经验值（内存）
+            playerAdjustments[pokemon.uuid] = OriginalLevelData(pokemon.level, pokemon.experience)
+
+            // 持久化到数据库
+            CobblemonRanked.rankDao.savePokemonOriginalData(
+                player.uuid,
+                pokemon.uuid,
+                pokemon.level,
+                pokemon.experience
+            )
+        }
+    }
+
+    /**
+     * 执行实际的等级调整（在战斗开始前调用）
+     */
+    fun applyLevelAdjustments(player: ServerPlayerEntity) {
+        val config = CobblemonRanked.config
+        if (!config.enableCustomLevel) return
+
+        val playerAdjustments = pendingLevelAdjustments[player.uuid] ?: return
+
+        Cobblemon.storage.getParty(player).forEach { pokemon ->
+            pokemon?.let {
+                if (playerAdjustments.containsKey(it.uuid)) {
+                    val targetLevel = config.customBattleLevel
+                    // 直接设置等级
+                    it.level = targetLevel
+                    it.currentHealth = it.maxHealth
+                }
+            }
+        }
+    }
+
+    /**
+     * 恢复宝可梦的原始等级
+     */
+    fun restoreLevelAdjustments(player: ServerPlayerEntity) {
+        val playerAdjustments = pendingLevelAdjustments.remove(player.uuid) ?: return
+        val lang = CobblemonRanked.config.defaultLang
+
+        Cobblemon.storage.getParty(player).forEach { pokemon ->
+            pokemon?.let {
+                playerAdjustments[it.uuid]?.let { original ->
+                    // 1. 先恢复原始等级
+                    it.level = original.originalLevel
+
+                    // 2. 使用反射强制设置经验值
+                    try {
+                        val experienceField = Pokemon::class.java.getDeclaredField("experience")
+                        experienceField.isAccessible = true
+                        experienceField.setInt(it, original.originalExp)
+
+                        // 3. 手动触发经验更新
+                        it.setExperienceAndUpdateLevel(original.originalExp)
+                    } catch (e: Exception) {
+                        CobblemonRanked.logger.error("Failed to restore experience: ${e.message}")
+                    }
+
+                    it.currentHealth = it.maxHealth
+                }
+            }
+        }
+
+        // 移除数据库中的原始数据
+        CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
+        RankUtils.sendMessage(player, MessageConfig.get("customBattleLevel.restore", lang))
+    }
+
+    // 从数据库恢复宝可梦原始等级
+    fun restoreLevelsFromDatabase(player: ServerPlayerEntity) {
+        val originalData = CobblemonRanked.rankDao.getPokemonOriginalData(player.uuid)
+
+        Cobblemon.storage.getParty(player).forEach { pokemon ->
+            pokemon?.let {
+                originalData[it.uuid]?.let { (level, exp) ->
+                    // 1. 先恢复原始等级
+                    it.level = level
+
+                    // 2. 使用反射强制设置经验值
+                    try {
+                        val experienceField = Pokemon::class.java.getDeclaredField("experience")
+                        experienceField.isAccessible = true
+                        experienceField.setInt(it, exp)
+
+                        // 3. 手动触发经验更新
+                        it.setExperienceAndUpdateLevel(exp)
+                    } catch (e: Exception) {
+                        CobblemonRanked.logger.error("Failed to restore experience: ${e.message}")
+                    }
+                    it.currentHealth = it.maxHealth
+                }
+            }
+        }
+
+        // 清理数据
+        CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
+        pendingLevelAdjustments.remove(player.uuid)
     }
 }

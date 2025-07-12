@@ -17,8 +17,13 @@ class RankDao(dbFile: File) {
         database = Database.connect(url, "org.sqlite.JDBC")
 
         transaction(database) {
-            addLogger(StdOutSqlLogger) // 调试时开启
-            SchemaUtils.createMissingTablesAndColumns(PlayerRankTable, SeasonInfoTable, PokemonUsageTable)
+            addLogger(StdOutSqlLogger)
+            SchemaUtils.createMissingTablesAndColumns(
+                PlayerRankTable,
+                SeasonInfoTable,
+                PokemonUsageTable,
+                PokemonOriginalDataTable
+            )
         }
     }
 
@@ -43,7 +48,9 @@ class RankDao(dbFile: File) {
                     row[losses] = data.losses
                     row[winStreak] = data.winStreak
                     row[bestWinStreak] = data.bestWinStreak
-                    val ranksStr = data.claimedRanks.takeIf { it.isNotEmpty() }?.joinToString(",") ?: ""
+                    val ranksStr = data.claimedRanks
+                        .filter { it.split(":").getOrNull(1) == data.format } // 关键过滤
+                        .joinToString(",")
                     row[claimedRanks] = ranksStr
                     row[fleeCount] = data.fleeCount
                 }
@@ -58,7 +65,9 @@ class RankDao(dbFile: File) {
                     row[losses] = data.losses
                     row[winStreak] = data.winStreak
                     row[bestWinStreak] = data.bestWinStreak
-                    val ranksStr = data.claimedRanks.takeIf { it.isNotEmpty() }?.joinToString(",") ?: ""
+                    val ranksStr = data.claimedRanks
+                        .filter { it.split(":").getOrNull(1) == data.format } // 关键过滤
+                        .joinToString(",")
                     row[claimedRanks] = ranksStr
                     row[fleeCount] = data.fleeCount
                 }
@@ -248,10 +257,15 @@ class RankDao(dbFile: File) {
             losses = row[PlayerRankTable.losses],
             winStreak = row[PlayerRankTable.winStreak],
             bestWinStreak = row[PlayerRankTable.bestWinStreak],
-            claimedRanks = if (row[PlayerRankTable.claimedRanks].isNotBlank())
-                row[PlayerRankTable.claimedRanks].split(",").toMutableSet()
-            else
-                mutableSetOf(),
+            claimedRanks = if (row[PlayerRankTable.claimedRanks].isNotBlank()) {
+                // 只加载当前格式的奖励记录
+                row[PlayerRankTable.claimedRanks]
+                    .split(",")
+                    .filter { it.split(":").getOrNull(1) == row[PlayerRankTable.format] } // 过滤
+                    .toMutableSet()
+            } else {
+                mutableSetOf()
+            },
             fleeCount = row.getOrNull(PlayerRankTable.fleeCount) ?: 0
         )
     }
@@ -333,6 +347,52 @@ class RankDao(dbFile: File) {
             PokemonUsageTable
                 .select { PokemonUsageTable.seasonId eq seasonId }
                 .sumOf { it[PokemonUsageTable.count] }
+        }
+    }
+
+    // 添加宝可梦原始数据表
+    object PokemonOriginalDataTable : Table("pokemon_original_data") {
+        val playerId = varchar("player_id", 36)
+        val pokemonUuid = varchar("pokemon_uuid", 36)
+        val originalLevel = integer("original_level")
+        val originalExp = integer("original_exp")
+
+        override val primaryKey = PrimaryKey(playerId, pokemonUuid)
+    }
+
+    // 添加保存原始数据的方法
+    fun savePokemonOriginalData(playerId: UUID, pokemonUuid: UUID, originalLevel: Int, originalExp: Int) {
+        transaction(database) {
+            PokemonOriginalDataTable.insert { row ->
+                row[PokemonOriginalDataTable.playerId] = playerId.toString()
+                row[PokemonOriginalDataTable.pokemonUuid] = pokemonUuid.toString()
+                row[PokemonOriginalDataTable.originalLevel] = originalLevel
+                row[PokemonOriginalDataTable.originalExp] = originalExp
+            }
+        }
+    }
+
+    // 添加获取原始数据的方法
+    fun getPokemonOriginalData(playerId: UUID): Map<UUID, Pair<Int, Int>> {
+        return transaction(database) {
+            PokemonOriginalDataTable.select {
+                PokemonOriginalDataTable.playerId eq playerId.toString()
+            }.associate {
+                UUID.fromString(it[PokemonOriginalDataTable.pokemonUuid]) to
+                        Pair(
+                            it[PokemonOriginalDataTable.originalLevel],
+                            it[PokemonOriginalDataTable.originalExp]
+                        )
+            }
+        }
+    }
+
+    // 添加删除原始数据的方法
+    fun deletePokemonOriginalData(playerId: UUID) {
+        transaction(database) {
+            PokemonOriginalDataTable.deleteWhere {
+                PokemonOriginalDataTable.playerId eq playerId.toString()
+            }
         }
     }
 }

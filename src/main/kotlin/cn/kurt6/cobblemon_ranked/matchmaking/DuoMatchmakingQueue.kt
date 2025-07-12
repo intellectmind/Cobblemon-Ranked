@@ -10,7 +10,6 @@ import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.util.RankUtils
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.battles.BattleFormat
-import com.cobblemon.mod.fabric.CobblemonFabric.server
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
@@ -65,6 +64,10 @@ object DuoMatchmakingQueue {
         CobblemonRanked.matchmakingQueue.removePlayer(player.uuid)
         queuedPlayers.add(QueuedPlayer(player, team, now))
         RankUtils.sendMessage(player, MessageConfig.get("duo.waiting_for_match", lang))
+
+        if (config.enableCustomLevel) {
+            RankUtils.sendMessage(player, MessageConfig.get("queue.join_success_customLevel", lang))
+        }
     }
 
     private fun processQueue() {
@@ -102,6 +105,39 @@ object DuoMatchmakingQueue {
                         val server = p1.player.server
                         scheduler.schedule({
                             server.execute {
+                                // 检查是否有玩家掉线
+                                val players = listOf(p1, p2, p3, p4)
+                                val disconnectedPlayers = players.filter { it.player.isDisconnected }
+
+                                if (disconnectedPlayers.isNotEmpty()) {
+                                    // 给在线的玩家发送消息并重新加入队列
+                                    players.filter { !it.player.isDisconnected }.forEach { playerEntry ->
+                                        RankUtils.sendMessage(
+                                            playerEntry.player,
+                                            MessageConfig.get("queue.opponent_disconnected", lang)
+                                        )
+                                        // 只将未掉线的玩家重新加入队列
+                                        queuedPlayers.add(playerEntry)
+                                    }
+
+                                    return@execute
+                                }
+
+                                // 再次验证队伍
+                                val invalidPlayers = players.filter {
+                                    !BattleHandler.validateTeam(it.player, it.team, BattleFormat.GEN_9_SINGLES)
+                                }
+
+                                if (invalidPlayers.isNotEmpty()) {
+                                    players.forEach { playerEntry ->
+                                        RankUtils.sendMessage(
+                                            playerEntry.player,
+                                            MessageConfig.get("queue.cancel_team_changed", lang)
+                                        )
+                                    }
+                                    return@execute
+                                }
+
                                 startNextBattle(teamA, teamB)
                             }
                         }, 5, TimeUnit.SECONDS)

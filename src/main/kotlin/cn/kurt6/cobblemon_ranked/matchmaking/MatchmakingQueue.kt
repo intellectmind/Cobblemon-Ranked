@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("RankedBattle")
 
-
 class MatchmakingQueue {
     // 使用线程安全的ConcurrentHashMap存储匹配队列
     private val queue = ConcurrentHashMap<UUID, QueueEntry>()
@@ -142,6 +141,10 @@ class MatchmakingQueue {
                 else -> "queue.join_success_unknown"
             }
             RankUtils.sendMessage(player, MessageConfig.get(messageKey, lang))
+
+            if (config.enableCustomLevel) {
+                RankUtils.sendMessage(player, MessageConfig.get("queue.join_success_customLevel", lang))
+            }
         } catch (e: Exception) {
             // 处理异常情况
             if (e.message?.contains("队伍为空") == true) {
@@ -313,6 +316,21 @@ class MatchmakingQueue {
         // 5秒后开始传送和战斗
         scheduler.schedule({
             server.execute {
+                // 检查玩家是否掉线
+                if (player1.player.isDisconnected || player2.player.isDisconnected) {
+                    // 如果玩家1在线，发送消息并重新加入队列
+                    if (!player1.player.isDisconnected) {
+                        queue[player1.player.uuid] = player1
+                        RankUtils.sendMessage(player1.player, MessageConfig.get("queue.opponent_disconnected", lang))
+                    }
+                    // 如果玩家2在线，发送消息并重新加入队列
+                    if (!player2.player.isDisconnected) {
+                        queue[player2.player.uuid] = player2
+                        RankUtils.sendMessage(player2.player, MessageConfig.get("queue.opponent_disconnected", lang))
+                    }
+                    return@execute
+                }
+
                 // 再次验证队伍
                 if (!BattleHandler.validateTeam(player1.player, player1.team, player1.format) ||
                     !BattleHandler.validateTeam(player2.player, player2.team, player2.format)) {
@@ -328,6 +346,20 @@ class MatchmakingQueue {
                 // 传送玩家
                 player1.player.teleport(world, positions[0].x, positions[0].y, positions[0].z, 0f, 0f)
                 player2.player.teleport(world, positions[1].x, positions[1].y, positions[1].z, 0f, 0f)
+
+                // 应用等级调整
+                if (config.enableCustomLevel) {
+                    RankUtils.sendMessage(
+                        player1.player,
+                        MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel)
+                    )
+                    RankUtils.sendMessage(
+                        player2.player,
+                        MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel)
+                    )
+                    BattleHandler.applyLevelAdjustments(player1.player)
+                    BattleHandler.applyLevelAdjustments(player2.player)
+                }
 
                 // 创建战斗参与者
                 val actor1 = PlayerBattleActor(player1.player.uuid, team1)

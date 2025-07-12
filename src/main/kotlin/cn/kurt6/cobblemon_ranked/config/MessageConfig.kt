@@ -34,12 +34,16 @@ object MessageConfig {
                     "en" to "§e[Pokemon Statistics]"
                 ),
                 // MatchmakingQueue (单人匹配)
+                "queue.opponent_disconnected" to mapOf(
+                    "zh" to "§c你的对手已断开连接，已重新加入匹配队列",
+                    "en" to "§cYour opponent has disconnected and has rejoined the matching queue"
+                ),
                 "queue.cooldown" to mapOf(
-                    "zh" to "§c你刚刚匹配失败，请等待 {seconds} 秒后再尝试加入。",
-                    "en" to "§cYou recently failed matchmaking. Please wait {seconds} seconds before trying again."
+                    "zh" to "§c你刚刚匹配失败，请等待 {seconds} 秒后再尝试加入",
+                    "en" to "§cYou recently failed matchmaking. Please wait {seconds} seconds before trying again"
                 ),
                 "queue.invalid_format" to mapOf(
-                    "zh" to "§禁用的战斗模式: {format}",
+                    "zh" to "§c禁用的战斗模式: {format}",
                     "en" to "§cBanned battle format: {format}"
                 ),
                 "queue.ban_format" to mapOf(
@@ -61,6 +65,10 @@ object MessageConfig {
                 "queue.join_success_unknown" to mapOf(
                     "zh" to "§a已加入 匹配队列（未知模式）...",
                     "en" to "§aJoined the matchmaking queue (unknown mode)..."
+                ),
+                "queue.join_success_customLevel" to mapOf(
+                    "zh" to "§c服务器已启用强制修改宝可梦等级功能，等待时获取的宝可梦经验将无效",
+                    "en" to "§cThe server has enabled the forced modification of Pokémon level function. The Pokémon experience obtained while waiting will be invalid"
                 ),
                 "queue.empty_team" to mapOf(
                     "zh" to "§c你的队伍为空，请先准备至少一只宝可梦再点击加入匹配。",
@@ -109,6 +117,10 @@ object MessageConfig {
                 "duo.disqualified" to mapOf(
                     "zh" to "§c在战斗中更换了非法队伍，判负处理。",
                     "en" to "§cDisqualified from battle: team changed"
+                ),
+                "queue.customBattleLevel" to mapOf(
+                    "zh" to "§a已启用自定义等级，强制修改宝可梦等级为: {level}",
+                    "en" to "§aCustom level enabled, forcing modification of Pokémon level to: {level}"
                 ),
                 "queue.battle_start_fail" to mapOf(
                     "zh" to "§c创建战斗失败: {reason}",
@@ -399,20 +411,28 @@ object MessageConfig {
                 ),
 
                 // BattleHandler
+                "customBattleLevel.restore" to mapOf(
+                    "zh" to "§a已恢复宝可梦等级",
+                    "en" to "§aRecovered Pokémon level"
+                ),
                 "battle.team.banned_nature" to mapOf(
-                    "zh" to "队伍中有宝可梦使用了被禁止的性格: {names}",
-                    "en" to "Your team contains Pokémon with banned natures: {names}"
+                    "zh" to "§c队伍中有宝可梦使用了被禁止的性格: {names}",
+                    "en" to "§cYour team contains Pokémon with banned natures: {names}"
                 ),
                 "battle.team.banned_gender" to mapOf(
-                    "zh" to "队伍中有宝可梦使用了被禁止的特性: {names}",
-                    "en" to "Your team contains Pokémon with banned genders: {names}"
+                    "zh" to "§c队伍中有宝可梦使用了被禁止的性别: {names}",
+                    "en" to "§cYour team contains Pokémon with banned genders: {names}"
+                ),
+                "battle.team.banned_ability" to mapOf(
+                    "zh" to "§c队伍中有宝可梦使用了被禁止的特性: {names}",
+                    "en" to "§cYour team contains Pokémon with banned abilities: {names}"
                 ),
                 "battle.team.banned_moves" to mapOf(
-                    "zh" to "队伍中有宝可梦使用了被禁止的招式: {names}",
-                    "en" to "Your team contains banned moves: {names}"
+                    "zh" to "§c队伍中有宝可梦使用了被禁止的招式: {names}",
+                    "en" to "§cYour team contains banned moves: {names}"
                 ),
                 "battle.team.banned_shiny" to mapOf(
-                    "zh" to "队伍中有宝可梦使用了被禁止的闪光个体: {names}",
+                    "zh" to "§c队伍中有宝可梦使用了被禁止的闪光个体: {names}",
                     "en" to "§cYour team contains shiny Pokémon: {names}"
                 ),
                 "battle.player.banned_items" to mapOf(
@@ -424,24 +444,24 @@ object MessageConfig {
                     "en" to "§cPlayer {player} disconnected and lost. Their team was eliminated."
                 ),
                 "battle.flee.forbidden" to mapOf(
-                    "zh" to "你不能在排位战中逃跑！",
-                    "en" to "You cannot flee in a ranked battle."
+                    "zh" to "§c你不能在排位战中逃跑！",
+                    "en" to "§cYou cannot flee in a ranked battle."
                 ),
                 "battle.team.banned_held_items" to mapOf(
-                "zh" to "队伍中有宝可梦携带了被禁止的物品: {names}",
-                "en" to "Your team contains Pokémon with banned held items: {names}"
+                "zh" to "§c队伍中有宝可梦携带了被禁止的物品: {names}",
+                "en" to "§cYour team contains Pokémon with banned held items: {names}"
                 ),
                 "battle.team.banned_moves" to mapOf(
-                    "zh" to "队伍中有宝可梦使用了被禁止的招式: {names}",
-                    "en" to "Your team contains banned moves: {names}"
+                    "zh" to "§c队伍中有宝可梦使用了被禁止的招式: {names}",
+                    "en" to "§cYour team contains banned moves: {names}"
                 ),
                 "battle.team.banned_abilities" to mapOf(
-                    "zh" to "队伍中有宝可梦使用了被禁止的特性: {names}",
-                    "en" to "Your team contains Pokémon with banned abilities: {names}"
+                    "zh" to "§c队伍中有宝可梦使用了被禁止的特性: {names}",
+                    "en" to "§cYour team contains Pokémon with banned abilities: {names}"
                 ),
                 "battle.team.banned_natures" to mapOf(
-                    "zh" to "队伍中有宝可梦使用了被禁止的性格: {names}",
-                    "en" to "Your team contains banned natures: {names}"
+                    "zh" to "§c队伍中有宝可梦使用了被禁止的性格: {names}",
+                    "en" to "§cYour team contains banned natures: {names}"
                 ),
                 "battle.disconnect.loser" to mapOf(
                     "zh" to "§c你断线导致失败。",

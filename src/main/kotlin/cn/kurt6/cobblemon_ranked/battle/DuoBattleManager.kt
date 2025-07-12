@@ -2,6 +2,8 @@
 package cn.kurt6.cobblemon_ranked.battle
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
+import cn.kurt6.cobblemon_ranked.CobblemonRanked.Companion.config
+import cn.kurt6.cobblemon_ranked.battle.BattleHandler.restoreLevelAdjustments
 import cn.kurt6.cobblemon_ranked.config.ArenaCoordinate
 import cn.kurt6.cobblemon_ranked.config.BattleArena
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
@@ -172,6 +174,20 @@ object DuoBattleManager {
             }
         }
 
+        // 应用等级调整
+        if (config.enableCustomLevel) {
+            RankUtils.sendMessage(
+                p1,
+                MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel)
+            )
+            RankUtils.sendMessage(
+                p2,
+                MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel)
+            )
+            BattleHandler.applyLevelAdjustments(p1)
+            BattleHandler.applyLevelAdjustments(p2)
+        }
+
         // ---------- 构建战斗对象 ----------
         val team1Pokemon = getBattlePokemonList(p1, winnerTeam.getActiveTeam())
         val team2Pokemon = getBattlePokemonList(p2, loserTeam.getActiveTeam())
@@ -270,6 +286,11 @@ object DuoBattleManager {
             BattleHandler.rankDao.savePlayerData(data)
             BattleHandler.rewardManager.grantRankRewardIfEligible(player, data.getRankTitle(), format, server)
             BattleHandler.sendBattleResultMessage(player, data, eloDiff)
+        }
+
+        // 恢复所有玩家的宝可梦等级
+        allPlayers.forEach { player ->
+            restoreLevelAdjustments(player)
         }
 
         val winnerNames = "${winnerTeam.player1.name.string} & ${winnerTeam.player2.name.string}"

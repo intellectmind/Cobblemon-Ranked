@@ -50,6 +50,10 @@ class CobblemonRanked : ModInitializer {
 
         // 注册玩家登录事件
         ServerPlayConnectionEvents.JOIN.register { handler, sender, server ->
+            val player = handler.player
+            // 检查并恢复原始等级（如果数据库中有记录）
+            BattleHandler.restoreLevelsFromDatabase(player)
+
             CrossServerSocket.handlePlayerJoin(handler.player)
         }
 

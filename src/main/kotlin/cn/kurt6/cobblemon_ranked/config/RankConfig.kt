@@ -59,16 +59,19 @@ data class RankConfig(
     var bannedHeldItems: List<String> = listOf("cobblemon:leftovers"),
 
     @Comment("Banned items in player's inventory / 禁止玩家背包携带的物品")
-    var bannedCarriedItems: List<String> = listOf("cobblemon:leftovers", "cobblemon:choice_band"),
+    var bannedCarriedItems: List<String> = listOf("cobblemon:leftovers"),
 
     @Comment("Banned moves for Pokémon / 禁止宝可梦使用的技能")
     var bannedMoves: List<String> = listOf("leechseed"),
 
     @Comment("Banned personalities for Pokémon /  禁止宝可梦使用的性格")
-    var bannedNatures: List<String> = listOf("cobblemon:naughty"),
+    var bannedNatures: List<String> = listOf(),
 
-    @Comment("Banned Abilities for Pokémon / 禁止宝可梦使用的特性")
-    var bannedGenders: List<String> = listOf("MALE"),
+    @Comment("Banned abilities for Pokémon / 禁止宝可梦使用的特性")
+    var bannedAbilities: List<String> = listOf(),
+
+    @Comment("Banned gender for Pokémon / 禁止宝可梦使用的性别")
+    var bannedGenders: List<String> = listOf(),
 
     @Comment("Banned shiny Pokémon from participating in battles / 是否禁止闪光宝可梦参战")
     var bannedShiny: Boolean = false,
@@ -81,6 +84,12 @@ data class RankConfig(
 
     @Comment("Allowed to have the same species of Pokémon in a single team / 允许同一个队伍中出现相同的宝可梦")
     var allowDuplicateSpecies: Boolean = false,
+
+    @Comment("Enable forced modification of Pokémon levels / 是否启用强制修改宝可梦等级")
+    var enableCustomLevel: Boolean = false,
+
+    @Comment("Forcefully modify the level of Pokémon / 设置强制修改宝可梦的等级")
+    var customBattleLevel: Int = 50,
 
     @Comment("Available battle arenas after matchmaking, each with 2 teleport coordinates / 匹配成功后可用的战斗场地列表，支持多个场地随机挑选，每个场地需要定义 2 个传送坐标")
     var battleArenas: List<BattleArena> = listOf(
@@ -149,7 +158,7 @@ data class RankConfig(
     ),
 
     @Comment("Enable cross-server matchmaking / 是否启用跨服匹配")
-    var enableCrossServer: Boolean = true,
+    var enableCrossServer: Boolean = false,
 
     @Comment("Cloud server ID for this server(Cannot be repeated with others) / 本服的云端标识(不可与他人重复)")
     var cloudServerId: String = "server",
