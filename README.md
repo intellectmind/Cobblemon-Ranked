@@ -31,7 +31,7 @@
 
 > Available from v1.2.0+ — Supports connecting from **any server or single-player world** (requires **official Minecraft account**)  
 > If you encounter an abnormal match, you can report it to us on [Discord](https://discord.gg/guTkeS8wEE)  
-> Cloud server support guaranteed until at least 2026-01-01.
+> Cloud server support guaranteed until at least 2026-01-01.  
 > Cross server matching demonstration and configuration: [Youtube](https://youtu.be/V8zmSMrxSuU)  
 
 ### ✅ How to Use
