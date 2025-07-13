@@ -30,6 +30,7 @@
 > 从v1.2.0+开始支持，可以从**任何服务器或单人世界**连接（需要**正版Minecraft帐户**）  
 > 如果你遇到异常匹配对局，可以在[Discord](https://discord.gg/guTkeS8wEE)上向我们报告  
 > 云服务器支持保证至少到2026-01-01  
+> 跨服匹配演示及配置：[Bilibili](https://www.bilibili.com/video/BV1ztuwz5ECa)  
 
 ### ✅ 如何使用
 
