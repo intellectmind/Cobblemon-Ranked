@@ -438,9 +438,8 @@ object RankCommands {
             return 1
         }
 
-        val leaderboard = dao.getLeaderboard(seasonId, format, limit = Int.MAX_VALUE)
-        val rankIndex = leaderboard.indexOfFirst { it.playerId == player.uuid }
-        val rankString = if (rankIndex != -1) "#${rankIndex + 1}" else MessageConfig.get("rank.unranked", lang)
+        val rank = dao.getPlayerRank(player.uuid, seasonId, format)
+        val rankString = if (rank != -1) "#$rank" else MessageConfig.get("rank.unranked", lang)
 
         val msg = MessageConfig.get("rank.summary", lang,
             "player" to player.name.string,
@@ -465,19 +464,27 @@ object RankCommands {
     private fun showLeaderboard(ctx: CommandContext<ServerCommandSource>, format: String, seasonId: Int, page: Int, count: Int): Int {
         val lang = CobblemonRanked.config.defaultLang
         val source = ctx.source
-        val fullLeaderboard = CobblemonRanked.rankDao.getLeaderboard(seasonId, format)
+        val dao = CobblemonRanked.rankDao
 
-        if (fullLeaderboard.isEmpty()) {
-            source.sendMessage(Text.literal(MessageConfig.get("leaderboard.empty", lang, "season" to seasonId.toString(), "name" to CobblemonRanked.seasonManager.currentSeasonName, "format" to format)))
+        // 获取总记录数
+        val totalPlayers = dao.getPlayerCount(seasonId, format)
+
+        if (totalPlayers == 0) {
+            source.sendMessage(Text.literal(MessageConfig.get("leaderboard.empty", lang,
+                "season" to seasonId.toString(),
+                "name" to CobblemonRanked.seasonManager.currentSeasonName,
+                "format" to format)))
             return 1
         }
 
+        // 计算分页
         val pageSize = count
-        val totalPages = (fullLeaderboard.size + pageSize - 1) / pageSize
+        val totalPages = (totalPlayers + pageSize - 1) / pageSize
         val currentPage = page.coerceIn(1, totalPages)
-        val startIndex = (currentPage - 1) * pageSize
-        val endIndex = minOf(startIndex + pageSize, fullLeaderboard.size)
-        val pageData = fullLeaderboard.subList(startIndex, endIndex)
+        val offset = (currentPage - 1).toLong() * pageSize
+
+        // 只查询当前页的数据
+        val pageData = dao.getLeaderboard(seasonId, format, offset, pageSize)
 
         val header = MessageConfig.get("leaderboard.header", lang,
             "format" to format,
@@ -488,12 +495,11 @@ object RankCommands {
         )
         source.sendMessage(Text.literal(header))
 
-        for ((index, data) in pageData.withIndex()) {
-            val name = data.playerName
-            val rank = (startIndex + index + 1).toString()
+        pageData.forEachIndexed { index, data ->
+            val rank = (offset + index + 1).toString()
             val entry = MessageConfig.get("leaderboard.entry", lang,
                 "rank" to rank,
-                "name" to name,
+                "name" to data.playerName,
                 "elo" to data.elo.toString(),
                 "wins" to data.wins.toString(),
                 "losses" to data.losses.toString(),
@@ -502,12 +508,24 @@ object RankCommands {
             source.sendMessage(Text.literal(entry))
         }
 
+        // 添加分页导航按钮
         if (totalPages > 1) {
-            val hint = MessageConfig.get("leaderboard.more_hint", lang,
-                "format" to format,
-                "season" to seasonId.toString()
-            )
-            source.sendMessage(Text.literal(hint))
+            val nav = Text.empty()
+            // 添加上一页按钮（如果当前不是第一页）
+            if (currentPage > 1) {
+                nav.append(link(MessageConfig.get("leaderboard.prev_page", lang), "/rank top $format $seasonId ${currentPage - 1} $count"))
+            }
+
+            // 添加下一页按钮（如果当前不是最后一页）
+            if (currentPage < totalPages) {
+                nav.append(Text.literal("   "))
+                nav.append(link(MessageConfig.get("leaderboard.next_page", lang), "/rank top $format $seasonId ${currentPage + 1} $count"))
+            }
+
+            // 只有在有按钮时才发送导航
+            if (!nav.siblings.isEmpty()) {
+                source.sendMessage(nav)
+            }
         }
 
         return 1
@@ -518,17 +536,37 @@ object RankCommands {
         val lang = CobblemonRanked.config.defaultLang
         val season = CobblemonRanked.seasonManager
         val remaining = season.getRemainingTime()
-        val participation = CobblemonRanked.rankDao.getParticipationCount(season.currentSeasonId)
+        val seasonId = season.currentSeasonId
 
-        val message = MessageConfig.get("season.info", lang,
+        // 获取所有模式及其参与人数
+        val formats = CobblemonRanked.config.allowedFormats
+        val participationByFormat = formats.associate { format ->
+            val count = CobblemonRanked.rankDao.getParticipationCount(seasonId, format)
+            format to count
+        }
+
+        // 构建模式参与人数字符串
+        val playersText = formats.joinToString(" ") { format ->
+            val count = participationByFormat[format] ?: 0
+            val formatName = when (format) {
+                "singles" -> if (lang == "zh") "单打" else "Singles"
+                "doubles" -> if (lang == "zh") "双打" else "Doubles"
+                "2v2singles" -> if (lang == "zh") "2v2单打" else "2v2 Singles"
+                else -> format
+            }
+            "§a$formatName: §f$count"
+        }
+
+        val message = MessageConfig.get("season.info2", lang,
             "season" to season.currentSeasonId.toString(),
             "name" to season.currentSeasonName,
             "start" to season.formatDate(season.startDate),
             "end" to season.formatDate(season.endDate),
             "duration" to CobblemonRanked.config.seasonDuration.toString(),
             "remaining" to remaining.toString(),
-            "players" to participation.toString()
+            "players" to playersText
         )
+
         source.sendMessage(Text.literal(message.replace("\\n", "\n")))
         return 1
     }
@@ -835,11 +873,11 @@ object RankCommands {
         // 添加分页导航
         val nav = Text.empty()
         if (page > 1) {
-            nav.append(link("« 上一页", "/rank pokemon_usage $seasonId ${page - 1}"))
+            nav.append(link(MessageConfig.get("leaderboard.prev_page", lang), "/rank pokemon_usage $seasonId ${page - 1}"))
         }
         if (page < totalPages) {
-            if (nav.siblings.isNotEmpty()) nav.append(Text.literal(" "))
-            nav.append(link("下一页 »", "/rank pokemon_usage $seasonId ${page + 1}"))
+            if (nav.siblings.isNotEmpty()) nav.append(Text.literal("   "))
+            nav.append(link(MessageConfig.get("leaderboard.next_page", lang), "/rank pokemon_usage $seasonId ${page + 1}"))
         }
 
         if (nav.siblings.isNotEmpty()) {

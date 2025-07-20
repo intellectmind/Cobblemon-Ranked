@@ -20,7 +20,7 @@ class ServerNetworking {
 
             when (payload.type) {
                 RequestType.PLAYER -> handlePlayerRequest(player, payload.format)
-                RequestType.SEASON -> handleSeasonRequest(player)
+                RequestType.SEASON -> handleSeasonRequest(player, payload.format)
                 RequestType.LEADERBOARD -> handleLeaderboardRequest(player, payload.format, payload.extra)
             }
         }
@@ -31,7 +31,7 @@ class ServerNetworking {
             val lang = config.defaultLang
 
             if (data != null) {
-                val fullList = dao.getLeaderboard(seasonId, format, limit = Int.MAX_VALUE)
+                val fullList = dao.getLeaderboard(seasonId, format, offset = 0, limit = Int.MAX_VALUE)
                 val rankIndex = fullList.indexOfFirst { it.playerId == player.uuid }
 
                 val response = PlayerRankDataPayload(
@@ -54,7 +54,7 @@ class ServerNetworking {
             }
         }
 
-        private fun handleSeasonRequest(player: ServerPlayerEntity) {
+        private fun handleSeasonRequest(player: ServerPlayerEntity, format: String) {
             val season = dao.getLastSeasonInfo()
             if (season != null) {
                 val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
@@ -70,7 +70,7 @@ class ServerNetworking {
                 val minutes = remainingDuration.minusDays(days).minusHours(hours).toMinutes()
 
                 val remainTime = "${days}d ${hours}h ${minutes}m"
-                val participantCount = dao.getParticipationCount(season.seasonId)
+                val participantCount = dao.getParticipationCount(season.seasonId, format)
 
                 val lang = config.defaultLang
                 val text = MessageConfig.get("season.info2", lang,
@@ -94,20 +94,28 @@ class ServerNetworking {
             val page = pageStr?.toIntOrNull()?.coerceAtLeast(1) ?: 1
             val seasonId = dao.getLastSeasonInfo()?.seasonId ?: 1
 
-            val fullList = dao.getLeaderboard(seasonId, format)
+            // 每页显示10条记录
             val pageSize = 10
-            val fromIndex = (page - 1) * pageSize
-            val toIndex = (fromIndex + pageSize).coerceAtMost(fullList.size)
+            val offset = (page - 1) * pageSize
 
-            val currentPageList = if (fromIndex >= fullList.size) emptyList() else fullList.subList(fromIndex, toIndex)
+            // 使用分页查询获取当前页的数据
+            val currentPageList = dao.getLeaderboard(seasonId, format, offset.toLong(), pageSize)
+
+            // 获取总记录数
+            val totalPlayers = dao.getPlayerCount(seasonId, format)
+            val totalPages = (totalPlayers + pageSize - 1) / pageSize
 
             val lang = config.defaultLang
 
             val leaderboardText = buildString {
-                append(MessageConfig.get("leaderboard.header", lang, "page" to page, "format" to format))
+                append(MessageConfig.get("leaderboard.header", lang,
+                    "page" to page,
+                    "total" to totalPages,
+                    "format" to format,
+                    "season" to seasonId))
 
                 currentPageList.forEachIndexed { index, data ->
-                    val rank = fromIndex + index + 1
+                    val rank = offset + index + 1
                     append(
                         MessageConfig.get("leaderboard.entry2", lang,
                             "rank" to rank,
@@ -117,6 +125,7 @@ class ServerNetworking {
                             "losses" to data.losses,
                             "flees" to data.fleeCount)
                     )
+                    append("\n") // 添加换行符
                 }
 
                 if (currentPageList.isEmpty()) {

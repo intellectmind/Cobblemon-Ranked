@@ -1,5 +1,4 @@
-// RacnkDao.kt
-// 数据库访问
+// RankDao.kt
 package cn.kurt6.cobblemon_ranked.data
 
 import org.jetbrains.exposed.dao.id.LongIdTable
@@ -7,27 +6,55 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
+import java.sql.DriverManager
+import java.sql.SQLTimeoutException
 import java.util.*
+import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeSource
 
 class RankDao(dbFile: File) {
     private val database: Database
+    private val connectionTimeoutMs = 5000L // 连接超时5秒
+    private val queryTimeoutMs = 3000L     // 查询超时3秒
 
     init {
-        val url = "jdbc:sqlite:${dbFile.absolutePath}"
-        database = Database.connect(url, "org.sqlite.JDBC")
+        val url = "jdbc:sqlite:${dbFile.absolutePath}?busy_timeout=$connectionTimeoutMs"
+        database = Database.connect(
+            url = url,
+            driver = "org.sqlite.JDBC",
+            setupConnection = {
+                it.createStatement().queryTimeout =
+                    TimeUnit.MILLISECONDS.toSeconds(queryTimeoutMs).toInt()
+            }
+        )
 
-        transaction(database) {
-            addLogger(StdOutSqlLogger)
-            SchemaUtils.createMissingTablesAndColumns(
-                PlayerRankTable,
-                SeasonInfoTable,
-                PokemonUsageTable,
-                PokemonOriginalDataTable
-            )
+        executeWithTimeout("初始化数据库表") {
+            transaction(db = database) {
+                SchemaUtils.createMissingTablesAndColumns(
+                    PlayerRankTable,
+                    SeasonInfoTable,
+                    PokemonUsageTable,
+                    PokemonOriginalDataTable
+                )
+            }
         }
     }
 
-    fun savePlayerData(data: PlayerRankData) {
+    // 带超时保护的数据库操作执行方法
+    private fun <T> executeWithTimeout(operation: String, block: () -> T): T {
+        val startTime = TimeSource.Monotonic.markNow()
+        try {
+            return block()
+        } catch (e: Exception) {
+            if (startTime.elapsedNow() > queryTimeoutMs.milliseconds) {
+                throw SQLTimeoutException("数据库操作'$operation'超时（超过${queryTimeoutMs}毫秒）")
+            }
+            throw e
+        }
+    }
+
+    fun savePlayerData(data: PlayerRankData) = executeWithTimeout("Save player data") {
         transaction(database) {
             // 更新或插入
             val existing = PlayerRankTable.select {
@@ -49,7 +76,7 @@ class RankDao(dbFile: File) {
                     row[winStreak] = data.winStreak
                     row[bestWinStreak] = data.bestWinStreak
                     val ranksStr = data.claimedRanks
-                        .filter { it.split(":").getOrNull(1) == data.format } // 关键过滤
+                        .filter { it.split(":").getOrNull(1) == data.format }
                         .joinToString(",")
                     row[claimedRanks] = ranksStr
                     row[fleeCount] = data.fleeCount
@@ -66,7 +93,7 @@ class RankDao(dbFile: File) {
                     row[winStreak] = data.winStreak
                     row[bestWinStreak] = data.bestWinStreak
                     val ranksStr = data.claimedRanks
-                        .filter { it.split(":").getOrNull(1) == data.format } // 关键过滤
+                        .filter { it.split(":").getOrNull(1) == data.format }
                         .joinToString(",")
                     row[claimedRanks] = ranksStr
                     row[fleeCount] = data.fleeCount
@@ -75,8 +102,8 @@ class RankDao(dbFile: File) {
         }
     }
 
-    fun getPlayerData(playerId: UUID, seasonId: Int, format: String? = null): PlayerRankData? {
-        return transaction(database) {
+    fun getPlayerData(playerId: UUID, seasonId: Int, format: String? = null): PlayerRankData? = executeWithTimeout("Get player data") {
+        transaction(database) {
             val query = PlayerRankTable.select {
                 (PlayerRankTable.playerId eq playerId.toString()) and
                         (PlayerRankTable.seasonId eq seasonId)
@@ -108,21 +135,51 @@ class RankDao(dbFile: File) {
         }
     }
 
-    fun getLeaderboard(seasonId: Int, format: String, limit: Int = 10): List<PlayerRankData> {
-        return transaction(database) {
-            PlayerRankTable.select {
-                (PlayerRankTable.seasonId eq seasonId) and
-                        (PlayerRankTable.format eq format)
-            }.orderBy(PlayerRankTable.elo to org.jetbrains.exposed.sql.SortOrder.DESC)
-                .limit(limit)
-                .map {
-                    rowToPlayerRankData(it)
-                }
+    fun getLeaderboard(seasonId: Int, format: String, offset: Long, limit: Int): List<PlayerRankData> =
+        executeWithTimeout("Get leaderboard") {
+            transaction(database) {
+                PlayerRankTable.select {
+                    (PlayerRankTable.seasonId eq seasonId) and
+                            (PlayerRankTable.format eq format)
+                }.orderBy(PlayerRankTable.elo to SortOrder.DESC)
+                    .limit(limit, offset)  // 添加offset参数
+                    .map(::rowToPlayerRankData)
+            }
         }
-    }
+
+    // 获取总数的方法
+    fun getPlayerCount(seasonId: Int, format: String): Int =
+        executeWithTimeout("Get player count") {
+            transaction(database) {
+                PlayerRankTable.select {
+                    (PlayerRankTable.seasonId eq seasonId) and
+                            (PlayerRankTable.format eq format)
+                }.count().toInt()
+            }
+        }
+
+    fun getPlayerRank(playerId: UUID, seasonId: Int, format: String): Int =
+        executeWithTimeout("Get player rank") {
+            transaction(database) {
+                // 获取玩家ELO
+                val playerElo = PlayerRankTable.select {
+                    (PlayerRankTable.playerId eq playerId.toString()) and
+                            (PlayerRankTable.seasonId eq seasonId) and
+                            (PlayerRankTable.format eq format)
+                }.firstOrNull()?.get(PlayerRankTable.elo) ?: return@transaction -1
+
+                // 计算排名：ELO更高或相等的玩家数量
+                PlayerRankTable.select {
+                    (PlayerRankTable.seasonId eq seasonId) and
+                            (PlayerRankTable.format eq format) and
+                            // 使用 greaterEq 包含相同分数的玩家
+                            (PlayerRankTable.elo greaterEq playerElo)
+                }.count().toInt()
+            }
+        }
 
     // 赛季信息操作
-    fun saveSeasonInfo(seasonId: Int, startDate: String, endDate: String, ended: Boolean = false, name: String = "") {
+    fun saveSeasonInfo(seasonId: Int, startDate: String, endDate: String, ended: Boolean = false, name: String = "") = executeWithTimeout("Save season info") {
         transaction(database) {
             val existing = SeasonInfoTable.select { SeasonInfoTable.seasonId eq seasonId }.firstOrNull()
 
@@ -145,8 +202,8 @@ class RankDao(dbFile: File) {
         }
     }
 
-    fun getLastSeasonInfo(): SeasonInfo? {
-        return transaction(database) {
+    fun getLastSeasonInfo(): SeasonInfo? = executeWithTimeout("Get last season info") {
+        transaction(database) {
             SeasonInfoTable
                 .selectAll()
                 .orderBy(SeasonInfoTable.seasonId to SortOrder.DESC)
@@ -163,7 +220,7 @@ class RankDao(dbFile: File) {
         }
     }
 
-    fun markSeasonEnded(seasonId: Int) {
+    fun markSeasonEnded(seasonId: Int) = executeWithTimeout("Mark season ended") {
         transaction(database) {
             SeasonInfoTable.update({ SeasonInfoTable.seasonId eq seasonId }) {
                 it[SeasonInfoTable.ended] = true
@@ -180,8 +237,8 @@ class RankDao(dbFile: File) {
         val seasonName: String
     )
 
-    fun getSeasonInfo(seasonId: Int): SeasonInfo? {
-        return transaction(database) {
+    fun getSeasonInfo(seasonId: Int): SeasonInfo? = executeWithTimeout("Get season info") {
+        transaction(database) {
             SeasonInfoTable
                 .select { SeasonInfoTable.seasonId eq seasonId }
                 .firstOrNull()
@@ -213,34 +270,36 @@ class RankDao(dbFile: File) {
         val losses = integer("losses")
         val winStreak = integer("win_streak")
         val bestWinStreak = integer("best_win_streak")
-        val claimedRanks = text("claimed_ranks").default("[]") // 已领取段位列表
+        val claimedRanks = text("claimed_ranks").default("[]")
         val fleeCount = integer("flee_count").default(0)
 
         override val primaryKey = PrimaryKey(id)
     }
 
     object SeasonInfoTable : LongIdTable("season_info") {
-        val seasonId = integer("season_id").uniqueIndex()
+        val seasonId = integer("season_id").uniqueIndex("season_info_season_id")
         val startDate = varchar("start_date", 30)
         val endDate = varchar("end_date", 30)
-        val ended = bool("ended").default(false) // 标记赛季是否已结束
+        val ended = bool("ended").default(false)
         val seasonName = varchar("season_name", 50).default("")
     }
 
-    // 获取所有玩家数据
-    fun getAllPlayerData(seasonId: Int): List<PlayerRankData> {
-        return transaction(database) {
+    fun getAllPlayerData(seasonId: Int): List<PlayerRankData> = executeWithTimeout("Get all player data") {
+        transaction(database) {
             PlayerRankTable.select { PlayerRankTable.seasonId eq seasonId }
                 .map(::rowToPlayerRankData)
         }
     }
 
-    // 参与人数统计
-    fun getParticipationCount(seasonId: Int): Long {
-        return transaction(database) {
+    // 在 RankDao 类中添加以下方法
+    fun getParticipationCount(seasonId: Int, format: String): Long = executeWithTimeout("Get participation count by format") {
+        transaction(database) {
             PlayerRankTable
                 .slice(PlayerRankTable.playerId)
-                .select { PlayerRankTable.seasonId eq seasonId }
+                .select {
+                    (PlayerRankTable.seasonId eq seasonId) and
+                            (PlayerRankTable.format eq format)
+                }
                 .withDistinct()
                 .count()
         }
@@ -258,11 +317,7 @@ class RankDao(dbFile: File) {
             winStreak = row[PlayerRankTable.winStreak],
             bestWinStreak = row[PlayerRankTable.bestWinStreak],
             claimedRanks = if (row[PlayerRankTable.claimedRanks].isNotBlank()) {
-                // 只加载当前格式的奖励记录
-                row[PlayerRankTable.claimedRanks]
-                    .split(",")
-                    .filter { it.split(":").getOrNull(1) == row[PlayerRankTable.format] } // 过滤
-                    .toMutableSet()
+                row[PlayerRankTable.claimedRanks].split(",").toMutableSet()
             } else {
                 mutableSetOf()
             },
@@ -270,8 +325,8 @@ class RankDao(dbFile: File) {
         )
     }
 
-    fun deletePlayerData(playerId: UUID, seasonId: Int, format: String): Boolean {
-        return transaction(database) {
+    fun deletePlayerData(playerId: UUID, seasonId: Int, format: String): Boolean = executeWithTimeout("Delete player data") {
+        transaction(database) {
             val rowsDeleted = PlayerRankTable.deleteWhere {
                 (PlayerRankTable.playerId eq playerId.toString()) and
                         (PlayerRankTable.seasonId eq seasonId) and
@@ -281,7 +336,6 @@ class RankDao(dbFile: File) {
         }
     }
 
-    // 宝可梦使用统计
     object PokemonUsageTable : Table("pokemon_usage") {
         val id = long("id").autoIncrement()
         val seasonId = integer("season_id")
@@ -291,17 +345,14 @@ class RankDao(dbFile: File) {
         override val primaryKey = PrimaryKey(id)
     }
 
-    // 统计方法
-    fun incrementPokemonUsage(seasonId: Int, pokemonSpecies: String) {
+    fun incrementPokemonUsage(seasonId: Int, pokemonSpecies: String) = executeWithTimeout("Increment pokemon usage") {
         transaction(database) {
-            // 查找现有记录
             val existing = PokemonUsageTable.select {
                 (PokemonUsageTable.seasonId eq seasonId) and
                         (PokemonUsageTable.pokemonSpecies eq pokemonSpecies.lowercase())
             }.firstOrNull()
 
             if (existing != null) {
-                // 更新计数
                 PokemonUsageTable.update({
                     (PokemonUsageTable.seasonId eq seasonId) and
                             (PokemonUsageTable.pokemonSpecies eq pokemonSpecies.lowercase())
@@ -309,7 +360,6 @@ class RankDao(dbFile: File) {
                     row[count] = existing[PokemonUsageTable.count] + 1
                 }
             } else {
-                // 插入新记录
                 PokemonUsageTable.insert { row ->
                     row[PokemonUsageTable.seasonId] = seasonId
                     row[PokemonUsageTable.pokemonSpecies] = pokemonSpecies.lowercase()
@@ -319,38 +369,34 @@ class RankDao(dbFile: File) {
         }
     }
 
-    // 查询方法
-    fun getPokemonUsage(seasonId: Int, limit: Int, offset: Int): List<Pair<String, Int>> {
-        return transaction(database) {
+    fun getPokemonUsage(seasonId: Int, limit: Int, offset: Int): List<Pair<String, Int>> = executeWithTimeout("Get pokemon usage") {
+        transaction(database) {
             PokemonUsageTable
                 .select { PokemonUsageTable.seasonId eq seasonId }
                 .orderBy(PokemonUsageTable.count to SortOrder.DESC)
-                .limit(limit, offset.toLong()) // 将 offset 转换为 Long
+                .limit(limit, offset.toLong())
                 .map {
                     it[PokemonUsageTable.pokemonSpecies] to it[PokemonUsageTable.count]
                 }
         }
     }
 
-    // 总数查询
-    fun getTotalPokemonUsage(seasonId: Int): Int {
-        return transaction(database) {
+    fun getTotalPokemonUsage(seasonId: Int): Int = executeWithTimeout("Get total pokemon usage") {
+        transaction(database) {
             PokemonUsageTable
                 .select { PokemonUsageTable.seasonId eq seasonId }
-                .count().toInt() // 添加 .toInt() 转换
+                .count().toInt()
         }
     }
 
-    // 获取所有宝可梦使用次数的总和
-    fun getTotalPokemonUsageCount(seasonId: Int): Int {
-        return transaction(database) {
+    fun getTotalPokemonUsageCount(seasonId: Int): Int = executeWithTimeout("Get total pokemon usage count") {
+        transaction(database) {
             PokemonUsageTable
                 .select { PokemonUsageTable.seasonId eq seasonId }
                 .sumOf { it[PokemonUsageTable.count] }
         }
     }
 
-    // 添加宝可梦原始数据表
     object PokemonOriginalDataTable : Table("pokemon_original_data") {
         val playerId = varchar("player_id", 36)
         val pokemonUuid = varchar("pokemon_uuid", 36)
@@ -360,8 +406,7 @@ class RankDao(dbFile: File) {
         override val primaryKey = PrimaryKey(playerId, pokemonUuid)
     }
 
-    // 添加保存原始数据的方法
-    fun savePokemonOriginalData(playerId: UUID, pokemonUuid: UUID, originalLevel: Int, originalExp: Int) {
+    fun savePokemonOriginalData(playerId: UUID, pokemonUuid: UUID, originalLevel: Int, originalExp: Int) = executeWithTimeout("Save pokemon original data") {
         transaction(database) {
             PokemonOriginalDataTable.insert { row ->
                 row[PokemonOriginalDataTable.playerId] = playerId.toString()
@@ -372,9 +417,8 @@ class RankDao(dbFile: File) {
         }
     }
 
-    // 添加获取原始数据的方法
-    fun getPokemonOriginalData(playerId: UUID): Map<UUID, Pair<Int, Int>> {
-        return transaction(database) {
+    fun getPokemonOriginalData(playerId: UUID): Map<UUID, Pair<Int, Int>> = executeWithTimeout("Get pokemon original data") {
+        transaction(database) {
             PokemonOriginalDataTable.select {
                 PokemonOriginalDataTable.playerId eq playerId.toString()
             }.associate {
@@ -387,8 +431,7 @@ class RankDao(dbFile: File) {
         }
     }
 
-    // 添加删除原始数据的方法
-    fun deletePokemonOriginalData(playerId: UUID) {
+    fun deletePokemonOriginalData(playerId: UUID) = executeWithTimeout("Delete pokemon original data") {
         transaction(database) {
             PokemonOriginalDataTable.deleteWhere {
                 PokemonOriginalDataTable.playerId eq playerId.toString()

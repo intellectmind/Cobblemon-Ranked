@@ -190,6 +190,14 @@ object MessageConfig {
                 ),
 
                 // RankCommands
+                "leaderboard.prev_page" to mapOf(
+                    "zh" to "§e« 上一页",
+                    "en" to "§e« Previous Page"
+                ),
+                "leaderboard.next_page" to mapOf(
+                    "zh" to "§e下一页 »",
+                    "en" to "§eNext Page »"
+                ),
                 "gui.op.cross_start" to mapOf(
                     "zh" to "§c[连接云服]",
                     "en" to "§c[Connect to Cloud]"
@@ -280,10 +288,6 @@ object MessageConfig {
                 "leaderboard.entry" to mapOf(
                     "zh" to "§e{rank}. §f{name} §7- §6ELO: {elo} §7(战绩: §a{wins}§7/§c{losses}§7) §8断线: {flee}",
                     "en" to "§e{rank}. §f{name} §7- §6ELO: {elo} §7(W/L: §a{wins}§7/§c{losses}§7) §8Disconnection: {flee}"
-                ),
-                "leaderboard.more_hint" to mapOf(
-                    "zh" to "§e使用 /rank top {format} {season} <页码> [数量] 查看更多",
-                    "en" to "§eUse /rank top {format} {season} <page> [count] to view more"
                 ),
                 "season.info" to mapOf(
                     "zh" to "§6当前赛季: #{season} {name}\\n§f开始时间: §7{start}\\n§f结束时间: §7{end}\\n§f赛季时长: §e{duration}天\\n§f剩余时间: §e{remaining}\\n§f参与玩家: §a{players} 人",
@@ -599,10 +603,6 @@ object MessageConfig {
                 "season.not_found" to mapOf(
                     "zh" to "§c未找到赛季信息。",
                     "en" to "§cNo season information found."
-                ),
-                "leaderboard.header" to mapOf(
-                    "zh" to "§6第{page}页（模式：{format}）\n",
-                    "en" to "§6Page {page} (Format: {format})\n"
                 ),
                 "leaderboard.entry2" to mapOf(
                     "zh" to "§e{rank}. §f{name} §7- §6ELO: {elo} §7(战绩: §a{wins}§7/§c{losses}§7) §7断线: {flees}\n",
