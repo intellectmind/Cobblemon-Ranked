@@ -341,8 +341,12 @@ class ModeScreen(private val mode: String) : RankedBaseScreen(Text.literal("Cobb
     private fun requestInfo(type: RequestType) {
         val payload = when (type) {
             RequestType.PLAYER -> RequestPlayerRankPayload(type, format = mode)
-            RequestType.LEADERBOARD -> RequestPlayerRankPayload(type, format = mode, extra = leaderboardPage.toString())
-            else -> RequestPlayerRankPayload(type)
+            RequestType.LEADERBOARD -> RequestPlayerRankPayload(
+                type,
+                format = mode,
+                extra = leaderboardPage.toString() // 发送当前页码
+            )
+            RequestType.SEASON -> RequestPlayerRankPayload(type, format = mode)
         }
         ClientPlayNetworking.send(payload)
     }
@@ -441,6 +445,13 @@ class ModeScreen(private val mode: String) : RankedBaseScreen(Text.literal("Cobb
             RequestType.LEADERBOARD -> {
                 leaderboardLines = lines
                 leaderboardScrollOffset = 0
+
+                // 添加页码信息
+//                val pageInfo = Text.literal(getLocalizedText(
+//                    "第 $leaderboardPage 页",
+//                    "Page $leaderboardPage"
+//                )).styled { it.withColor(0xFFFF00) }
+//                leaderboardLines = listOf(pageInfo) + lines
             }
         }
     }
