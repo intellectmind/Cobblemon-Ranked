@@ -1,0 +1,12 @@
+{
+  "is_test_version": true,
+  "server_tokens": {
+    "server-a": "abc123",
+    "server-b": "def456"
+  },
+  "elo_max_diff": 300,
+  "api_key": "cobblemonranked",
+  "match_timeout": 1800,
+  "max_concurrent_battles": 100,
+  "port": 8000
+}
