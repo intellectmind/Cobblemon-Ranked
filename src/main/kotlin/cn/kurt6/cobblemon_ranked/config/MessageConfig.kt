@@ -17,6 +17,10 @@ object MessageConfig {
         if (!Files.exists(path)) {
             Files.createDirectories(path.parent)
             val defaultMessages = mapOf(
+                "battle.VictoryRewards" to mapOf(
+                    "zh" to "§a已发放获胜奖励！",
+                    "en" to "§aVictory rewards have been granted!"
+                ),
                 "pokemon_usage.header" to mapOf(
                     "zh" to "§e===== 赛季 §6{season} {name} §e宝可梦使用统计 (第 §6{page}§e/§6{total}§e 页) =====",
                     "en" to "§e===== Season §6{season} {name} §ePokemon Usage Statistics (Page §6{page}§e/§6{total}§e) ====="
@@ -34,6 +38,10 @@ object MessageConfig {
                     "en" to "§e[Pokemon Statistics]"
                 ),
                 // MatchmakingQueue (单人匹配)
+                "queue.global_join" to mapOf(
+                    "zh" to "§a玩家 {player} 加入了 {format} 模式的匹配队列！",
+                    "en" to "§aPlayer {player} has joined the matching queue of {format} mode!"
+                ),
                 "queue.opponent_disconnected" to mapOf(
                     "zh" to "§c你的对手已断开连接，已重新加入匹配队列",
                     "en" to "§cYour opponent has disconnected and has rejoined the matching queue"

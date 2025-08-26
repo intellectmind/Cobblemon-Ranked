@@ -109,6 +109,12 @@ data class RankConfig(
         )
     ),
 
+    @Comment("Victory rewards configuration (executed after each win) / 每场比赛获胜的奖励配置")
+    var victoryRewards: List<String> = listOf(
+        "give {player} minecraft:experience_bottle 5",
+        "give {player} minecraft:emerald 1"
+    ),
+
     @Comment("Rank rewards configuration per format / 段位奖励配置，每种模式可单独配置 ")
     var rankRewards: Map<String, Map<String, List<String>>> = mapOf(
         "singles" to mapOf(

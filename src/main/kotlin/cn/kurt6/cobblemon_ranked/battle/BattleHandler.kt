@@ -597,6 +597,9 @@ object BattleHandler {
         rankDao.savePlayerData(winnerData)
         rankDao.savePlayerData(loserData)
 
+        // 发放获胜奖励
+        grantVictoryRewards(winner, server)
+
         // 在战斗结束后记录宝可梦使用
         recordPokemonUsage(listOf(winner, loser), seasonId)
 
@@ -611,6 +614,22 @@ object BattleHandler {
         // 传送回原位
         teleportBackIfPossible(winner)
         teleportBackIfPossible(loser)
+    }
+
+    /**
+     * 发放获胜奖励
+     * @param winner 获胜玩家
+     * @param server 服务器实例
+     */
+    fun grantVictoryRewards(winner: ServerPlayerEntity, server: MinecraftServer) {
+        val rewards = CobblemonRanked.config.victoryRewards
+        val lang = CobblemonRanked.config.defaultLang
+        if (rewards.isNotEmpty()) {
+            RankUtils.sendMessage(winner, MessageConfig.get("battle.VictoryRewards", lang))
+            rewards.forEach { command ->
+                executeRewardCommand(command, winner, server)
+            }
+        }
     }
 
     /**

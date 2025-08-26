@@ -86,6 +86,7 @@ class MatchmakingQueue {
         val lang = config.defaultLang
         val now = System.currentTimeMillis()
         val nextAllowedTime = cooldownMap[player.uuid] ?: 0L
+        val server = player.server
 
         // 检查冷却时间
         if (now < nextAllowedTime) {
@@ -117,6 +118,12 @@ class MatchmakingQueue {
             try {
                 val team = getPlayerTeam(player)
                 DuoMatchmakingQueue.joinQueue(player, team)
+
+                // 发送全局加入消息
+                val joinMsg = MessageConfig.get("queue.global_join", lang, 
+                    "player" to player.name.string, "format" to formatName)
+                server.playerManager.broadcast(net.minecraft.text.Text.literal(joinMsg), false)
+
             } catch (e: Exception) {
                 if (e.message?.contains("队伍为空") == true) {
                     RankUtils.sendMessage(player, MessageConfig.get("queue.empty_team", lang))
@@ -141,6 +148,11 @@ class MatchmakingQueue {
                 else -> "queue.join_success_unknown"
             }
             RankUtils.sendMessage(player, MessageConfig.get(messageKey, lang))
+
+            // 发送全局加入消息
+            val joinMsg = MessageConfig.get("queue.global_join", lang, 
+                "player" to player.name.string, "format" to formatName)
+            player.server.playerManager.broadcast(net.minecraft.text.Text.literal(joinMsg), false)
 
             if (config.enableCustomLevel) {
                 RankUtils.sendMessage(player, MessageConfig.get("queue.join_success_customLevel", lang))

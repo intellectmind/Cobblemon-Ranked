@@ -270,6 +270,9 @@ object DuoBattleManager {
             BattleHandler.rankDao.savePlayerData(data)
             BattleHandler.rewardManager.grantRankRewardIfEligible(player, data.getRankTitle(), format, server)
             BattleHandler.sendBattleResultMessage(player, data, eloDiff)
+
+            // 发放获胜奖励给赢家队伍的每个玩家
+            BattleHandler.grantVictoryRewards(player, server)
         }
 
         // 分别处理输家

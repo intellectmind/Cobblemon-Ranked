@@ -224,6 +224,25 @@ object ConfigManager {
                 val rawcloudWebSocketUrl = json.get("cloudWebSocketUrl")
                 val fixedcloudWebSocketUrl = rawcloudWebSocketUrl?.toString()?.removeSurrounding("\"") ?: rawConfig.cloudWebSocketUrl
 
+                // 解析 victoryRewards
+                val rawVictoryRewards = json.get("victoryRewards") as? blue.endless.jankson.JsonArray
+                val fixedVictoryRewards = rawVictoryRewards
+                    ?.mapNotNull { 
+                        when (it) {
+                            is blue.endless.jankson.JsonPrimitive -> {
+                                val rawValue = it.asString()
+                                // 处理可能的 Unicode 转义
+                                decodeUnicode(rawValue)
+                            }
+                            is blue.endless.jankson.JsonNull -> null
+                            else -> {
+                                val stringValue = it.toString().trim('"')
+                                decodeUnicode(stringValue)
+                            }
+                        }
+                    }
+                    ?: rawConfig.victoryRewards
+
                 // 替换字段并返回配置对象
                 rawConfig.copy(
                     rankTitles = fixedRankTitles,
@@ -258,7 +277,8 @@ object ConfigManager {
                     cloudServerId = fixedCloudServerId,
                     cloudToken = fixedcloudToken,
                     cloudApiUrl = fixedcloudApiUrl,
-                    cloudWebSocketUrl = fixedcloudWebSocketUrl
+                    cloudWebSocketUrl = fixedcloudWebSocketUrl,
+                    victoryRewards = fixedVictoryRewards
                 )
             } else {
                 val default = RankConfig()
