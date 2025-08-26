@@ -153,6 +153,10 @@
       ]
     }
   ],
+	"victoryRewards": [ // 每场比赛获胜的奖励配置
+		"give {player} minecraft:experience_bottle 5",
+		"give {player} minecraft:emerald 1"
+	],
   "rankRewards": { // 段位奖励（按模式分别配置）
     "singles": {
       "青铜": ["give {player} minecraft:apple 5"],
