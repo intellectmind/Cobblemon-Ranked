@@ -156,6 +156,10 @@
       ]
     }
   ],
+	"victoryRewards": [                      // Victory rewards configuration (executed after each win)
+		"give {player} minecraft:experience_bottle 5",
+		"give {player} minecraft:emerald 1"
+	],
   "rankRewards": {                         // Format-specific rank rewards (command-based)
     "singles": {
       "Bronze": ["give {player} minecraft:apple 5"],
