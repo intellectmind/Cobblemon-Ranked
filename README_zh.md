@@ -106,6 +106,38 @@
 
 ---
 
+## Placeholder API
+
+**通用/单打数据 (默认读取 singles 模式)**
+**`%cobblemon_ranked:elo%`**
+    *   描述：玩家当前赛季的单打 ELO 分数。
+    *   示例：`1200`
+
+**`%cobblemon_ranked:rank_title%`**
+    *   描述：玩家当前赛季的单打段位称号。
+    *   示例：`Diamond`, `Gold`, `Unranked`
+
+**`%cobblemon_ranked:win_rate%`**
+    *   描述：玩家当前赛季的单打胜率（保留一位小数）。
+    *   示例：`55.5%`
+
+**`%cobblemon_ranked:wins%`**
+    *   描述：玩家当前赛季的单打胜场数。
+    *   示例：`10`
+
+**`%cobblemon_ranked:losses%`**
+    *   描述：玩家当前赛季的单打负场数。
+    *   示例：`5`
+
+**特定模式数据**
+**`%cobblemon_ranked:elo_singles%`**
+    *   描述：明确指定获取单打 ELO（功能同 `%cobblemon_ranked:elo%`）。
+
+**`%cobblemon_ranked:elo_doubles%`**
+    *   描述：玩家当前赛季的**双打 (doubles)** ELO 分数。
+
+---
+
 ## ⚙️ 配置文件说明（`cobblemon_ranked.json`）
 
 <details>
