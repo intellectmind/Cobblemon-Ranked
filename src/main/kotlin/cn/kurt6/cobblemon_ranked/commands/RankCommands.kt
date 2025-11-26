@@ -1,4 +1,3 @@
-// RankCommands.kt
 package cn.kurt6.cobblemon_ranked.commands
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked

@@ -45,6 +45,7 @@ repositories {
     maven { url = uri("https://maven.impactdev.net/repository/development/") }
     maven { url = uri("https://maven.fabricmc.net/") }
     maven { url = uri("https://maven.quiltmc.org/repository/release") }
+    maven { url = uri("https://maven.nucleoid.xyz/") }
     maven {
         name = ("Modrinth")
         url = uri("https://api.modrinth.com/maven")
@@ -63,6 +64,10 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-networking-api-v1:${project.property("fabric_version")}")
 
     modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+
+    // PlaceholderAPI
+    modImplementation("eu.pb4:placeholder-api:${project.property("placeholder_api_version")}")
+
     // Cobblemon
     modImplementation("com.cobblemon:fabric:${project.property("cobblemon_version")}")
     // Database

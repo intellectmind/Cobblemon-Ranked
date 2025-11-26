@@ -1,5 +1,3 @@
-// RewardManager.kt
-// 奖励管理
 package cn.kurt6.cobblemon_ranked.data
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked

@@ -1,5 +1,3 @@
-// SeasonManager.kt
-// 赛季管理
 package cn.kurt6.cobblemon_ranked.data
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked

@@ -8,7 +8,6 @@ import cn.kurt6.cobblemon_ranked.data.RankDao
 import cn.kurt6.cobblemon_ranked.util.RankUtils
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
 import java.io.File
 
 class ServerNetworking {

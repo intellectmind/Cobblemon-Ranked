@@ -1,4 +1,3 @@
-// DuoMatchmakingQueue.kt
 package cn.kurt6.cobblemon_ranked.matchmaking
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
@@ -24,6 +23,7 @@ object DuoMatchmakingQueue {
 
     init {
         scheduler.scheduleAtFixedRate({
+            cleanupStaleEntries()
             processQueue()
             DuoBattleManager.tick()
         }, 5, 5, TimeUnit.SECONDS)
@@ -33,6 +33,11 @@ object DuoMatchmakingQueue {
         val lang = CobblemonRanked.config.defaultLang
         val now = System.currentTimeMillis()
         val nextAllowedTime = cooldownMap[player.uuid] ?: 0L
+
+        if (!canPlayerJoinQueue(player)) {
+            RankUtils.sendMessage(player, MessageConfig.get("duo.cannot_join", lang))
+            return
+        }
 
         if (isInQueue(player.uuid)) {
             RankUtils.sendMessage(player, MessageConfig.get("duo.already_in_queue", lang))
@@ -45,7 +50,8 @@ object DuoMatchmakingQueue {
             return
         }
 
-        if (Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player) != null) {
+        val battleRegistry = Cobblemon.battleRegistry
+        if (battleRegistry.getBattleByParticipatingPlayer(player) != null) {
             RankUtils.sendMessage(player, MessageConfig.get("duo.in_battle", lang))
             return
         }
@@ -64,10 +70,6 @@ object DuoMatchmakingQueue {
         CobblemonRanked.matchmakingQueue.removePlayer(player.uuid)
         queuedPlayers.add(QueuedPlayer(player, team, now))
         RankUtils.sendMessage(player, MessageConfig.get("duo.waiting_for_match", lang))
-
-        if (config.enableCustomLevel) {
-            RankUtils.sendMessage(player, MessageConfig.get("queue.join_success_customLevel", lang))
-        }
     }
 
     private fun processQueue() {
@@ -76,8 +78,10 @@ object DuoMatchmakingQueue {
         val now = System.currentTimeMillis()
         val maxEloDiff = CobblemonRanked.config.maxEloDiff
         val maxWaitTime = CobblemonRanked.config.maxQueueTime * 1000L
+        val battleRegistry = Cobblemon.battleRegistry  // 获取一次实例
 
         val entries = queuedPlayers.toList()
+        val processedPlayers = mutableSetOf<UUID>() // 追踪已处理的玩家
 
         for (i in 0 until entries.size - 3) {
             for (j in i + 1 until entries.size - 2) {
@@ -88,12 +92,54 @@ object DuoMatchmakingQueue {
                         val p3 = entries[k]
                         val p4 = entries[l]
 
+                        // 跳过已经被处理的玩家
+                        val playerUuids = listOf(p1.player.uuid, p2.player.uuid, p3.player.uuid, p4.player.uuid)
+                        if (playerUuids.any { it in processedPlayers }) {
+                            continue
+                        }
+
+                        // 确保所有玩家仍在队列中
+                        if (!playerUuids.all { uuid -> queuedPlayers.any { it.player.uuid == uuid } }) {
+                            continue
+                        }
+
+                        // 获取 battleRegistry 实例
+                        if (playerUuids.any { uuid ->
+                                val player = queuedPlayers.find { it.player.uuid == uuid }?.player
+                                player != null && battleRegistry.getBattleByParticipatingPlayer(player) != null
+                            }) {
+                            // 移除正在战斗的玩家
+                            queuedPlayers.removeAll { playerUuids.contains(it.player.uuid) }
+                            continue
+                        }
+
                         val teamA = DuoTeam(p1.player, p2.player, p1.team, p2.team)
                         val teamB = DuoTeam(p3.player, p4.player, p3.team, p4.team)
 
                         if (!isEloCompatible(teamA, teamB)) continue
 
-                        queuedPlayers.removeAll(listOf(p1, p2, p3, p4))
+                        // 一次性移除所有4个玩家
+                        val playersToRemove = listOf(p1, p2, p3, p4)
+                        val removalSuccessful = synchronized(queuedPlayers) {
+                            // 移除前再次验证所有玩家都在队列中
+                            val allStillInQueue = playersToRemove.all { player ->
+                                queuedPlayers.any { it.player.uuid == player.player.uuid }
+                            }
+
+                            if (allStillInQueue) {
+                                queuedPlayers.removeAll(playersToRemove)
+                                true
+                            } else {
+                                false
+                            }
+                        }
+
+                        if (!removalSuccessful) {
+                            continue // 跳过此组，玩家已被移除
+                        }
+
+                        // 标记所有玩家为已处理
+                        processedPlayers.addAll(playerUuids)
 
                         val lang = config.defaultLang
                         RankUtils.sendMessage(p1.player, MessageConfig.get("queue.match_success", lang))
@@ -117,7 +163,11 @@ object DuoMatchmakingQueue {
                                             MessageConfig.get("queue.opponent_disconnected", lang)
                                         )
                                         // 只将未掉线的玩家重新加入队列
-                                        queuedPlayers.add(playerEntry)
+                                        synchronized(queuedPlayers) {
+                                            if (!queuedPlayers.any { it.player.uuid == playerEntry.player.uuid }) {
+                                                queuedPlayers.add(playerEntry)
+                                            }
+                                        }
                                     }
 
                                     return@execute
@@ -191,4 +241,43 @@ object DuoMatchmakingQueue {
         val team: List<UUID>,
         val joinTime: Long = System.currentTimeMillis()
     )
+
+    /**
+     * 清理仍在队列但已在战斗中的玩家
+     */
+    fun cleanupStaleEntries() {
+        val toRemove = mutableListOf<QueuedPlayer>()
+        val battleRegistry = Cobblemon.battleRegistry  // 获取一次实例
+
+        queuedPlayers.forEach { entry ->
+            // 移除正在战斗的玩家
+            if (battleRegistry.getBattleByParticipatingPlayer(entry.player) != null) {
+                toRemove.add(entry)
+            }
+            // 移除已断线的玩家
+            else if (entry.player.isDisconnected) {
+                toRemove.add(entry)
+            }
+        }
+
+        toRemove.forEach { player ->
+            queuedPlayers.remove(player)
+        }
+    }
+
+    /**
+     * 检查玩家是否可以安全加入队列
+     */
+    fun canPlayerJoinQueue(player: ServerPlayerEntity): Boolean {
+        // 已经在队列中
+        if (queuedPlayers.any { it.player.uuid == player.uuid }) return false
+
+        val battleRegistry = Cobblemon.battleRegistry
+        if (battleRegistry.getBattleByParticipatingPlayer(player) != null) return false
+
+        // 玩家已断线
+        if (player.isDisconnected) return false
+
+        return true
+    }
 }

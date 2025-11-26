@@ -1,4 +1,3 @@
-// RankDao.kt
 package cn.kurt6.cobblemon_ranked.data
 
 import org.jetbrains.exposed.dao.id.LongIdTable
@@ -6,7 +5,6 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
-import java.sql.DriverManager
 import java.sql.SQLTimeoutException
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -41,7 +39,6 @@ class RankDao(dbFile: File) {
         }
     }
 
-    // 带超时保护的数据库操作执行方法
     private fun <T> executeWithTimeout(operation: String, block: () -> T): T {
         val startTime = TimeSource.Monotonic.markNow()
         try {
@@ -56,7 +53,6 @@ class RankDao(dbFile: File) {
 
     fun savePlayerData(data: PlayerRankData) = executeWithTimeout("Save player data") {
         transaction(database) {
-            // 更新或插入
             val existing = PlayerRankTable.select {
                 (PlayerRankTable.playerId eq data.playerId.toString()) and
                         (PlayerRankTable.seasonId eq data.seasonId) and
@@ -142,7 +138,7 @@ class RankDao(dbFile: File) {
                     (PlayerRankTable.seasonId eq seasonId) and
                             (PlayerRankTable.format eq format)
                 }.orderBy(PlayerRankTable.elo to SortOrder.DESC)
-                    .limit(limit, offset)  // 添加offset参数
+                    .limit(limit, offset)
                     .map(::rowToPlayerRankData)
             }
         }
@@ -172,7 +168,6 @@ class RankDao(dbFile: File) {
                 PlayerRankTable.select {
                     (PlayerRankTable.seasonId eq seasonId) and
                             (PlayerRankTable.format eq format) and
-                            // 使用 greaterEq 包含相同分数的玩家
                             (PlayerRankTable.elo greaterEq playerElo)
                 }.count().toInt()
             }
@@ -258,7 +253,6 @@ class RankDao(dbFile: File) {
         // 清理资源
     }
 
-    // Exposed ORM 表定义
     object PlayerRankTable : Table("player_rank_data") {
         val id = long("id").autoIncrement()
         val playerId = varchar("player_id", 36)
@@ -291,7 +285,6 @@ class RankDao(dbFile: File) {
         }
     }
 
-    // 在 RankDao 类中添加以下方法
     fun getParticipationCount(seasonId: Int, format: String): Long = executeWithTimeout("Get participation count by format") {
         transaction(database) {
             PlayerRankTable

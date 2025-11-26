@@ -25,9 +25,9 @@
     }
   ],
   "depends": {
-    "fabricloader": ">=0.16.0",
+    "fabricloader": ">=0.17.2",
     "fabric": "*",
     "minecraft": "${minecraft_version}",
-    "cobblemon": ">=1.6.0"
+    "cobblemon": ">=1.7.0"
   }
 }

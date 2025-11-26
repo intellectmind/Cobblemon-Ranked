@@ -1,5 +1,3 @@
-// FormatArgumentType.kt
-// 命令参数
 package cn.kurt6.cobblemon_ranked.commands
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
@@ -29,7 +27,6 @@ class FormatArgumentType : ArgumentType<String> {
         val start = reader.cursor
         val format = reader.readUnquotedString()
 
-        // 验证格式是否有效
         val validFormats = CobblemonRanked.config.allowedFormats
         if (!validFormats.contains(format)) {
             reader.cursor = start

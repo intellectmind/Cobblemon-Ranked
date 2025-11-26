@@ -1,4 +1,3 @@
-// CobblemonRanked.kt
 package cn.kurt6.cobblemon_ranked
 
 import cn.kurt6.cobblemon_ranked.battle.BattleHandler
@@ -13,6 +12,7 @@ import cn.kurt6.cobblemon_ranked.data.RewardManager
 import cn.kurt6.cobblemon_ranked.data.SeasonManager
 import cn.kurt6.cobblemon_ranked.matchmaking.DuoMatchmakingQueue
 import cn.kurt6.cobblemon_ranked.matchmaking.MatchmakingQueue
+import cn.kurt6.cobblemon_ranked.util.RankPlaceholders
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import cn.kurt6.cobblemon_ranked.network.*
 import net.fabricmc.api.ModInitializer
@@ -48,6 +48,9 @@ class CobblemonRanked : ModInitializer {
         registerEvents()
         setupSeasonCheck()
 
+        // 注册 Placeholders
+        RankPlaceholders.register()
+
         // 注册玩家登录事件
         ServerPlayConnectionEvents.JOIN.register { handler, sender, server ->
             val player = handler.player
@@ -82,7 +85,7 @@ class CobblemonRanked : ModInitializer {
             LeaderboardPayload.CODEC
         )
 
-        // ======== 注册网络处理器 ========
+        // 注册网络处理器
         ServerPlayNetworking.registerGlobalReceiver(RequestPlayerRankPayload.ID) { payload, context ->
             ServerNetworking.handle(payload, context)
         }

@@ -1,4 +1,3 @@
-// DuoBattleManager.kt
 package cn.kurt6.cobblemon_ranked.battle
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
@@ -27,6 +26,7 @@ object DuoBattleManager {
     private val activePlayers = ConcurrentHashMap<UUID, DuoTeam>()
     private val teamBattleIdMap = mutableMapOf<DuoTeam, UUID>()
     private val indices = mutableMapOf<DuoTeam, Int>()
+    private val arenaCache = mutableMapOf<DuoTeam, Pair<BattleArena, List<ArenaCoordinate>>>()
 
     fun registerBattle(battleId: UUID, team1: DuoTeam, team2: DuoTeam) {
         activeBattles[battleId] = team1 to team2
@@ -54,16 +54,12 @@ object DuoBattleManager {
         }
     }
 
-    // 缓存每组队伍对应的战斗场地与坐标信息
-    private val arenaCache = mutableMapOf<DuoTeam, Pair<BattleArena, List<ArenaCoordinate>>>()
-
     fun startNextRound(winnerTeam: DuoTeam, loserTeam: DuoTeam) {
         val lang = CobblemonRanked.config.defaultLang
         val allPlayers = listOf(winnerTeam.player1, winnerTeam.player2, loserTeam.player1, loserTeam.player2)
 
         val isFirstRound = winnerTeam.currentIndex == 0 && loserTeam.currentIndex == 0
 
-        // ---------- 获取或复用场地 ----------
         val arenaResult = arenaCache[winnerTeam] ?: if (isFirstRound) {
             val result = BattleHandler.getRandomArenaForPlayers(2) ?: run {
                 allPlayers.forEach {
@@ -71,7 +67,6 @@ object DuoBattleManager {
                 }
                 return
             }
-            // 第一次就缓存给两个队伍
             arenaCache[winnerTeam] = result
             arenaCache[loserTeam] = result
             result
@@ -84,7 +79,6 @@ object DuoBattleManager {
 
         val (arena, positions) = arenaResult
 
-        // ---------- 解析世界 ----------
         val worldId = Identifier.tryParse(arena.world) ?: run {
             allPlayers.forEach {
                 RankUtils.sendMessage(it, MessageConfig.get("queue.invalid_world", lang, "world" to arena.world))
@@ -101,7 +95,6 @@ object DuoBattleManager {
             return
         }
 
-        // ---------- 分配坐标 ----------
         val winnerPos = positions.getOrNull(0)
         val loserPos = positions.getOrNull(1)
 
@@ -119,7 +112,6 @@ object DuoBattleManager {
             loserTeam.player2 to loserPos
         )
 
-        // ---------- 第一轮：广播匹配成功，记录返回点 ----------
         if (isFirstRound) {
             val matchMessage = MessageConfig.get(
                 "duo.match.announce", lang,
@@ -135,18 +127,15 @@ object DuoBattleManager {
             }
         }
 
-        // ---------- 所有轮次：传送玩家 ----------
         teamToPos.forEach { (player, pos) ->
             player.teleport(world, pos.x, pos.y, pos.z, 0f, 0f)
         }
 
-        // ---------- 广播本轮对战信息 ----------
         val p1 = winnerTeam.getActivePlayer()
         val p2 = loserTeam.getActivePlayer()
         val announce = MessageConfig.get("duo.round.announce", lang, "p1" to p1.name.string, "p2" to p2.name.string)
         allPlayers.forEach { it.sendMessage(Text.literal(announce)) }
 
-        // ---------- 队伍合法性校验 ----------
         if (isFirstRound) {
             for (player in allPlayers) {
                 val team = if (winnerTeam.player1 == player || winnerTeam.player2 == player) winnerTeam else loserTeam
@@ -162,7 +151,6 @@ object DuoBattleManager {
                 RankUtils.sendMessage(p1, MessageConfig.get("queue.cancel_team_changed", lang))
                 RankUtils.sendMessage(p2, MessageConfig.get("queue.cancel_team_changed", lang))
 
-                // 直接结束战斗（判定 winnerTeam 获胜）
                 val failingTeam = if (!BattleHandler.validateTeam(p1, winnerTeam.getActiveTeam(), BattleFormat.GEN_9_SINGLES)) winnerTeam else loserTeam
                 val winningTeam = if (failingTeam == winnerTeam) loserTeam else winnerTeam
 
@@ -174,7 +162,6 @@ object DuoBattleManager {
             }
         }
 
-        // 应用等级调整
         if (config.enableCustomLevel) {
             RankUtils.sendMessage(
                 p1,
@@ -184,11 +171,14 @@ object DuoBattleManager {
                 p2,
                 MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel)
             )
+
+            BattleHandler.prepareBattleSnapshot(p1, winnerTeam.getActiveTeam())
+            BattleHandler.prepareBattleSnapshot(p2, loserTeam.getActiveTeam())
+
             BattleHandler.applyLevelAdjustments(p1)
             BattleHandler.applyLevelAdjustments(p2)
         }
 
-        // ---------- 构建战斗对象 ----------
         val team1Pokemon = getBattlePokemonList(p1, winnerTeam.getActiveTeam())
         val team2Pokemon = getBattlePokemonList(p2, loserTeam.getActiveTeam())
 
@@ -201,8 +191,7 @@ object DuoBattleManager {
         val battleId = UUID.randomUUID()
         val format = BattleFormat.GEN_9_SINGLES
 
-        // ---------- 启动对战 ----------
-        val result = Cobblemon.battleRegistry.startBattle(format, side1, side2, true)
+        val result = Cobblemon.battleRegistry.startBattle(format, side1, side2)
         result.ifSuccessful {
             BattleHandler.markAsRanked(battleId, "2v2singles")
             BattleHandler.registerBattle(it, battleId)
@@ -212,7 +201,6 @@ object DuoBattleManager {
             RankUtils.sendMessage(p2, MessageConfig.get("duo.rematch.failed", lang, "error" to error.toString()))
         }
     }
-
 
     fun endBattle(winnerTeam: DuoTeam, loserTeam: DuoTeam) {
         val allPlayers = listOf(winnerTeam.player1, winnerTeam.player2, loserTeam.player1, loserTeam.player2)
@@ -255,7 +243,6 @@ object DuoBattleManager {
             CobblemonRanked.config.minElo
         )
 
-        // 分别处理赢家
         winnerData.forEachIndexed { index, data ->
             val player = listOf(winnerTeam.player1, winnerTeam.player2)[index]
             val eloDiff = newWinnerElo - data.elo
@@ -271,11 +258,9 @@ object DuoBattleManager {
             BattleHandler.rewardManager.grantRankRewardIfEligible(player, data.getRankTitle(), format, server)
             BattleHandler.sendBattleResultMessage(player, data, eloDiff)
 
-            // 发放获胜奖励给赢家队伍的每个玩家
             BattleHandler.grantVictoryRewards(player, server)
         }
 
-        // 分别处理输家
         loserData.forEachIndexed { index, data ->
             val player = listOf(loserTeam.player1, loserTeam.player2)[index]
             val eloDiff = newLoserElo - data.elo
@@ -291,7 +276,6 @@ object DuoBattleManager {
             BattleHandler.sendBattleResultMessage(player, data, eloDiff)
         }
 
-        // 恢复所有玩家的宝可梦等级
         allPlayers.forEach { player ->
             restoreLevelAdjustments(player)
         }

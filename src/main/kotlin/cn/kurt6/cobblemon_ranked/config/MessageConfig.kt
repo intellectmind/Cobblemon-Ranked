@@ -74,10 +74,6 @@ object MessageConfig {
                     "zh" to "§a已加入 匹配队列（未知模式）...",
                     "en" to "§aJoined the matchmaking queue (unknown mode)..."
                 ),
-                "queue.join_success_customLevel" to mapOf(
-                    "zh" to "§c服务器已启用强制修改宝可梦等级功能，等待时获取的宝可梦经验将无效",
-                    "en" to "§cThe server has enabled the forced modification of Pokémon level function. The Pokémon experience obtained while waiting will be invalid"
-                ),
                 "queue.empty_team" to mapOf(
                     "zh" to "§c你的队伍为空，请先准备至少一只宝可梦再点击加入匹配。",
                     "en" to "§cYour team is empty. Please prepare at least one Pokémon before joining matchmaking."

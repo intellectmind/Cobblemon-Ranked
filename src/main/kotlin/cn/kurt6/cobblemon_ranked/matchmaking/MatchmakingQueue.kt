@@ -1,5 +1,3 @@
-// MatchmakingQueue.kt
-// 单打匹配队列
 package cn.kurt6.cobblemon_ranked.matchmaking
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
@@ -16,6 +14,7 @@ import com.cobblemon.mod.common.battles.BattleSide
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import com.cobblemon.mod.common.pokemon.Pokemon
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.Identifier
@@ -31,19 +30,19 @@ import org.slf4j.LoggerFactory
 private val logger = LoggerFactory.getLogger("RankedBattle")
 
 class MatchmakingQueue {
-    // 使用线程安全的ConcurrentHashMap存储匹配队列
     private val queue = ConcurrentHashMap<UUID, QueueEntry>()
-    // 单线程调度器，用于定期处理队列
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
-    // 存储模式名称到BattleFormat的映射
     private val formatMap = mutableMapOf<String, BattleFormat>()
 
-    // 初始化方法：设置定时任务和模式映射
     init {
         // 每5秒执行一次队列处理
         registerDisconnectHandler()
+        registerRespawnHandler()
 
-        scheduler.scheduleAtFixedRate(::processQueue, 5, 5, TimeUnit.SECONDS)
+        scheduler.scheduleAtFixedRate({
+            cleanupStaleEntries()
+            processQueue()
+        }, 5, 5, TimeUnit.SECONDS)
         initializeFormatMap()
     }
 
@@ -66,13 +65,41 @@ class MatchmakingQueue {
                 val player = handler.player
                 val uuid = player.uuid
 
-                // 从单人匹配队列中移除
-                matchmakingQueue.removePlayer(uuid)
+                try {
+                    // 强制清理玩家的所有战斗相关数据
+                    BattleHandler.forceCleanupPlayerBattleData(player)
 
-                // 从 2v2 匹配队列中移除
-                DuoMatchmakingQueue.removePlayer(player)
+                    // 从单人匹配队列中移除
+                    matchmakingQueue.removePlayer(uuid)
 
-//                logger.info("玩家 ${player.name.string} 断线，已移出匹配队列")
+                    // 从 2v2 匹配队列中移除
+                    DuoMatchmakingQueue.removePlayer(player)
+                } catch (e: Exception) {
+                    // ignore
+                }
+            }
+        }
+
+        // 死亡/重生处理
+        fun registerRespawnHandler() {
+            ServerPlayerEvents.AFTER_RESPAWN.register { oldPlayer, newPlayer, alive ->
+                val uuid = newPlayer.uuid
+
+                // 移除单人队列
+                if (matchmakingQueue.queue.containsKey(uuid)) {
+                    matchmakingQueue.removePlayer(uuid)
+                    val lang = CobblemonRanked.config.defaultLang
+                    RankUtils.sendMessage(newPlayer, MessageConfig.get("queue.leave", lang))
+                }
+
+                // 移除双人队列
+                if (DuoMatchmakingQueue.removePlayer(oldPlayer)) {
+                    val lang = CobblemonRanked.config.defaultLang
+                    RankUtils.sendMessage(newPlayer, MessageConfig.get("queue.leave", lang))
+                }
+
+                // 确保清理战斗数据
+                BattleHandler.forceCleanupPlayerBattleData(newPlayer)
             }
         }
     }
@@ -87,6 +114,11 @@ class MatchmakingQueue {
         val now = System.currentTimeMillis()
         val nextAllowedTime = cooldownMap[player.uuid] ?: 0L
         val server = player.server
+
+        if (!canPlayerJoinQueue(player)) {
+            RankUtils.sendMessage(player, MessageConfig.get("queue.cannot_join", lang))
+            return
+        }
 
         // 检查冷却时间
         if (now < nextAllowedTime) {
@@ -108,7 +140,8 @@ class MatchmakingQueue {
         }
 
         // 检查玩家是否已在战斗中
-        if (Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player) != null) {
+        val battleRegistry = Cobblemon.battleRegistry
+        if (battleRegistry.getBattleByParticipatingPlayer(player) != null) {
             RankUtils.sendMessage(player, MessageConfig.get("queue.already_in_battle", lang))
             return
         }
@@ -120,7 +153,7 @@ class MatchmakingQueue {
                 DuoMatchmakingQueue.joinQueue(player, team)
 
                 // 发送全局加入消息
-                val joinMsg = MessageConfig.get("queue.global_join", lang, 
+                val joinMsg = MessageConfig.get("queue.global_join", lang,
                     "player" to player.name.string, "format" to formatName)
                 server.playerManager.broadcast(net.minecraft.text.Text.literal(joinMsg), false)
 
@@ -150,15 +183,10 @@ class MatchmakingQueue {
             RankUtils.sendMessage(player, MessageConfig.get(messageKey, lang))
 
             // 发送全局加入消息
-            val joinMsg = MessageConfig.get("queue.global_join", lang, 
+            val joinMsg = MessageConfig.get("queue.global_join", lang,
                 "player" to player.name.string, "format" to formatName)
             player.server.playerManager.broadcast(net.minecraft.text.Text.literal(joinMsg), false)
-
-            if (config.enableCustomLevel) {
-                RankUtils.sendMessage(player, MessageConfig.get("queue.join_success_customLevel", lang))
-            }
         } catch (e: Exception) {
-            // 处理异常情况
             if (e.message?.contains("队伍为空") == true) {
                 RankUtils.sendMessage(player, MessageConfig.get("queue.empty_team", lang))
             } else {
@@ -212,17 +240,49 @@ class MatchmakingQueue {
             if (queue.size < 2) return
 
             val entries = queue.values.toList()
+            val processedPlayers = mutableSetOf<UUID>() // 追踪本次迭代中已处理的玩家
+
             // 双重循环寻找匹配的玩家
             for (i in entries.indices) {
                 for (j in i + 1 until entries.size) {
                     val player1 = entries[i]
                     val player2 = entries[j]
 
+                    // 跳过已经在本次迭代中被匹配的玩家
+                    if (player1.player.uuid in processedPlayers ||
+                        player2.player.uuid in processedPlayers) {
+                        continue
+                    }
+
                     // 检查对战模式是否相同
                     if (player1.format != player2.format) continue
 
                     // 检查ELO是否匹配
                     if (!isEloCompatible(player1, player2)) continue
+
+                    // 确保玩家仍在队列中且未在战斗中
+                    if (!queue.containsKey(player1.player.uuid) ||
+                        !queue.containsKey(player2.player.uuid)) {
+                        continue
+                    }
+
+                    val battleRegistry = Cobblemon.battleRegistry
+                    if (battleRegistry.getBattleByParticipatingPlayer(player1.player) != null ||
+                        battleRegistry.getBattleByParticipatingPlayer(player2.player) != null) {
+                        // 移除正在战斗但仍在队列中的玩家
+                        queue.remove(player1.player.uuid)
+                        queue.remove(player2.player.uuid)
+                        continue
+                    }
+
+                    // 检查玩家是否正在进行其他战斗
+                    if (Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player1.player) != null ||
+                        Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player2.player) != null) {
+                        // 移除正在战斗但仍在队列中的玩家
+                        queue.remove(player1.player.uuid)
+                        queue.remove(player2.player.uuid)
+                        continue
+                    }
 
                     // 再次验证队伍合法性
                     if (!BattleHandler.validateTeam(player1.player, player1.team, player1.format) ||
@@ -233,9 +293,21 @@ class MatchmakingQueue {
                         continue
                     }
 
-                    // 匹配成功，从队列移除
-                    queue.remove(player1.player.uuid)
-                    queue.remove(player2.player.uuid)
+                    // 立即移除两个玩家
+                    val removed1 = queue.remove(player1.player.uuid)
+                    val removed2 = queue.remove(player2.player.uuid)
+
+                    // 双重检查移除是否成功
+                    if (removed1 == null || removed2 == null) {
+                        // 如果移除失败，重新添加成功移除的玩家
+                        removed1?.let { queue[player1.player.uuid] = it }
+                        removed2?.let { queue[player2.player.uuid] = it }
+                        continue
+                    }
+
+                    // 标记玩家为已处理
+                    processedPlayers.add(player1.player.uuid)
+                    processedPlayers.add(player2.player.uuid)
 
                     // 开始排位赛
                     startRankedBattle(player1, player2)
@@ -369,6 +441,10 @@ class MatchmakingQueue {
                         player2.player,
                         MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel)
                     )
+                    // 记录当前经验
+                    BattleHandler.prepareBattleSnapshot(player1.player, player1.team)
+                    BattleHandler.prepareBattleSnapshot(player2.player, player2.team)
+                    // 应用等级
                     BattleHandler.applyLevelAdjustments(player1.player)
                     BattleHandler.applyLevelAdjustments(player2.player)
                 }
@@ -380,7 +456,7 @@ class MatchmakingQueue {
                 val side2 = BattleSide(actor2)
 
                 // 开始战斗
-                val result = Cobblemon.battleRegistry.startBattle(player1.format, side1, side2, true)
+                val result = Cobblemon.battleRegistry.startBattle(player1.format, side1, side2)
 
                 var battle: PokemonBattle? = null
                 var failReason: String? = null
@@ -442,7 +518,7 @@ class MatchmakingQueue {
      * @return BattlePokemon列表
      */
     private fun getBattlePokemonList(player: ServerPlayerEntity, team: List<UUID>): List<BattlePokemon> {
-        return team.mapNotNull { getBattlePokemon(player, it) }
+        return team.mapNotNull { id -> getBattlePokemon(player, id) }
     }
 
     /**
@@ -497,4 +573,46 @@ class MatchmakingQueue {
         val team: List<UUID>,           // 队伍UUID列表
         val joinTime: Long              // 加入队列的时间戳
     )
+
+    /**
+     * 清理仍在队列但已在战斗中的玩家
+     */
+    fun cleanupStaleEntries() {
+        synchronized(queue) {
+            val toRemove = mutableListOf<UUID>()
+
+            queue.values.forEach { entry ->
+                val battleRegistry = Cobblemon.battleRegistry
+
+                // 移除正在战斗的玩家
+                if (battleRegistry.getBattleByParticipatingPlayer(entry.player) != null) {
+                    toRemove.add(entry.player.uuid)
+                }
+                // 移除已断线的玩家
+                else if (entry.player.isDisconnected) {
+                    toRemove.add(entry.player.uuid)
+                }
+            }
+
+            toRemove.forEach { uuid ->
+                queue.remove(uuid)
+            }
+        }
+    }
+
+    /**
+     * 检查玩家是否可以安全加入队列
+     */
+    fun canPlayerJoinQueue(player: ServerPlayerEntity): Boolean {
+        // 已经在队列中
+        if (queue.containsKey(player.uuid)) return false
+
+        val battleRegistry = Cobblemon.battleRegistry
+        if (battleRegistry.getBattleByParticipatingPlayer(player) != null) return false
+
+        // 玩家已断线
+        if (player.isDisconnected) return false
+
+        return true
+    }
 }
