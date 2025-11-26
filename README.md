@@ -109,6 +109,38 @@
 
 ---
 
+## Placeholder API
+
+**General/Singles Data (default reads singles mode)**  
+**`%cobblemon_ranked:elo%`**  
+*Description: The player's singles ELO score for the current season.  
+*Example: 1200`  
+
+**`%cobblemon_ranked:rank_title%`**  
+*Description: The player's singles rank title for the current season.  
+*Example: Diamond, Gold, Unranked`  
+
+**`%cobblemon_ranked:win_rate%`**  
+*Description: The player's singles win rate for the current season (rounded to one decimal place).  
+*Example: 55.5%`  
+
+**`%cobblemon_ranked:wins%`**  
+*Description: The player's singles wins in the current season.  
+*Example: ` 10`  
+
+**`%cobblemon_ranked:losses%`**  
+*Description: The player's number of singles losses in the current season.  
+*Example: ` 5`  
+
+**Specific pattern data**  
+**`%cobblemon_ranked:elo_singles%`**  
+*Description: Clearly specify to obtain single ELO (function the same as'% cobblemon_ranked: elo% ').  
+
+**`%cobblemon_ranked:elo_doubles%`**  
+*Description: The player's current season's Doubles ELO score.  
+
+---
+
 ## ⚙️ Configuration File Reference (`cobblemon_ranked.json`)
 
 <details>
