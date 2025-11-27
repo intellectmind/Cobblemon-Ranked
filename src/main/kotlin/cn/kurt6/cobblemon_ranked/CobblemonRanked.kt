@@ -3,6 +3,7 @@ package cn.kurt6.cobblemon_ranked
 import cn.kurt6.cobblemon_ranked.battle.BattleHandler
 import cn.kurt6.cobblemon_ranked.commands.RankCommands
 import cn.kurt6.cobblemon_ranked.config.ConfigManager
+import cn.kurt6.cobblemon_ranked.config.DatabaseConfig
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.config.RankConfig
 import cn.kurt6.cobblemon_ranked.crossserver.CrossCommand
@@ -33,11 +34,15 @@ class CobblemonRanked : ModInitializer {
         // 初始化路径和配置
         dataPath = FabricLoader.getInstance().configDir.resolve(MOD_ID).apply { toFile().mkdirs() }
         config = ConfigManager.load()
+
+        // 加载数据库配置
+        databaseConfig = ConfigManager.loadDatabaseConfig()
+
         // 初始化消息配置
         MessageConfig.get("msg_example")
 
-        // 初始化核心组件
-        rankDao = RankDao(dataPath.resolve("ranked.db").toFile())
+        // 初始化核心组件 - 使用数据库配置
+        rankDao = RankDao(databaseConfig, dataPath.toFile())
         rewardManager = RewardManager(rankDao)
         seasonManager = SeasonManager(rankDao, rewardManager)
 
@@ -90,13 +95,13 @@ class CobblemonRanked : ModInitializer {
             ServerNetworking.handle(payload, context)
         }
 
-        logger.info("Cobblemon Ranked Mod initialized")
+        logger.info("Cobblemon Ranked Mod initialized with database: ${databaseConfig.databaseType}")
     }
 
     private fun registerCommands() {
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
             RankCommands.register(dispatcher)
-            dispatcher.register(CrossCommand.register()) // 注册跨服命令
+            dispatcher.register(CrossCommand.register())
         }
     }
 
@@ -107,7 +112,7 @@ class CobblemonRanked : ModInitializer {
             matchmakingQueue.shutdown()
             DuoMatchmakingQueue.shutdown()
             rankDao.close()
-            CrossServerSocket.disconnect() // 跨服断开连接
+            CrossServerSocket.disconnect()
         }
     }
 
@@ -115,11 +120,22 @@ class CobblemonRanked : ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             var tickCounter = 0
             val interval = 20 * 60 * 10 // 10分钟
+            var cleanupCounter = 0
+            val cleanupInterval = 20 * 60 * 60 * 24 // 24小时
 
             ServerTickEvents.START_SERVER_TICK.register {
                 if (++tickCounter >= interval) {
                     tickCounter = 0
                     seasonManager.checkSeasonEnd(server)
+                }
+
+                if (++cleanupCounter >= cleanupInterval) {
+                    cleanupCounter = 0
+                    try {
+                        rankDao.cleanupOldReturnLocations()
+                    } catch (e: Exception) {
+                        logger.warn("Failed to cleanup old return locations", e)
+                    }
                 }
             }
         }
@@ -131,6 +147,7 @@ class CobblemonRanked : ModInitializer {
 
         lateinit var INSTANCE: CobblemonRanked
         lateinit var config: RankConfig
+        lateinit var databaseConfig: DatabaseConfig
         lateinit var dataPath: Path
         lateinit var rankDao: RankDao
         lateinit var matchmakingQueue: MatchmakingQueue

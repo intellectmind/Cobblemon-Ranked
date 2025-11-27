@@ -12,9 +12,11 @@ import com.cobblemon.mod.common.api.battles.model.PokemonBattle
 import com.cobblemon.mod.common.api.battles.model.actor.BattleActor
 import com.cobblemon.mod.common.api.events.CobblemonEvents
 import com.cobblemon.mod.common.api.events.battles.BattleVictoryEvent
+import com.cobblemon.mod.common.api.pokemon.status.Statuses
 import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.pokemon.Pokemon
+import com.cobblemon.mod.common.pokemon.status.PersistentStatus
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -24,6 +26,9 @@ import net.minecraft.util.Formatting
 import net.minecraft.registry.Registries
 import net.minecraft.item.ItemStack
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.minecraft.registry.RegistryKey
+import net.minecraft.registry.RegistryKeys
+import net.minecraft.util.Identifier
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -51,18 +56,30 @@ object BattleHandler {
 
     fun setReturnLocation(uuid: UUID, world: ServerWorld, location: Triple<Double, Double, Double>) {
         returnLocations[uuid] = Pair(world, location)
+        // 同时保存到数据库，防止断线丢失
+        rankDao.saveReturnLocation(uuid, world.registryKey.value.toString(), location.first, location.second, location.third)
     }
 
     fun validateTeam(player: ServerPlayerEntity, teamUuids: List<UUID>, format: BattleFormat): Boolean {
         val lang = CobblemonRanked.config.defaultLang
-        val partyUuids = Cobblemon.storage.getParty(player).mapNotNull { it?.uuid }.toSet()
+        val party = Cobblemon.storage.getParty(player)
+        val partyUuids = party.mapNotNull { it?.uuid }.toSet()
 
         if (!teamUuids.all { it in partyUuids }) {
             RankUtils.sendMessage(player, MessageConfig.get("battle.invalid_team_selection", lang))
             return false
         }
 
-        val pokemonList = teamUuids.mapNotNull { uuid -> getPokemonFromPlayer(player, uuid) }
+        val validPokemon = teamUuids.mapNotNull { uuid ->
+            party.find { it?.uuid == uuid }
+        }
+
+        if (validPokemon.size != teamUuids.size) {
+            RankUtils.sendMessage(player, MessageConfig.get("battle.invalid_team_selection", lang))
+            return false
+        }
+
+        val pokemonList = validPokemon
         val config = CobblemonRanked.config
 
         if (format == BattleFormat.GEN_9_DOUBLES && pokemonList.size < 2) {
@@ -219,8 +236,13 @@ object BattleHandler {
         return true
     }
 
-    private fun isEgg(pokemon: Pokemon): Boolean = pokemon.state.name == "egg"
-    private fun isFainted(pokemon: Pokemon): Boolean = pokemon.isFainted()
+    private fun isEgg(pokemon: Pokemon): Boolean {
+        return pokemon.state.name.equals("egg", ignoreCase = true)
+    }
+
+    private fun isFainted(pokemon: Pokemon): Boolean {
+        return pokemon.currentHealth <= 0 || pokemon.isFainted()
+    }
 
     private fun getPokemonFromPlayer(player: ServerPlayerEntity, uuid: UUID): Pokemon? {
         val party = Cobblemon.storage.getParty(player)
@@ -276,150 +298,162 @@ object BattleHandler {
 
     private fun handleDisconnectAsFlee(battle: PokemonBattle, disconnected: ServerPlayerEntity) {
         val lang = CobblemonRanked.config.defaultLang
-        val battleId = battleToIdMap.remove(battle) ?: return
-        val formatName = rankedBattles.remove(battleId) ?: return
-        val seasonId = seasonManager.currentSeasonId
 
-        val allPlayers = battle.sides
-            .flatMap { it.actors.toList() }
-            .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+        val battleId: UUID?
+        val formatName: String?
+        try {
+            battleId = battleToIdMap.remove(battle)
+            formatName = battleId?.let { rankedBattles.remove(it) }
 
-        if (formatName == "2v2singles" && allPlayers.size == 4) {
-            val disconnectMsg = MessageConfig.get("battle.disconnect.broadcast", lang, "player" to disconnected.name.string)
-            allPlayers.forEach {
-                RankUtils.sendMessage(it, disconnectMsg)
-            }
+            if (battleId == null || formatName == null) return
 
-            val loser = allPlayers.firstOrNull { it.getUuid() == disconnected.getUuid() } ?: return
+            val seasonId = seasonManager.currentSeasonId
 
-            val sidesList = battle.sides.toList()
-            val side1 = sidesList[0].actors.mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
-            val side2 = sidesList[1].actors.mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+            val allPlayers = battle.sides
+                .flatMap { it.actors.toList() }
+                .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
 
-            val loserTeam = if (side1.any { it.getUuid() == loser.getUuid() }) side1 else side2
-            val winnerTeam = if (loserTeam == side1) side2 else side1
-
-            val loserData = loserTeam.map {
-                getOrCreatePlayerData(it.getUuid(), seasonId, formatName).apply {
-                    playerName = it.name.string
+            if (formatName == "2v2singles" && allPlayers.size == 4) {
+                val disconnectMsg = MessageConfig.get("battle.disconnect.broadcast", lang, "player" to disconnected.name.string)
+                allPlayers.forEach {
+                    RankUtils.sendMessage(it, disconnectMsg)
                 }
-            }
-            val winnerData = winnerTeam.map {
-                getOrCreatePlayerData(it.getUuid(), seasonId, formatName).apply {
-                    playerName = it.name.string
+
+                val loser = allPlayers.firstOrNull { it.getUuid() == disconnected.getUuid() } ?: return
+
+                val sidesList = battle.sides.toList()
+                val side1 = sidesList[0].actors.mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+                val side2 = sidesList[1].actors.mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+
+                val loserTeam = if (side1.any { it.getUuid() == loser.getUuid() }) side1 else side2
+                val winnerTeam = if (loserTeam == side1) side2 else side1
+
+                val loserData = loserTeam.map {
+                    getOrCreatePlayerData(it.getUuid(), seasonId, formatName).apply {
+                        playerName = it.name.string
+                    }
                 }
+                val winnerData = winnerTeam.map {
+                    getOrCreatePlayerData(it.getUuid(), seasonId, formatName).apply {
+                        playerName = it.name.string
+                    }
+                }
+
+                val loserAvgElo = loserData.map { it.elo }.average().toInt()
+                val winnerAvgElo = winnerData.map { it.elo }.average().toInt()
+
+                val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(
+                    winnerAvgElo, loserAvgElo,
+                    CobblemonRanked.config.eloKFactor,
+                    CobblemonRanked.config.minElo
+                )
+
+                loserTeam.forEachIndexed { i, player ->
+                    val data = loserData[i]
+                    data.apply {
+                        elo = newLoserElo
+                        losses++
+                        winStreak = 0
+                        fleeCount++
+                    }
+                    rankDao.savePlayerData(data)
+                    RankUtils.sendMessage(player, MessageConfig.get("battle.disconnect.loser", lang))
+
+                    restoreLevelAdjustments(player)
+                }
+
+                winnerTeam.forEachIndexed { i, player ->
+                    val data = winnerData[i]
+                    data.apply {
+                        elo = newWinnerElo
+                        wins++
+                        winStreak++
+                        if (winStreak > bestWinStreak) bestWinStreak = winStreak
+                    }
+                    rankDao.savePlayerData(data)
+                    RankUtils.sendMessage(player, MessageConfig.get("battle.disconnect.winner", lang))
+
+                    restoreLevelAdjustments(player)
+                }
+
+                Cobblemon.battleRegistry.closeBattle(battle)
+
+                DuoBattleManager.cleanupTeamData(
+                    DuoBattleManager.DuoTeam(loserTeam[0], loserTeam[1], emptyList(), emptyList()),
+                    DuoBattleManager.DuoTeam(winnerTeam[0], winnerTeam[1], emptyList(), emptyList())
+                )
+
+                recordPokemonUsage(allPlayers, seasonId)
+                return
             }
 
-            val loserAvgElo = loserData.map { it.elo }.average().toInt()
-            val winnerAvgElo = winnerData.map { it.elo }.average().toInt()
+            val fleeingActor = battle.sides
+                .flatMap { it.actors.toList() }
+                .firstOrNull {
+                    (it as? PlayerBattleActor)?.entity?.getUuid() == disconnected.getUuid()
+                } as? PlayerBattleActor ?: return
+
+            val loser: ServerPlayerEntity = fleeingActor.entity as? ServerPlayerEntity ?: return
+
+            val winner: ServerPlayerEntity = battle.sides
+                .flatMap { it.actors.toList() }
+                .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
+                .firstOrNull { it.getUuid() != loser.getUuid() } ?: return
+
+            val loserData = getOrCreatePlayerData(loser.getUuid(), seasonId, formatName)
+            val winnerData = getOrCreatePlayerData(winner.getUuid(), seasonId, formatName)
+
+            loserData.playerName = loser.name.string
+            winnerData.playerName = winner.name.string
 
             val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(
-                winnerAvgElo, loserAvgElo,
+                winnerData.elo,
+                loserData.elo,
                 CobblemonRanked.config.eloKFactor,
                 CobblemonRanked.config.minElo
             )
 
-            loserTeam.forEachIndexed { i, player ->
-                val data = loserData[i]
-                data.apply {
-                    elo = newLoserElo
-                    losses++
-                    winStreak = 0
-                    fleeCount++
-                }
-                rankDao.savePlayerData(data)
-                RankUtils.sendMessage(player, MessageConfig.get("battle.disconnect.loser", lang))
+            val eloDiffWinner = newWinnerElo - winnerData.elo
+            val eloDiffLoser = newLoserElo - loserData.elo
 
-                restoreLevelAdjustments(player)
-                teleportBackIfPossible(player)
+            loserData.apply {
+                elo = newLoserElo
+                losses++
+                winStreak = 0
+                fleeCount++
+            }
+            winnerData.apply {
+                elo = newWinnerElo
+                wins++
+                winStreak++
+                if (winStreak > bestWinStreak) bestWinStreak = winStreak
             }
 
-            winnerTeam.forEachIndexed { i, player ->
-                val data = winnerData[i]
-                data.apply {
-                    elo = newWinnerElo
-                    wins++
-                    winStreak++
-                    if (winStreak > bestWinStreak) bestWinStreak = winStreak
-                }
-                rankDao.savePlayerData(data)
-                RankUtils.sendMessage(player, MessageConfig.get("battle.disconnect.winner", lang))
-
-                restoreLevelAdjustments(player)
-                teleportBackIfPossible(player)
-            }
+            rankDao.savePlayerData(loserData)
+            rankDao.savePlayerData(winnerData)
 
             Cobblemon.battleRegistry.closeBattle(battle)
 
-            DuoBattleManager.cleanupTeamData(
-                DuoBattleManager.DuoTeam(loserTeam[0], loserTeam[1], emptyList(), emptyList()),
-                DuoBattleManager.DuoTeam(winnerTeam[0], winnerTeam[1], emptyList(), emptyList())
-            )
+            restoreLevelAdjustments(winner)
+            restoreLevelAdjustments(loser)
 
             recordPokemonUsage(allPlayers, seasonId)
-            return
+
+            RankUtils.sendMessage(loser, MessageConfig.get("battle.disconnect.loser", lang, "elo" to loserData.elo.toString()))
+            RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", lang, "elo" to winnerData.elo.toString()))
+
+            sendBattleResultMessage(winner, winnerData, eloDiffWinner)
+            sendBattleResultMessage(loser, loserData, eloDiffLoser)
+
+            // 传送所有玩家，包括断线的
+            teleportBackIfPossible(loser)
+            teleportBackIfPossible(winner)
+        } finally {
+            battleToIdMap.remove(battle)
+            battle.let { b ->
+                battleToIdMap[b]?.let { id -> rankedBattles.remove(id) }
+            }
         }
-
-        val fleeingActor = battle.sides
-            .flatMap { it.actors.toList() }
-            .firstOrNull {
-                (it as? PlayerBattleActor)?.entity?.getUuid() == disconnected.getUuid()
-            } as? PlayerBattleActor ?: return
-
-        val loser: ServerPlayerEntity = fleeingActor.entity as? ServerPlayerEntity ?: return
-
-        val winner: ServerPlayerEntity = battle.sides
-            .flatMap { it.actors.toList() }
-            .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
-            .firstOrNull { it.getUuid() != loser.getUuid() } ?: return
-
-        val loserData = getOrCreatePlayerData(loser.getUuid(), seasonId, formatName)
-        val winnerData = getOrCreatePlayerData(winner.getUuid(), seasonId, formatName)
-
-        loserData.playerName = loser.name.string
-        winnerData.playerName = winner.name.string
-
-        val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(
-            winnerData.elo,
-            loserData.elo,
-            CobblemonRanked.config.eloKFactor,
-            CobblemonRanked.config.minElo
-        )
-
-        val eloDiffWinner = newWinnerElo - winnerData.elo
-        val eloDiffLoser = newLoserElo - loserData.elo
-
-        loserData.apply {
-            elo = newLoserElo
-            losses++
-            winStreak = 0
-            fleeCount++
-        }
-        winnerData.apply {
-            elo = newWinnerElo
-            wins++
-            winStreak++
-            if (winStreak > bestWinStreak) bestWinStreak = winStreak
-        }
-
-        rankDao.savePlayerData(loserData)
-        rankDao.savePlayerData(winnerData)
-
-        Cobblemon.battleRegistry.closeBattle(battle)
-
-        restoreLevelAdjustments(winner)
-        restoreLevelAdjustments(loser)
-
-        recordPokemonUsage(allPlayers, seasonId)
-
-        RankUtils.sendMessage(loser, MessageConfig.get("battle.disconnect.loser", lang, "elo" to loserData.elo.toString()))
-        RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", lang, "elo" to winnerData.elo.toString()))
-
-        sendBattleResultMessage(winner, winnerData, eloDiffWinner)
-        sendBattleResultMessage(loser, loserData, eloDiffLoser)
-
-        teleportBackIfPossible(loser)
-        teleportBackIfPossible(winner)
     }
 
     fun markAsRanked(battleId: UUID, formatName: String) {
@@ -517,11 +551,32 @@ object BattleHandler {
         if (player !is ServerPlayerEntity) return
 
         val lang = CobblemonRanked.config.defaultLang
-        val data = returnLocations.remove(player.uuid)
+
+        // 先尝试从内存获取
+        var data = returnLocations.remove(player.uuid)
+
+        // 如果内存中没有，尝试从数据库恢复
+        if (data == null) {
+            val dbLocation = rankDao.getReturnLocation(player.uuid)
+            if (dbLocation != null) {
+                val (worldId, coordinates) = dbLocation
+                val (x, y, z) = coordinates
+
+                val worldKey = RegistryKey.of(RegistryKeys.WORLD, Identifier.tryParse(worldId))
+                val world = player.server.getWorld(worldKey)
+                if (world != null) {
+                    data = Pair(world, Triple(x, y, z))
+                }
+            }
+        }
+
         if (data != null) {
             val (originalWorld, loc) = data
-            player.teleport(originalWorld, loc.first, loc.second, loc.third, 0f, 0f)
+            val (locX, locY, locZ) = loc
+            player.teleport(originalWorld, locX, locY, locZ, 0f, 0f)
             RankUtils.sendMessage(player, MessageConfig.get("battle.teleport.back", lang))
+            // 传送后清理数据库记录
+            rankDao.deleteReturnLocation(player.uuid)
         }
     }
 
@@ -594,20 +649,14 @@ object BattleHandler {
         }
     }
 
-    /**
-     * 记录当前战斗队伍的等级快照。
-     */
     fun prepareBattleSnapshot(player: ServerPlayerEntity, teamUuids: List<UUID>) {
         if (!CobblemonRanked.config.enableCustomLevel) return
 
-        // 获取（或创建）该玩家的挂起调整记录
         val playerAdjustments = pendingLevelAdjustments.getOrPut(player.uuid) { mutableMapOf() }
 
-        // 清空旧数据
         playerAdjustments.clear()
         CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
 
-        // 遍历队伍并记录快照
         teamUuids.mapNotNull { getPokemonFromPlayer(player, it) }.forEach { pokemon ->
             prepareLevelAdjustment(player, pokemon)
         }
@@ -654,7 +703,6 @@ object BattleHandler {
                 playerAdjustments[it.uuid]?.let { original ->
                     it.setExperienceAndUpdateLevel(original.originalExp)
 
-                    // 确保等级完全一致
                     if (it.level != original.originalLevel) {
                         it.level = original.originalLevel
                     }
@@ -670,23 +718,51 @@ object BattleHandler {
     }
 
     fun restoreLevelsFromDatabase(player: ServerPlayerEntity) {
-        val originalData = CobblemonRanked.rankDao.getPokemonOriginalData(player.uuid)
+        val memoryAdjustments = pendingLevelAdjustments[player.uuid]
+        if (memoryAdjustments != null) {
+            val lang = CobblemonRanked.config.defaultLang
 
-        Cobblemon.storage.getParty(player).forEach { pokemon ->
-            pokemon?.let {
-                originalData[it.uuid]?.let { (level, exp) ->
-                    it.setExperienceAndUpdateLevel(exp)
-                    if (it.level != level) {
-                        it.level = level
+            Cobblemon.storage.getParty(player).forEach { pokemon ->
+                pokemon?.let {
+                    memoryAdjustments[it.uuid]?.let { original ->
+                        it.setExperienceAndUpdateLevel(original.originalExp)
+                        if (it.level != original.originalLevel) {
+                            it.level = original.originalLevel
+                        }
+                        it.currentHealth = it.maxHealth
+                        it.onChange()
                     }
-                    it.currentHealth = it.maxHealth
-                    it.onChange()
                 }
             }
+
+            pendingLevelAdjustments.remove(player.uuid)
+            CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
+            return
         }
 
-        CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
+        val originalData = CobblemonRanked.rankDao.getPokemonOriginalData(player.uuid)
+
+        if (originalData.isNotEmpty()) {
+            Cobblemon.storage.getParty(player).forEach { pokemon ->
+                pokemon?.let {
+                    originalData[it.uuid]?.let { (level, exp) ->
+                        it.setExperienceAndUpdateLevel(exp)
+                        if (it.level != level) {
+                            it.level = level
+                        }
+                        it.currentHealth = it.maxHealth
+                        it.onChange()
+                    }
+                }
+            }
+
+            CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
+        }
+
         pendingLevelAdjustments.remove(player.uuid)
+
+        // 检查是否有待传送的位置
+        teleportBackIfPossible(player)
     }
 
     fun forceCleanupPlayerBattleData(player: ServerPlayerEntity) {

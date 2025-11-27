@@ -1,8 +1,11 @@
 package cn.kurt6.cobblemon_ranked.data
 
+import cn.kurt6.cobblemon_ranked.CobblemonRanked.Companion.logger
+import cn.kurt6.cobblemon_ranked.config.DatabaseConfig
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import java.sql.SQLTimeoutException
@@ -11,21 +14,56 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
-class RankDao(dbFile: File) {
+class RankDao(dbConfig: DatabaseConfig, configDir: File) {
     private val database: Database
-    private val connectionTimeoutMs = 5000L // 连接超时5秒
-    private val queryTimeoutMs = 3000L     // 查询超时3秒
+    private val isMySQL: Boolean
+    private val connectionTimeoutMs = 5000L
+    private val queryTimeoutMs = 3000L
 
     init {
-        val url = "jdbc:sqlite:${dbFile.absolutePath}?busy_timeout=$connectionTimeoutMs"
-        database = Database.connect(
-            url = url,
-            driver = "org.sqlite.JDBC",
-            setupConnection = {
-                it.createStatement().queryTimeout =
-                    TimeUnit.MILLISECONDS.toSeconds(queryTimeoutMs).toInt()
+        isMySQL = dbConfig.databaseType.lowercase() == "mysql"
+
+        database = when (dbConfig.databaseType.lowercase()) {
+            "mysql" -> {
+                try {
+                    val mysql = dbConfig.mysql
+                    val jdbcUrl = "jdbc:mysql://${mysql.host}:${mysql.port}/${mysql.database}?${mysql.parameters}"
+                    Database.connect(
+                        url = jdbcUrl,
+                        driver = "com.mysql.cj.jdbc.Driver",
+                        user = mysql.username,
+                        password = mysql.password,
+                        setupConnection = {
+                            it.createStatement().queryTimeout = TimeUnit.MILLISECONDS.toSeconds(queryTimeoutMs).toInt()
+                        }
+                    )
+                } catch (e: Exception) {
+                    logger.error("Failed to connect to MySQL, falling back to SQLite: ${e.message}")
+                    // 回退到 SQLite
+                    val dbFile = configDir.resolve(dbConfig.sqliteFile)
+                    val url = "jdbc:sqlite:${dbFile.absolutePath}?busy_timeout=$connectionTimeoutMs"
+                    Database.connect(
+                        url = url,
+                        driver = "org.sqlite.JDBC",
+                        setupConnection = {
+                            it.createStatement().queryTimeout = TimeUnit.MILLISECONDS.toSeconds(queryTimeoutMs).toInt()
+                        }
+                    )
+                }
             }
-        )
+            "sqlite" -> {
+                val dbFile = configDir.resolve(dbConfig.sqliteFile)
+                val url = "jdbc:sqlite:${dbFile.absolutePath}?busy_timeout=$connectionTimeoutMs"
+                Database.connect(
+                    url = url,
+                    driver = "org.sqlite.JDBC",
+                    setupConnection = {
+                        it.createStatement().queryTimeout = TimeUnit.MILLISECONDS.toSeconds(queryTimeoutMs).toInt()
+                    }
+                )
+            }
+            else -> throw IllegalArgumentException("Unsupported database type: ${dbConfig.databaseType}")
+        }
 
         executeWithTimeout("初始化数据库表") {
             transaction(db = database) {
@@ -33,7 +71,8 @@ class RankDao(dbFile: File) {
                     PlayerRankTable,
                     SeasonInfoTable,
                     PokemonUsageTable,
-                    PokemonOriginalDataTable
+                    PokemonOriginalDataTable,
+                    ReturnLocationTable
                 )
             }
         }
@@ -51,6 +90,59 @@ class RankDao(dbFile: File) {
         }
     }
 
+    object ReturnLocationTable : Table("player_return_location") {
+        val playerId = varchar("player_id", 36)
+        val worldId = varchar("world_id", 255)
+        val x = double("x")
+        val y = double("y")
+        val z = double("z")
+        val timestamp = long("timestamp").default(System.currentTimeMillis())
+
+        override val primaryKey = PrimaryKey(playerId)
+    }
+
+    fun saveReturnLocation(playerId: UUID, worldId: String, x: Double, y: Double, z: Double) =
+        executeWithTimeout("Save return location") {
+            transaction(database) {
+                ReturnLocationTable.deleteWhere { ReturnLocationTable.playerId eq playerId.toString() }
+                ReturnLocationTable.insert { row ->
+                    row[ReturnLocationTable.playerId] = playerId.toString()
+                    row[ReturnLocationTable.worldId] = worldId
+                    row[ReturnLocationTable.x] = x
+                    row[ReturnLocationTable.y] = y
+                    row[ReturnLocationTable.z] = z
+                    row[timestamp] = System.currentTimeMillis()
+                }
+            }
+        }
+
+    fun getReturnLocation(playerId: UUID): Pair<String, Triple<Double, Double, Double>>? =
+        executeWithTimeout("Get return location") {
+            transaction(database) {
+                ReturnLocationTable.select { ReturnLocationTable.playerId eq playerId.toString() }
+                    .firstOrNull()?.let {
+                        val worldId = it[ReturnLocationTable.worldId]
+                        val x = it[ReturnLocationTable.x]
+                        val y = it[ReturnLocationTable.y]
+                        val z = it[ReturnLocationTable.z]
+                        Pair(worldId, Triple(x, y, z))
+                    }
+            }
+        }
+
+    fun deleteReturnLocation(playerId: UUID) = executeWithTimeout("Delete return location") {
+        transaction(database) {
+            ReturnLocationTable.deleteWhere { ReturnLocationTable.playerId eq playerId.toString() }
+        }
+    }
+
+    fun cleanupOldReturnLocations() = executeWithTimeout("Cleanup old return locations") {
+        transaction(database) {
+            val dayAgo = System.currentTimeMillis() - 86400000L
+            ReturnLocationTable.deleteWhere { timestamp less dayAgo }
+        }
+    }
+
     fun savePlayerData(data: PlayerRankData) = executeWithTimeout("Save player data") {
         transaction(database) {
             val existing = PlayerRankTable.select {
@@ -58,6 +150,11 @@ class RankDao(dbFile: File) {
                         (PlayerRankTable.seasonId eq data.seasonId) and
                         (PlayerRankTable.format eq data.format)
             }.firstOrNull()
+
+            val ranksStr = data.claimedRanks
+                .filter { it.split(":").getOrNull(1) == data.format }
+                .joinToString(",")
+                .ifEmpty { "" }
 
             if (existing != null) {
                 PlayerRankTable.update({
@@ -71,9 +168,6 @@ class RankDao(dbFile: File) {
                     row[losses] = data.losses
                     row[winStreak] = data.winStreak
                     row[bestWinStreak] = data.bestWinStreak
-                    val ranksStr = data.claimedRanks
-                        .filter { it.split(":").getOrNull(1) == data.format }
-                        .joinToString(",")
                     row[claimedRanks] = ranksStr
                     row[fleeCount] = data.fleeCount
                 }
@@ -88,9 +182,6 @@ class RankDao(dbFile: File) {
                     row[losses] = data.losses
                     row[winStreak] = data.winStreak
                     row[bestWinStreak] = data.bestWinStreak
-                    val ranksStr = data.claimedRanks
-                        .filter { it.split(":").getOrNull(1) == data.format }
-                        .joinToString(",")
                     row[claimedRanks] = ranksStr
                     row[fleeCount] = data.fleeCount
                 }
@@ -143,7 +234,6 @@ class RankDao(dbFile: File) {
             }
         }
 
-    // 获取总数的方法
     fun getPlayerCount(seasonId: Int, format: String): Int =
         executeWithTimeout("Get player count") {
             transaction(database) {
@@ -157,14 +247,12 @@ class RankDao(dbFile: File) {
     fun getPlayerRank(playerId: UUID, seasonId: Int, format: String): Int =
         executeWithTimeout("Get player rank") {
             transaction(database) {
-                // 获取玩家ELO
                 val playerElo = PlayerRankTable.select {
                     (PlayerRankTable.playerId eq playerId.toString()) and
                             (PlayerRankTable.seasonId eq seasonId) and
                             (PlayerRankTable.format eq format)
                 }.firstOrNull()?.get(PlayerRankTable.elo) ?: return@transaction -1
 
-                // 计算排名：ELO更高或相等的玩家数量
                 PlayerRankTable.select {
                     (PlayerRankTable.seasonId eq seasonId) and
                             (PlayerRankTable.format eq format) and
@@ -173,7 +261,6 @@ class RankDao(dbFile: File) {
             }
         }
 
-    // 赛季信息操作
     fun saveSeasonInfo(seasonId: Int, startDate: String, endDate: String, ended: Boolean = false, name: String = "") = executeWithTimeout("Save season info") {
         transaction(database) {
             val existing = SeasonInfoTable.select { SeasonInfoTable.seasonId eq seasonId }.firstOrNull()
@@ -223,7 +310,6 @@ class RankDao(dbFile: File) {
         }
     }
 
-    // 赛季信息数据类
     data class SeasonInfo(
         val seasonId: Int,
         val startDate: String,
@@ -250,7 +336,7 @@ class RankDao(dbFile: File) {
     }
 
     fun close() {
-        // 清理资源
+
     }
 
     object PlayerRankTable : Table("player_rank_data") {
@@ -264,7 +350,7 @@ class RankDao(dbFile: File) {
         val losses = integer("losses")
         val winStreak = integer("win_streak")
         val bestWinStreak = integer("best_win_streak")
-        val claimedRanks = text("claimed_ranks").default("[]")
+        val claimedRanks = text("claimed_ranks")
         val fleeCount = integer("flee_count").default(0)
 
         override val primaryKey = PrimaryKey(id)
