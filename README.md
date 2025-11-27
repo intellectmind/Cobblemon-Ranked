@@ -111,33 +111,29 @@
 
 ## Placeholder API
 
-**General/Singles Data (default reads singles mode)**  
-**`%cobblemon_ranked:elo%`**  
-*Description: The player's singles ELO score for the current season.  
-*Example: 1200`  
+%Cobblemon_ranked: elo% - ELO score  
+%Cobblemon_ranked: rank_title% - Rank Title  
+%Cobblemon_ranked: win_rate% - win rate  
+%Cobblemon_ranked: wins% - wins  
+%Cobblemon_ranked: losses% - negative field  
+%Cobblemon_ranked: total games% - total number of sessions  
+%Cobblemon_ranked: stress% - current winning streak  
+%Cobblemon_ranked: best_stream% - Best Winning streak  
+%Cobblemon_ranked: fle_count% - Number of escapes  
+%Cobblemon_ranked: rank% - ranking  
+%Cobblemon_ranked: season_name% - season name  
+%Cobblemon_ranked: season_id% - Season ID  
+%Cobblemon_ranked: season_days_1eft% - remaining days of the season  
+%Cobblemon_ranked: season_time_1eft% - remaining time of season  
+%Cobblemon_ranked: Next_rank_ elo% - ELO required for the next rank  
+%Cobblemon_ranked: Next_rank_name% - Next rank name  
+%Cobblemon_ranked: queue_stus% - queue status  
 
-**`%cobblemon_ranked:rank_title%`**  
-*Description: The player's singles rank title for the current season.  
-*Example: Diamond, Gold, Unranked`  
-
-**`%cobblemon_ranked:win_rate%`**  
-*Description: The player's singles win rate for the current season (rounded to one decimal place).  
-*Example: 55.5%`  
-
-**`%cobblemon_ranked:wins%`**  
-*Description: The player's singles wins in the current season.  
-*Example: ` 10`  
-
-**`%cobblemon_ranked:losses%`**  
-*Description: The player's number of singles losses in the current season.  
-*Example: ` 5`  
-
-**Specific pattern data**  
-**`%cobblemon_ranked:elo_singles%`**  
-*Description: Clearly specify to obtain single ELO (function the same as'% cobblemon_ranked: elo% ').  
-
-**`%cobblemon_ranked:elo_doubles%`**  
-*Description: The player's current season's Doubles ELO score.  
+Support dynamic mode parameters (singles/doubles/2v2 singles)  
+For example:  
+%cobblemon_ranked:elo_singles%  
+%cobblemon_ranked:rank_title_doubles%  
+%cobblemon_ranked:win_rate_2v2singles%  
 
 ---
 
@@ -188,10 +184,10 @@
       ]
     }
   ],
-	"victoryRewards": [                      // Victory rewards configuration (executed after each win)
-		"give {player} minecraft:experience_bottle 5",
-		"give {player} minecraft:emerald 1"
-	],
+  "victoryRewards": [                      // Victory rewards configuration (executed after each win)
+    "give {player} minecraft:experience_bottle 5",
+    "give {player} minecraft:emerald 1"
+  ],
   "rankRewards": {                         // Format-specific rank rewards (command-based)
     "singles": {
       "Bronze": ["give {player} minecraft:apple 5"],
@@ -239,4 +235,36 @@
   "cloudToken": "",                // Cloud server auth token(Leave blank for the public cloud server)
   "cloudApiUrl": "http://139.196.103.55:8000",  // Cloud API address(Either IP or domain name is acceptable)
   "cloudWebSocketUrl": "ws://139.196.103.55:8000/ws/" // Cloud WebSocket Address(Either IP or domain name is acceptable)
+}
+```
+</details>
+
+<details>
+<summary>Click to expand `database.json`</summary>
+
+```json
+{
+	// Database type: 'sqlite' or 'mysql'
+	"databaseType": "sqlite",
+	// SQLite database file path (relative to config folder)
+	"sqliteFile": "ranked.db",
+	// MySQL configuration
+	"mysql": {
+		// MySQL host address
+		"host": "localhost",
+		// MySQL port
+		"port": 3306,
+		// MySQL database name
+		"database": "cobblemon_ranked",
+		// MySQL username
+		"username": "root",
+		// MySQL password
+		"password": "",
+		// MySQL connection pool size
+		"poolSize": 10,
+		// MySQL connection timeout (ms)
+		"connectionTimeout": 5000,
+		// Additional MySQL connection parameters
+		"parameters": "useSSL=false&serverTimezone=UTC&characterEncoding=utf8"
+	}
 }
