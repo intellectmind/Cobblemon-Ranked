@@ -108,33 +108,29 @@
 
 ## Placeholder API
 
-**通用/单打数据 (默认读取 singles 模式)**
-**`%cobblemon_ranked:elo%`**
-    *   描述：玩家当前赛季的单打 ELO 分数。
-    *   示例：`1200`
+%cobblemon_ranked:elo%                     - ELO分数  
+%cobblemon_ranked:rank_title%              - 段位称号  
+%cobblemon_ranked:win_rate%                - 胜率  
+%cobblemon_ranked:wins%                    - 胜场  
+%cobblemon_ranked:losses%                  - 负场  
+%cobblemon_ranked:total_games%             - 总场次  
+%cobblemon_ranked:streak%                  - 当前连胜  
+%cobblemon_ranked:best_streak%             - 最佳连胜  
+%cobblemon_ranked:flee_count%              - 逃跑次数  
+%cobblemon_ranked:rank%                    - 排名  
+%cobblemon_ranked:season_name%             - 赛季名称  
+%cobblemon_ranked:season_id%               - 赛季ID  
+%cobblemon_ranked:season_days_left%        - 赛季剩余天数  
+%cobblemon_ranked:season_time_left%        - 赛季剩余时间  
+%cobblemon_ranked:next_rank_elo%           - 下一段位所需ELO  
+%cobblemon_ranked:next_rank_name%          - 下一段位名称  
+%cobblemon_ranked:queue_status%            - 排队状态  
 
-**`%cobblemon_ranked:rank_title%`**
-    *   描述：玩家当前赛季的单打段位称号。
-    *   示例：`Diamond`, `Gold`, `Unranked`
-
-**`%cobblemon_ranked:win_rate%`**
-    *   描述：玩家当前赛季的单打胜率（保留一位小数）。
-    *   示例：`55.5%`
-
-**`%cobblemon_ranked:wins%`**
-    *   描述：玩家当前赛季的单打胜场数。
-    *   示例：`10`
-
-**`%cobblemon_ranked:losses%`**
-    *   描述：玩家当前赛季的单打负场数。
-    *   示例：`5`
-
-**特定模式数据**
-**`%cobblemon_ranked:elo_singles%`**
-    *   描述：明确指定获取单打 ELO（功能同 `%cobblemon_ranked:elo%`）。
-
-**`%cobblemon_ranked:elo_doubles%`**
-    *   描述：玩家当前赛季的**双打 (doubles)** ELO 分数。
+支持动态模式参数(singles/doubles/2v2singles)  
+例如：  
+%cobblemon_ranked:elo_singles%  
+%cobblemon_ranked:rank_title_doubles%  
+%cobblemon_ranked:win_rate_2v2singles%  
 
 ---
 
@@ -237,4 +233,36 @@
   "cloudToken": "",                // 云端验证用密钥(公开云服留空即可)
   "cloudApiUrl": "http://139.196.103.55:8000",  // 云端 API 地址(ip或者域名都可以)
   "cloudWebSocketUrl": "ws://139.196.103.55:8000/ws/" // 云端 WebSocket 地址(ip或者域名都可以)
+}
+```
+</details>
+
+<details>
+<summary>Click to expand `database.json`</summary>
+
+```json
+{
+	// 数据库类型：'sqlite' 或 'mysql'
+	"databaseType": "sqlite",
+	// SQLite 数据库文件路径
+	"sqliteFile": "ranked.db",
+	// MySQL 配置
+	"mysql": {
+		// MySQL 主机地址
+		"host": "localhost",
+		// MySQL 端口
+		"port": 3306,
+		// MySQL 数据库名
+		"database": "cobblemon_ranked",
+		// MySQL 用户名
+		"username": "root",
+		// MySQL 密码
+		"password": "",
+		// MySQL 连接池大小
+		"poolSize": 10,
+		// MySQL 连接超时时间（毫秒）
+		"connectionTimeout": 5000,
+		// MySQL 额外连接参数
+		"parameters": "useSSL=false&serverTimezone=UTC&characterEncoding=utf8"
+	}
 }
