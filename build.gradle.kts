@@ -70,6 +70,10 @@ dependencies {
 
     // Cobblemon
     modImplementation("com.cobblemon:fabric:${project.property("cobblemon_version")}")
+
+    // MySQL 驱动
+    implementation("mysql:mysql-connector-java:8.0.33")
+
     // Database
     implementation("org.xerial:sqlite-jdbc:3.45.1.0")
     include("org.xerial:sqlite-jdbc:3.45.1.0")
