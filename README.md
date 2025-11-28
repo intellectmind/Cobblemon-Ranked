@@ -163,6 +163,10 @@ For example:
   "bannedAbilities": [],                   // Banned abilities for Pokémon
   "bannedGenders": ["MALE"],               // Banned gender for Pokémon
   "bannedShiny": false,                    // Banned shiny Pokémon from participating in battles
+  "banUsageBelow": 0.0,					   // Ban Pokémon with usage rate below this threshold (0 to disable, 0.1 = 10%)
+  "banUsageAbove": 0.0,					   // Ban Pokémon with usage rate above this threshold (0 to disable, 0.1 = 10%) 
+  "banTopUsed": 0,						   // Ban top N most used Pokémon (0 to disable)
+  "onlyBaseFormWithEvolution": false,	   // Only allow base form Pokémon that can evolve
   "allowedFormats": ["singles", "doubles", "2v2singles"], // Supported battle formats
   "maxLevel": 0,                           // Max Pokémon level (0 = no limit)
   "allowDuplicateSpecies": false,          // Whether duplicate Pokémon species are allowed
