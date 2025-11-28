@@ -160,6 +160,10 @@
   "bannedAbilities": [], // 禁止宝可梦使用的特性
   "bannedGenders": ["MALE"], // 禁止宝可梦使用的性别
   "bannedShiny": false, // 是否禁止闪光宝可梦参战
+  "banUsageBelow": 0.0,					   // 禁止使用率低于此阈值的宝可梦（0为关闭，0.1表示10%）
+  "banUsageAbove": 0.0,					   // 禁止使用率高于此阈值的宝可梦（0为关闭，0.1表示10%）
+  "banTopUsed": 0,						   // 禁止使用排行前N的宝可梦（0为关闭）
+  "onlyBaseFormWithEvolution": false,	   // 是否只允许使用能够进化的最初形态
   "allowedFormats": ["singles", "doubles", "2v2singles"], // 支持的对战模式
   "maxLevel": 0, // 宝可梦最大等级（0 表示不限制）
   "allowDuplicateSpecies": false, // 是否允许重复宝可梦
