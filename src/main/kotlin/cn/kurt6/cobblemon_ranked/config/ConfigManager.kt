@@ -21,7 +21,6 @@ object ConfigManager {
         }
     }
 
-    // 加载数据库配置
     fun loadDatabaseConfig(): DatabaseConfig {
         return try {
             if (Files.exists(dbConfigPath)) {
@@ -29,7 +28,6 @@ object ConfigManager {
                 val json = jankson.load(jsonText) as blue.endless.jankson.JsonObject
                 val rawConfig = jankson.fromJson(json, DatabaseConfig::class.java)
 
-                // 解析 MySQL 配置
                 val mysqlJson = json.getObject("mysql")
                 val mysqlConfig = if (mysqlJson != null) {
                     MySQLConfig(
@@ -59,7 +57,6 @@ object ConfigManager {
         }
     }
 
-    // 保存数据库配置
     fun saveDatabaseConfig(config: DatabaseConfig) {
         try {
             val json = jankson.toJson(config).toJson(true, true)
@@ -240,6 +237,18 @@ object ConfigManager {
                 val rawcloudWebSocketUrl = json.get("cloudWebSocketUrl")
                 val fixedcloudWebSocketUrl = rawcloudWebSocketUrl?.toString()?.removeSurrounding("\"") ?: rawConfig.cloudWebSocketUrl
 
+                val rawBanUsageBelow = json.get("banUsageBelow")
+                val fixedBanUsageBelow = rawBanUsageBelow?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.banUsageBelow
+
+                val rawBanUsageAbove = json.get("banUsageAbove")
+                val fixedBanUsageAbove = rawBanUsageAbove?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.banUsageAbove
+
+                val rawBanTopUsed = json.get("banTopUsed")
+                val fixedBanTopUsed = rawBanTopUsed?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.banTopUsed
+
+                val rawOnlyBaseFormWithEvolution = json.get("onlyBaseFormWithEvolution")
+                val fixedOnlyBaseFormWithEvolution = rawOnlyBaseFormWithEvolution?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.onlyBaseFormWithEvolution
+
                 val rawVictoryRewards = json.get("victoryRewards") as? blue.endless.jankson.JsonArray
                 val fixedVictoryRewards = rawVictoryRewards
                     ?.mapNotNull {
@@ -280,6 +289,10 @@ object ConfigManager {
                     maxLevel = fixedMaxLevel,
                     customBattleLevel = fixedCustomBattleLevel,
                     enableCustomLevel = fixedEnableCustomLevel,
+                    banUsageBelow = fixedBanUsageBelow,
+                    banUsageAbove = fixedBanUsageAbove,
+                    banTopUsed = fixedBanTopUsed,
+                    onlyBaseFormWithEvolution = fixedOnlyBaseFormWithEvolution,
                     rankRequirements = fixedRankRequirements,
                     bannedMoves = fixedBannedMoves,
                     bannedNatures = fixedBannedNatures,
@@ -311,7 +324,6 @@ object ConfigManager {
     fun reload(): RankConfig {
         val newConfig = load()
 
-        // 清理旧队列
         CobblemonRanked.matchmakingQueue.clear()
         synchronized(DuoMatchmakingQueue) {
             // DuoMatchmakingQueue 内部的清理
@@ -320,7 +332,6 @@ object ConfigManager {
         CobblemonRanked.config = newConfig
         CobblemonRanked.matchmakingQueue.reloadConfig(newConfig)
 
-        // 通知所有在线玩家
         try {
             val server = CobblemonRanked.INSTANCE.javaClass.getDeclaredField("server")
                 .apply { isAccessible = true }

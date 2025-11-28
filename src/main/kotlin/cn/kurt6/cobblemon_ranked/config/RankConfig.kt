@@ -1,5 +1,3 @@
-// RankConfig.kt
-// 配置管理
 package cn.kurt6.cobblemon_ranked.config
 
 import blue.endless.jankson.Comment
@@ -22,7 +20,7 @@ data class RankConfig(
     @Comment("Default language: zh or en")
     var defaultLang: String = "en",
 
-    @Comment("Default battle format: 'singles' / 默认的战斗模式‘singles’（单打）")
+    @Comment("Default battle format: 'singles' / 默认的战斗模式'singles'（单打）")
     var defaultFormat: String = "singles",
 
     @Comment("Minimum number of Pokémon allowed in a team / 宝可梦限制最少数量")
@@ -76,7 +74,19 @@ data class RankConfig(
     @Comment("Banned shiny Pokémon from participating in battles / 是否禁止闪光宝可梦参战")
     var bannedShiny: Boolean = false,
 
-    @Comment("Allowed battle formats: 'singles', 'doubles', '2v2singles' / 允许的战斗模式：‘singles’（单打）, ‘doubles’（双打）, '2v2singles'（2v2单打）")
+    @Comment("Ban Pokémon with usage rate below this threshold (0 to disable, 0.1 = 10%) / 禁止使用率低于此阈值的宝可梦（0为关闭，0.1表示10%）")
+    var banUsageBelow: Double = 0.0,
+
+    @Comment("Ban Pokémon with usage rate above this threshold (0 to disable, 0.1 = 10%) / 禁止使用率高于此阈值的宝可梦（0为关闭，0.1表示10%）")
+    var banUsageAbove: Double = 0.0,
+
+    @Comment("Ban top N most used Pokémon (0 to disable) / 禁止使用排行前N的宝可梦（0为关闭）")
+    var banTopUsed: Int = 0,
+
+    @Comment("Only allow base form Pokémon that can evolve / 是否只允许使用能够进化的最初形态")
+    var onlyBaseFormWithEvolution: Boolean = false,
+
+    @Comment("Allowed battle formats: 'singles', 'doubles', '2v2singles' / 允许的战斗模式：'singles'（单打）, 'doubles'（双打）, '2v2singles'（2v2单打）")
     var allowedFormats: List<String> = listOf("singles", "doubles", "2v2singles"),
 
     @Comment("Max Pokémon level allowed (0 = no limit) / 允许的宝可梦等级，0 = 无限制")

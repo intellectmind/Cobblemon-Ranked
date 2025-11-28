@@ -111,6 +111,7 @@ class CobblemonRanked : ModInitializer {
             matchmakingQueue.clear()
             matchmakingQueue.shutdown()
             DuoMatchmakingQueue.shutdown()
+            BattleHandler.shutdown()
             rankDao.close()
             CrossServerSocket.disconnect()
         }

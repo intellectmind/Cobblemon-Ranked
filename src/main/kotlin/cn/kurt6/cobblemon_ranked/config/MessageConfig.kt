@@ -286,8 +286,8 @@ object MessageConfig {
                     "en" to "§7No ranking data for season #{season} {name} [{format}]"
                 ),
                 "leaderboard.header" to mapOf(
-                    "zh" to "§6===== [{format} - 赛季 #{season} {name}] 排行榜 ({page}/{total}) =====",
-                    "en" to "§6===== [{format} - Season #{season} {name}] Leaderboard ({page}/{total}) ====="
+                    "zh" to "§6[{format} - 赛季 #{season} {name}] 排行榜 ({page}/{total})",
+                    "en" to "§6[{format} - Season #{season} {name}] Leaderboard ({page}/{total})"
                 ),
                 "leaderboard.entry" to mapOf(
                     "zh" to "§e{rank}. §f{name} §7- §6ELO: {elo} §7(战绩: §a{wins}§7/§c{losses}§7) §8断线: {flee}",
@@ -419,6 +419,26 @@ object MessageConfig {
                 ),
 
                 // BattleHandler
+                "battle.team.not_base_form" to mapOf(
+                    "zh" to "§c{name}不是最初形态！只允许使用最初形态的宝可梦",
+                    "en" to "§c{name} is not in its base form! Only base form Pokémon are allowed"
+                ),
+                "battle.team.cannot_evolve" to mapOf(
+                    "zh" to "§c{name}无法进化！只允许使用能够进化的最初形态",
+                    "en" to "§c{name} cannot evolve! Only base forms that can evolve are allowed"
+                ),
+                "battle.team.usage_too_low" to mapOf(
+                    "zh" to "§c{name}的使用率过低（{rate}）！最低要求：{threshold}",
+                    "en" to "§c{name} has too low usage rate ({rate})! Minimum required: {threshold}"
+                ),
+                "battle.team.usage_too_high" to mapOf(
+                    "zh" to "§c{name}的使用率过高（{rate}）！最高限制：{threshold}",
+                    "en" to "§c{name} has too high usage rate ({rate})! Maximum allowed: {threshold}"
+                ),
+                "battle.team.in_top_used" to mapOf(
+                    "zh" to "§c{name}的使用排名为第{rank}位！禁止使用前{limit}名宝可梦",
+                    "en" to "§c{name} is ranked #{rank} in usage! Top {limit} Pokémon are banned"
+                ),
                 "customBattleLevel.restore" to mapOf(
                     "zh" to "§a已恢复宝可梦等级",
                     "en" to "§aRecovered Pokémon level"
