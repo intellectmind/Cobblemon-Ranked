@@ -145,6 +145,11 @@
   "defaultFormat": "singles", // 默认对战模式
   "minTeamSize": 1, // 最少携带宝可梦数量
   "maxTeamSize": 6, // 最多携带宝可梦数量
+  "allowDuplicateItems": false, // 是否允许队伍中携带重复道具 (道具条款)
+  "enableTeamPreview": true, // 是否启用队伍预览和选出阶段 (6选3/4)
+  "teamSelectionTime": 90, // 队伍选择阶段的时间限制(秒)
+  "singlesPickCount": 3, // 单打模式选出的宝可梦数量 (通常为3)
+  "doublesPickCount": 4, // 双打模式选出的宝可梦数量 (通常为4)
   "maxEloDiff": 200, // 最大 Elo 匹配差值
   "maxQueueTime": 300, // 最大排队等待时间（秒）
   "maxEloMultiplier": 3.0, // Elo 放宽倍率上限
