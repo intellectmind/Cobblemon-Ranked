@@ -148,6 +148,11 @@ For example:
   "defaultFormat": "singles",              // Default battle format
   "minTeamSize": 1,                        // Minimum Pokémon per team
   "maxTeamSize": 6,                        // Maximum Pokémon per team
+  "allowDuplicateItems": false,            // Allow duplicate held items in a team
+  "enableTeamPreview": true,               // Enable Team Preview and Selection (Bring 6 Pick 3/4) 
+  "teamSelectionTime": 90,                 // Time allowed for team selection in seconds
+  "singlesPickCount": 3,                   // Number of Pokemon to select for Singles (usually 3) 
+  "doublesPickCount": 4,                   // Number of Pokemon to select for Doubles (usually 4) 
   "maxEloDiff": 200,                       // Max Elo gap for matchmaking
   "maxQueueTime": 300,                     // Max wait time (seconds) before relaxing Elo rules
   "maxEloMultiplier": 3.0,                 // Max multiplier for Elo diff relaxation
