@@ -56,14 +56,12 @@ class ServerNetworking {
             val remaining = season.getRemainingTime()
             val lang = config.defaultLang
 
-            // 获取所有模式及其参与人数
             val formats = CobblemonRanked.config.allowedFormats
             val participationByFormat = formats.associate { format ->
                 val count = dao.getParticipationCount(seasonId, format)
                 format to count
             }
 
-            // 构建模式参与人数字符串
             val playersText = formats.joinToString(" ") { format ->
                 val count = participationByFormat[format] ?: 0
                 val formatName = when (format) {
@@ -93,14 +91,11 @@ class ServerNetworking {
             val seasonId = CobblemonRanked.seasonManager.currentSeasonId
             val lang = config.defaultLang
 
-            // 每页显示10条记录
             val pageSize = 10
             val offset = (page - 1) * pageSize
 
-            // 使用分页查询获取当前页的数据
             val currentPageList = dao.getLeaderboard(seasonId, format, offset.toLong(), pageSize)
 
-            // 获取总记录数
             val totalPlayers = dao.getPlayerCount(seasonId, format)
             val totalPages = (totalPlayers + pageSize - 1) / pageSize
 
@@ -115,7 +110,7 @@ class ServerNetworking {
 
                 currentPageList.forEachIndexed { index, data ->
                     val rank = offset + index + 1
-                    append("\n") // 添加换行符
+                    append("\n")
                     append(
                         MessageConfig.get("leaderboard.entry", lang,
                             "rank" to rank.toString(),

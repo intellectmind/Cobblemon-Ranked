@@ -18,5 +18,16 @@
   "cobblemon_ranked.mode.doubles": "双打",
   "cobblemon_ranked.mode.2v2singles": "2v2 单打",
   "cobblemon_ranked.cross_server.web_portal": "在线网站(点击打开): %s",
-  "cobblemon_ranked.cross_server.auth_key": "认证密钥(点击复制): %s"
+  "cobblemon_ranked.cross_server.auth_key": "认证密钥(点击复制): %s",
+  "cobblemon_ranked.selection.title": "选择出战宝可梦",
+  "cobblemon_ranked.selection.confirm": "确认出战",
+  "cobblemon_ranked.selection.pick": "请选择 %d / %d",
+  "cobblemon_ranked.selection.time": "剩余时间: %d秒",
+  "cobblemon_ranked.selection.opponent": "对手: %s",
+  "cobblemon_ranked.selection.your_team": "你的队伍",
+  "cobblemon_ranked.selection.vs": "VS",
+  "cobblemon_ranked.selection.male": "§b♂",
+  "cobblemon_ranked.selection.female": "§d♀",
+  "cobblemon_ranked.selection.shiny": "§6★",
+  "cobblemon_ranked.selection.lvl": "Lv.%d"
 }

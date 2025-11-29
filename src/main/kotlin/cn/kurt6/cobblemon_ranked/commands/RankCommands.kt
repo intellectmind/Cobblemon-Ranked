@@ -129,15 +129,6 @@ object RankCommands {
                         val lang = newConfig.defaultLang
 
                         it.source.sendMessage(Text.literal(MessageConfig.get("config.reloaded", lang)))
-
-//                        val jankson = blue.endless.jankson.Jankson.builder().build()
-//                        val configJson = jankson.toJson(newConfig).toJson(true, true)
-//
-//                        // 将配置每行逐条发送
-//                        configJson.lines().forEach { line ->
-//                            it.source.sendMessage(Text.literal(line))
-//                        }
-
                         1
                     }
                 )
@@ -177,7 +168,6 @@ object RankCommands {
                     )
                     .then(CommandManager.argument("player", EntityArgumentType.player())
                         .then(CommandManager.argument("format", StringArgumentType.word())
-                            // 省略 season 参数时使用当前赛季
                             .executes { ctx ->
                                 val player = EntityArgumentType.getPlayer(ctx, "player")
                                 val format = StringArgumentType.getString(ctx, "format")
@@ -206,7 +196,6 @@ object RankCommands {
                 )
                 .then(CommandManager.literal("top")
                     .then(CommandManager.argument("format", StringArgumentType.word())
-                        // 当 season 省略时使用当前赛季
                         .executes { ctx ->
                             val format = StringArgumentType.getString(ctx, "format")
                             if (!validateFormatOrFail(format, ctx.source)) return@executes 0
@@ -319,14 +308,12 @@ object RankCommands {
         val manager = CobblemonRanked.seasonManager
         val lang = CobblemonRanked.config.defaultLang
 
-        // 正确查找任意赛季
         val season = manager.rankDao.getSeasonInfo(seasonId)
             ?: run {
                 source.sendMessage(Text.literal(MessageConfig.get("setSeasonName.error", lang, "seasonId" to seasonId)))
                 return
             }
 
-        // 写入数据库
         manager.rankDao.saveSeasonInfo(
             seasonId = seasonId,
             startDate = season.startDate,
@@ -342,12 +329,6 @@ object RankCommands {
         source.sendMessage(Text.literal(MessageConfig.get("setSeasonName.success", lang, "seasonId" to seasonId, "name" to name)))
     }
 
-    /**
-     * 验证对战模式是否有效
-     * @param format 要验证的模式名称
-     * @param source 命令源
-     * @return 如果模式有效返回true，否则返回false并发送错误消息
-     */
     private fun validateFormatOrFail(format: String, source: ServerCommandSource): Boolean {
         val lang = CobblemonRanked.config.defaultLang
         if (!CobblemonRanked.config.allowedFormats.contains(format)) {
@@ -357,11 +338,6 @@ object RankCommands {
         return true
     }
 
-    /**
-     * 发放段位奖励给指定玩家
-     * @param ctx 命令上下文
-     * @return 执行结果(1成功/0失败)
-     */
     private fun grantRankReward(ctx: CommandContext<ServerCommandSource>): Int {
         val source = ctx.source
         val lang = CobblemonRanked.config.defaultLang
@@ -369,7 +345,6 @@ object RankCommands {
         val format = FormatArgumentType.getFormat(ctx, "format")
         val rank = StringArgumentType.getString(ctx, "rank")
 
-        // 验证段位是否有效
         val validRanks = CobblemonRanked.config.rankTitles.values.toSet()
         val matchedRank = validRanks.firstOrNull { it.equals(rank.trim(), ignoreCase = true) }
 
@@ -379,17 +354,11 @@ object RankCommands {
             return 0
         }
 
-        // 调用奖励管理器发放奖励
         CobblemonRanked.rewardManager.grantRankReward(player, matchedRank, format, source.server)
         source.sendMessage(Text.literal(MessageConfig.get("reward.granted_to", lang, "player" to player.name.string, "format" to format, "rank" to matchedRank)))
         return 1
     }
 
-    /**
-     * 结束当前赛季
-     * @param ctx 命令上下文
-     * @return 执行结果(1成功/0失败)
-     */
     private fun endSeason(ctx: CommandContext<ServerCommandSource>): Int {
         val source = ctx.source
         val lang = CobblemonRanked.config.defaultLang
@@ -403,21 +372,13 @@ object RankCommands {
         return 1
     }
 
-    /**
-     * 加入匹配队列
-     * @param ctx 命令上下文
-     * @param format 对战格式(可选)
-     * @return 执行结果(1成功/0失败)
-     */
     private fun joinQueue(ctx: CommandContext<ServerCommandSource>, format: String?): Int {
         val player = ctx.source.player ?: return 0
         val selectedFormat = format ?: CobblemonRanked.config.defaultFormat
 
-        // 退出所有其他模式
-        CobblemonRanked.matchmakingQueue.removePlayer(player.uuid)  // 清 1v1 / 2v2 doubles
-        DuoMatchmakingQueue.removePlayer(player)                    // 清 2v2singles
+        CobblemonRanked.matchmakingQueue.removePlayer(player.uuid)
+        DuoMatchmakingQueue.removePlayer(player)
 
-        // 直接调用加入队列，内部会获取并验证队伍
         CobblemonRanked.matchmakingQueue.addPlayer(player, selectedFormat)
         return 1
     }
@@ -464,8 +425,6 @@ object RankCommands {
         val lang = CobblemonRanked.config.defaultLang
         val source = ctx.source
         val dao = CobblemonRanked.rankDao
-
-        // 获取总记录数
         val totalPlayers = dao.getPlayerCount(seasonId, format)
 
         if (totalPlayers == 0) {
@@ -476,13 +435,10 @@ object RankCommands {
             return 1
         }
 
-        // 计算分页
         val pageSize = count
         val totalPages = (totalPlayers + pageSize - 1) / pageSize
         val currentPage = page.coerceIn(1, totalPages)
         val offset = (currentPage - 1).toLong() * pageSize
-
-        // 只查询当前页的数据
         val pageData = dao.getLeaderboard(seasonId, format, offset, pageSize)
 
         val header = MessageConfig.get("leaderboard.header", lang,
@@ -507,21 +463,17 @@ object RankCommands {
             source.sendMessage(Text.literal(entry))
         }
 
-        // 添加分页导航按钮
         if (totalPages > 1) {
             val nav = Text.empty()
-            // 添加上一页按钮（如果当前不是第一页）
             if (currentPage > 1) {
                 nav.append(link(MessageConfig.get("leaderboard.prev_page", lang), "/rank top $format $seasonId ${currentPage - 1} $count"))
             }
 
-            // 添加下一页按钮（如果当前不是最后一页）
             if (currentPage < totalPages) {
                 nav.append(Text.literal("   "))
                 nav.append(link(MessageConfig.get("leaderboard.next_page", lang), "/rank top $format $seasonId ${currentPage + 1} $count"))
             }
 
-            // 只有在有按钮时才发送导航
             if (!nav.siblings.isEmpty()) {
                 source.sendMessage(nav)
             }
@@ -537,14 +489,12 @@ object RankCommands {
         val remaining = season.getRemainingTime()
         val seasonId = season.currentSeasonId
 
-        // 获取所有模式及其参与人数
         val formats = CobblemonRanked.config.allowedFormats
         val participationByFormat = formats.associate { format ->
             val count = CobblemonRanked.rankDao.getParticipationCount(seasonId, format)
             format to count
         }
 
-        // 构建模式参与人数字符串
         val playersText = formats.joinToString(" ") { format ->
             val count = participationByFormat[format] ?: 0
             val formatName = when (format) {
@@ -841,7 +791,6 @@ object RankCommands {
             return 1
         }
 
-        // 获取总使用次数用于计算使用率
         val totalUsageCount = dao.getTotalPokemonUsageCount(seasonId)
 
         val header = MessageConfig.get("pokemon_usage.header", lang,
@@ -853,7 +802,6 @@ object RankCommands {
         source.sendMessage(Text.literal(header))
 
         usageList.forEachIndexed { index, (species, count) ->
-            // 计算使用率
             val usageRate = if (totalUsageCount > 0) {
                 String.format("%.2f", count.toDouble() / totalUsageCount * 100)
             } else {
@@ -869,7 +817,6 @@ object RankCommands {
             source.sendMessage(Text.literal(entry))
         }
 
-        // 添加分页导航
         val nav = Text.empty()
         if (page > 1) {
             nav.append(link(MessageConfig.get("leaderboard.prev_page", lang), "/rank pokemon_usage $seasonId ${page - 1}"))

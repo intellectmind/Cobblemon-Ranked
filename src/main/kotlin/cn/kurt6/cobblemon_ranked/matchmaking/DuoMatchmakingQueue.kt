@@ -19,7 +19,6 @@ object DuoMatchmakingQueue {
     private val queuedPlayers = CopyOnWriteArrayList<QueuedPlayer>()
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private val cooldownMap = mutableMapOf<UUID, Long>()
-    private const val BATTLE_COOLDOWN_MS = 10_000L
 
     init {
         scheduler.scheduleAtFixedRate({
@@ -76,7 +75,6 @@ object DuoMatchmakingQueue {
         synchronized(queuedPlayers) {
             if (queuedPlayers.size < 4) return
 
-            val now = System.currentTimeMillis()
             val battleRegistry = Cobblemon.battleRegistry
             val entries = queuedPlayers.toList()
             val processedPlayers = mutableSetOf<UUID>()

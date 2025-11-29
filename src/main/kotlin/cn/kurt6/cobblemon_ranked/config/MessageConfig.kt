@@ -17,6 +17,24 @@ object MessageConfig {
         if (!Files.exists(path)) {
             Files.createDirectories(path.parent)
             val defaultMessages = mapOf(
+                // Team Selection (队伍选择)
+                "battle.team.duplicate_items" to mapOf(
+                    "zh" to "§c队伍中包含重复携带道具，请调整后再试！",
+                    "en" to "§cDuplicate held items detected in your team!"
+                ),
+                "queue.selection_confirmed" to mapOf(
+                    "zh" to "§a已确认出战队伍，等待对手...",
+                    "en" to "§aTeam selection confirmed. Waiting for opponent..."
+                ),
+                "queue.opponent_confirmed" to mapOf(
+                    "zh" to "§e对手已确认出战队伍！",
+                    "en" to "§eOpponent has confirmed their team!"
+                ),
+                "queue.selection_timeout" to mapOf(
+                    "zh" to "§c选人超时，系统已自动为您选择默认首发。",
+                    "en" to "§cSelection timed out. Default team selected automatically."
+                ),
+
                 "battle.VictoryRewards" to mapOf(
                     "zh" to "§a已发放获胜奖励！",
                     "en" to "§aVictory rewards have been granted!"

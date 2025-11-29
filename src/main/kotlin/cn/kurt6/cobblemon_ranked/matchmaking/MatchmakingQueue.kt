@@ -8,12 +8,7 @@ import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.config.RankConfig
 import cn.kurt6.cobblemon_ranked.util.RankUtils
 import com.cobblemon.mod.common.Cobblemon
-import com.cobblemon.mod.common.api.battles.model.PokemonBattle
 import com.cobblemon.mod.common.battles.BattleFormat
-import com.cobblemon.mod.common.battles.BattleSide
-import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
-import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
-import com.cobblemon.mod.common.pokemon.Pokemon
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.network.ServerPlayerEntity
@@ -53,8 +48,6 @@ class MatchmakingQueue {
     }
 
     companion object {
-        private const val BATTLE_COOLDOWN_MS = 10_000L
-
         fun registerDisconnectHandler() {
             ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
                 val player = handler.player
@@ -189,7 +182,6 @@ class MatchmakingQueue {
     }
 
     private fun processQueue() {
-        // 第一阶段：在锁内收集所有匹配对
         val matchedPairs = mutableListOf<Pair<QueueEntry, QueueEntry>>()
         
         synchronized(queue) {
@@ -203,7 +195,6 @@ class MatchmakingQueue {
                     val player1 = entries[i]
                     val player2 = entries[j]
 
-                    // 跳过已处理的玩家
                     if (player1.player.uuid in processedInThisRound ||
                         player2.player.uuid in processedInThisRound ||
                         player1.player.uuid in processingMatches ||
@@ -211,47 +202,37 @@ class MatchmakingQueue {
                         continue
                     }
 
-                    // 格式不匹配
                     if (player1.format != player2.format) continue
 
-                    // ELO不兼容
                     if (!isEloCompatible(player1, player2)) continue
 
-                    // 再次检查玩家仍在队列中（防止并发修改）
                     if (!queue.containsKey(player1.player.uuid) ||
                         !queue.containsKey(player2.player.uuid)) {
                         continue
                     }
 
-                    // 检查玩家是否在战斗中
                     val battleRegistry = Cobblemon.battleRegistry
                     if (battleRegistry.getBattleByParticipatingPlayer(player1.player) != null ||
                         battleRegistry.getBattleByParticipatingPlayer(player2.player) != null) {
-                        // 从队列中移除但不匹配
                         queue.remove(player1.player.uuid)
                         queue.remove(player2.player.uuid)
                         continue
                     }
 
-                    // 再次验证队伍
                     if (!BattleHandler.validateTeam(player1.player, player1.team, player1.format) ||
                         !BattleHandler.validateTeam(player2.player, player2.team, player2.format)) {
                         continue
                     }
 
-                    // 从队列中移除（在锁内完成）
                     val removed1 = queue.remove(player1.player.uuid)
                     val removed2 = queue.remove(player2.player.uuid)
 
-                    // 确认移除成功
                     if (removed1 == null || removed2 == null) {
-                        // 恢复队列
                         removed1?.let { queue[player1.player.uuid] = it }
                         removed2?.let { queue[player2.player.uuid] = it }
                         continue
                     }
 
-                    // 标记为正在处理
                     processingMatches.add(player1.player.uuid)
                     processingMatches.add(player2.player.uuid)
 
@@ -266,18 +247,15 @@ class MatchmakingQueue {
             }
         }
 
-        // 第二阶段：在锁外处理战斗启动
         matchedPairs.forEach { (p1, p2) ->
             try {
                 startRankedBattle(p1, p2)
             } catch (e: Exception) {
                 logger.error("Error starting battle for ${p1.player.name.string} vs ${p2.player.name.string}", e)
                 
-                // 失败时清理标记
                 processingMatches.remove(p1.player.uuid)
                 processingMatches.remove(p2.player.uuid)
                 
-                // 如果战斗启动失败，将玩家放回队列
                 if (!p1.player.isDisconnected && Cobblemon.battleRegistry.getBattleByParticipatingPlayer(p1.player) == null) {
                     queue[p1.player.uuid] = p1
                 }
@@ -311,18 +289,16 @@ class MatchmakingQueue {
 
     private fun startRankedBattle(player1: QueueEntry, player2: QueueEntry) {
         val lang = config.defaultLang
-        val team1 = getBattlePokemonList(player1.player, player1.team)
-        val team2 = getBattlePokemonList(player2.player, player2.team)
+        val team1Uuids = player1.team
+        val team2Uuids = player2.team
 
-        if (team1.isEmpty() || team2.isEmpty()) {
+        if (team1Uuids.isEmpty() || team2Uuids.isEmpty()) {
             RankUtils.sendMessage(player1.player, MessageConfig.get("queue.team_load_fail", lang))
             RankUtils.sendMessage(player2.player, MessageConfig.get("queue.team_load_fail", lang))
-            
-            // 清理处理标记
+
             processingMatches.remove(player1.player.uuid)
             processingMatches.remove(player2.player.uuid)
-            
-            // 放回队列
+
             queue[player1.player.uuid] = player1
             queue[player2.player.uuid] = player2
             return
@@ -333,8 +309,7 @@ class MatchmakingQueue {
         val arenaResult = BattleHandler.getRandomArenaForPlayers(2) ?: run {
             RankUtils.sendMessage(player1.player, MessageConfig.get("queue.no_arena", lang))
             RankUtils.sendMessage(player2.player, MessageConfig.get("queue.no_arena", lang))
-            
-            // 清理处理标记
+
             processingMatches.remove(player1.player.uuid)
             processingMatches.remove(player2.player.uuid)
             return
@@ -345,8 +320,7 @@ class MatchmakingQueue {
         val worldId = Identifier.tryParse(arena.world) ?: run {
             RankUtils.sendMessage(player1.player, MessageConfig.get("queue.invalid_world", lang, "world" to arena.world))
             RankUtils.sendMessage(player2.player, MessageConfig.get("queue.invalid_world", lang, "world" to arena.world))
-            
-            // 清理处理标记
+
             processingMatches.remove(player1.player.uuid)
             processingMatches.remove(player2.player.uuid)
             return
@@ -356,8 +330,7 @@ class MatchmakingQueue {
         val world = server.getWorld(worldKey) ?: run {
             RankUtils.sendMessage(player1.player, MessageConfig.get("queue.world_load_fail", lang, "world" to arena.world))
             RankUtils.sendMessage(player2.player, MessageConfig.get("queue.world_load_fail", lang, "world" to arena.world))
-            
-            // 清理处理标记
+
             processingMatches.remove(player1.player.uuid)
             processingMatches.remove(player2.player.uuid)
             return
@@ -367,34 +340,27 @@ class MatchmakingQueue {
         RankUtils.sendMessage(player2.player, MessageConfig.get("queue.match_success", lang))
 
         scheduler.schedule({
-            server.execute{
+            server.execute {
                 try {
-                    // 最后一次检查玩家状态
                     if (player1.player.isDisconnected || player2.player.isDisconnected) {
-
                         if (!player1.player.isDisconnected) {
                             queue[player1.player.uuid] = player1
                             RankUtils.sendMessage(player1.player, MessageConfig.get("queue.opponent_disconnected", lang))
                         }
-
                         if (!player2.player.isDisconnected) {
                             queue[player2.player.uuid] = player2
                             RankUtils.sendMessage(player2.player, MessageConfig.get("queue.opponent_disconnected", lang))
                         }
-
-                        // 清理处理标记
                         processingMatches.remove(player1.player.uuid)
                         processingMatches.remove(player2.player.uuid)
                         return@execute
                     }
 
-                    // 最后一次验证队伍
                     if (!BattleHandler.validateTeam(player1.player, player1.team, player1.format) ||
                         !BattleHandler.validateTeam(player2.player, player2.team, player2.format)) {
                         RankUtils.sendMessage(player1.player, MessageConfig.get("queue.cancel_team_changed", lang))
                         RankUtils.sendMessage(player2.player, MessageConfig.get("queue.cancel_team_changed", lang))
-                        
-                        // 清理处理标记
+
                         processingMatches.remove(player1.player.uuid)
                         processingMatches.remove(player2.player.uuid)
                         return@execute
@@ -407,71 +373,27 @@ class MatchmakingQueue {
                     player2.player.teleport(world, positions[1].x, positions[1].y, positions[1].z, 0f, 0f)
 
                     if (config.enableCustomLevel) {
-                        RankUtils.sendMessage(
-                            player1.player,
-                            MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel)
-                        )
-                        RankUtils.sendMessage(
-                            player2.player,
-                            MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel)
-                        )
-                        BattleHandler.prepareBattleSnapshot(player1.player, player1.team)
-                        BattleHandler.prepareBattleSnapshot(player2.player, player2.team)
-                        BattleHandler.applyLevelAdjustments(player1.player)
-                        BattleHandler.applyLevelAdjustments(player2.player)
+                        RankUtils.sendMessage(player1.player, MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel))
+                        RankUtils.sendMessage(player2.player, MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel))
                     }
 
-                    val actor1 = PlayerBattleActor(player1.player.uuid, team1)
-                    val actor2 = PlayerBattleActor(player2.player.uuid, team2)
-                    val side1 = BattleSide(actor1)
-                    val side2 = BattleSide(actor2)
-
-                    val result = Cobblemon.battleRegistry.startBattle(player1.format, side1, side2)
-
-                    var battle: PokemonBattle? = null
-                    var failReason: String? = null
-
-                    result.ifSuccessful { b -> battle = b }
-                    result.ifErrored { error -> failReason = error.toString() }
-
-                    if (battle == null) {
-                        val errorMsg = failReason ?: "未知错误"
-                        RankUtils.sendMessage(player1.player, MessageConfig.get("queue.battle_start_fail", lang, "reason" to errorMsg))
-                        RankUtils.sendMessage(player2.player, MessageConfig.get("queue.battle_start_fail", lang, "reason" to errorMsg))
-
-                        val cooldownUntil = System.currentTimeMillis() + BATTLE_COOLDOWN_MS
-                        cooldownMap[player1.player.uuid] = cooldownUntil
-                        cooldownMap[player2.player.uuid] = cooldownUntil
-                        
-                        // 清理处理标记
-                        processingMatches.remove(player1.player.uuid)
-                        processingMatches.remove(player2.player.uuid)
-                        return@execute
-                    }
-
-                    val battleId = UUID.randomUUID()
                     val formatName = getFormatName(player1.format)
-                    val nonNullBattle = battle!!
 
-                    BattleHandler.markAsRanked(battleId, formatName)
-                    BattleHandler.registerBattle(nonNullBattle, battleId)
+                    cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.startSelection(
+                        player1.player, team1Uuids,
+                        player2.player, team2Uuids,
+                        player1.format, formatName
+                    )
 
-                    // 清理处理标记（战斗成功启动）
                     processingMatches.remove(player1.player.uuid)
                     processingMatches.remove(player2.player.uuid)
 
-                    RankUtils.sendMessage(player1.player, MessageConfig.get("queue.battle_start", lang, "opponent" to player2.player.name.string))
-                    RankUtils.sendMessage(player2.player, MessageConfig.get("queue.battle_start", lang, "opponent" to player1.player.name.string))
-                    
-                    logger.info("Battle started successfully: ${player1.player.name.string} vs ${player2.player.name.string} (BattleID: $battleId)")
                 } catch (e: Exception) {
                     logger.error("Error in battle startup execution", e)
-                    
-                    // 清理处理标记
+
                     processingMatches.remove(player1.player.uuid)
                     processingMatches.remove(player2.player.uuid)
-                    
-                    // 尝试放回队列
+
                     if (!player1.player.isDisconnected) queue[player1.player.uuid] = player1
                     if (!player2.player.isDisconnected) queue[player2.player.uuid] = player2
                 }
@@ -489,16 +411,6 @@ class MatchmakingQueue {
         return party.mapNotNull { pokemon ->
             pokemon?.uuid
         }
-    }
-
-    private fun getBattlePokemonList(player: ServerPlayerEntity, team: List<UUID>): List<BattlePokemon> {
-        return team.mapNotNull { id -> getBattlePokemon(player, id) }
-    }
-
-    private fun getBattlePokemon(player: ServerPlayerEntity, uuid: UUID): BattlePokemon? {
-        val party = Cobblemon.storage.getParty(player)
-        val pokemon: Pokemon? = party.find { it?.uuid == uuid }
-        return pokemon?.let { BattlePokemon(it) }
     }
 
     private fun getFormatName(format: BattleFormat): String {

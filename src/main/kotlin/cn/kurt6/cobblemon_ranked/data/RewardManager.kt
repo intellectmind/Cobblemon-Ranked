@@ -10,18 +10,14 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
 class RewardManager(private val rankDao: RankDao) {
-    // 检查并发放段位奖励
     fun grantRankRewardIfEligible(player: PlayerEntity, rank: String, format: String, server: MinecraftServer) {
         val uuid = player.uuid
         val seasonId = seasonManager.currentSeasonId
         val lang = CobblemonRanked.config.defaultLang
 
-        // 获取玩家数据
         val playerData = rankDao.getPlayerData(uuid, seasonId, format) ?: return
 
-        // 检查时传入当前格式
         if (!playerData.hasClaimedReward(rank, format)) {
-            // 胜率判断逻辑
             val requiredWinRate = CobblemonRanked.config.rankRequirements[rank] ?: 0.0
             val totalGames = playerData.wins + playerData.losses
             val winRate = if (totalGames > 0) playerData.wins.toDouble() / totalGames else 0.0
@@ -34,18 +30,15 @@ class RewardManager(private val rankDao: RankDao) {
             }
             BattleHandler.grantRankReward(player, rank, format, server)
 
-            // 标记时传入当前格式
             playerData.markRewardClaimed(rank, format)
             rankDao.savePlayerData(playerData)
 
-            // 广播全服首次领取该段位奖励
             val name = player.name.string
             val message = Text.literal(MessageConfig.get("reward.broadcast", lang, "player" to name, "rank" to rank))
             server.playerManager.broadcast(message, false)
         }
     }
 
-    // 强制发放段位奖励
     fun grantRankReward(player: PlayerEntity, rank: String, format: String, server: MinecraftServer) {
         val config = CobblemonRanked.config
         val lang = CobblemonRanked.config.defaultLang
@@ -56,7 +49,6 @@ class RewardManager(private val rankDao: RankDao) {
             return
         }
 
-        // 执行所有奖励指令
         rewards.forEach { command ->
             executeRewardCommand(command, player, server)
         }

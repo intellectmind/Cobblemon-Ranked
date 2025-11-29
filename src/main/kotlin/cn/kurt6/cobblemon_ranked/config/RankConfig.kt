@@ -29,6 +29,21 @@ data class RankConfig(
     @Comment("Maximum number of Pokémon allowed in a team / 宝可梦限制最多数量")
     var maxTeamSize: Int = 6,
 
+    @Comment("Allow duplicate held items in a team / 是否允许队伍中携带重复道具 (道具条款)")
+    var allowDuplicateItems: Boolean = false,
+
+    @Comment("Enable Team Preview and Selection (Bring 6 Pick 3/4) / 是否启用队伍预览和选出阶段 (6选3/4)")
+    var enableTeamPreview: Boolean = true,
+
+    @Comment("Time allowed for team selection in seconds / 队伍选择阶段的时间限制(秒)")
+    var teamSelectionTime: Int = 90,
+
+    @Comment("Number of Pokemon to select for Singles (usually 3) / 单打模式选出的宝可梦数量 (通常为3)")
+    var singlesPickCount: Int = 3,
+
+    @Comment("Number of Pokemon to select for Doubles (usually 4) / 双打模式选出的宝可梦数量 (通常为4)")
+    var doublesPickCount: Int = 4,
+
     @Comment("Maximum allowed Elo difference in matchmaking / 队伍Elo差限制")
     var maxEloDiff: Int = 200,
 

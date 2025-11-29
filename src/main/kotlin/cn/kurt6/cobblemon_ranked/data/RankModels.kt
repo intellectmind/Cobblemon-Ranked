@@ -27,22 +27,12 @@ data class PlayerRankData(
     }
 
     fun hasClaimedReward(rank: String, format: String): Boolean {
-        // 确保只检查当前模式的奖励
         return claimedRanks.any {
             it.startsWith("$seasonId:$format:") && it.endsWith(":$rank")
         }
     }
 
     fun markRewardClaimed(rank: String, format: String) {
-        // 格式: seasonId:format:rank
         claimedRanks.add("$seasonId:$format:$rank")
     }
-}
-
-data class SeasonRemainingTime(
-    val days: Long,
-    val hours: Long,
-    val minutes: Long
-) {
-    override fun toString() = "${days}d ${hours}h ${minutes}m"
 }

@@ -249,6 +249,21 @@ object ConfigManager {
                 val rawOnlyBaseFormWithEvolution = json.get("onlyBaseFormWithEvolution")
                 val fixedOnlyBaseFormWithEvolution = rawOnlyBaseFormWithEvolution?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.onlyBaseFormWithEvolution
 
+                val rawAllowDuplicateItems = json.get("allowDuplicateItems")
+                val fixedAllowDuplicateItems = rawAllowDuplicateItems?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.allowDuplicateItems
+
+                val rawEnableTeamPreview = json.get("enableTeamPreview")
+                val fixedEnableTeamPreview = rawEnableTeamPreview?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.enableTeamPreview
+
+                val rawTeamSelectionTime = json.get("teamSelectionTime")
+                val fixedTeamSelectionTime = rawTeamSelectionTime?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.teamSelectionTime
+
+                val rawSinglesPickCount = json.get("singlesPickCount")
+                val fixedSinglesPickCount = rawSinglesPickCount?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.singlesPickCount
+
+                val rawDoublesPickCount = json.get("doublesPickCount")
+                val fixedDoublesPickCount = rawDoublesPickCount?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.doublesPickCount
+
                 val rawVictoryRewards = json.get("victoryRewards") as? blue.endless.jankson.JsonArray
                 val fixedVictoryRewards = rawVictoryRewards
                     ?.mapNotNull {
@@ -274,6 +289,11 @@ object ConfigManager {
                     bannedHeldItems = fixedBannedHeldItems,
                     bannedPokemon = fixedBannedPokemon,
                     maxQueueTime = fixedMaxQueueTime,
+                    allowDuplicateItems = fixedAllowDuplicateItems,
+                    enableTeamPreview = fixedEnableTeamPreview,
+                    teamSelectionTime = fixedTeamSelectionTime,
+                    singlesPickCount = fixedSinglesPickCount,
+                    doublesPickCount = fixedDoublesPickCount,
                     maxEloMultiplier = fixedMaxEloMultiplier,
                     battleArenas = fixedBattleArenas,
                     defaultFormat = fixedDefaultFormat,

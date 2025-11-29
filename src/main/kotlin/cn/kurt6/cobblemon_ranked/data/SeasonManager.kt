@@ -11,7 +11,6 @@ import java.time.temporal.ChronoUnit
 
 class SeasonManager(
     val rankDao: RankDao,
-    private val rewardManager: RewardManager
 ) {
     private val logger = LoggerFactory.getLogger(SeasonManager::class.java)
     var currentSeasonName: String = ""
@@ -37,7 +36,6 @@ class SeasonManager(
         currentSeasonName = lastSeason?.seasonName ?: ""
 
         if (lastSeason == null) {
-            // 全新安装，创建第一个赛季
             currentSeasonId = 1
             startDate = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS)
             endDate = startDate.plusDays(config.seasonDuration.toLong())
@@ -45,13 +43,11 @@ class SeasonManager(
             currentSeasonName = ""
             saveSeasonInfo()
         } else {
-            // 加载现有赛季
             currentSeasonId = lastSeason.seasonId
             startDate = LocalDateTime.parse(lastSeason.startDate, dateFormatter)
             endDate = LocalDateTime.parse(lastSeason.endDate, dateFormatter)
             currentSeasonName = lastSeason.seasonName
 
-            // 如果赛季已结束但未处理，自动结束赛季
             if (lastSeason.ended) {
                 logger.warn("检测到未处理的赛季结束，需要手动处理赛季 ${lastSeason.seasonId}")
             }
@@ -65,17 +61,14 @@ class SeasonManager(
     }
 
     fun endSeason(server: MinecraftServer) {
-        // 标记旧赛季已结束
         rankDao.markSeasonEnded(currentSeasonId)
 
-        // 清空所有玩家的段位奖励记录
         val allData = rankDao.getAllPlayerData(currentSeasonId)
         allData.forEach {
             it.claimedRanks.clear()
             rankDao.savePlayerData(it)
         }
 
-        // 开始新赛季
         currentSeasonId++
         startDate = LocalDateTime.now()
         endDate = startDate.plusDays(config.seasonDuration.toLong())
@@ -83,7 +76,6 @@ class SeasonManager(
             .withMinute(59)
             .withSecond(59)
 
-        // 保存赛季信息到数据库
         currentSeasonName = ""
         saveSeasonInfo()
         announceNewSeason(server)

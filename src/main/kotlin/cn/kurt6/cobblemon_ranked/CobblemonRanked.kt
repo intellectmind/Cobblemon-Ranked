@@ -41,10 +41,10 @@ class CobblemonRanked : ModInitializer {
         // 初始化消息配置
         MessageConfig.get("msg_example")
 
-        // 初始化核心组件 - 使用数据库配置
+        // 初始化核心组件
         rankDao = RankDao(databaseConfig, dataPath.toFile())
         rewardManager = RewardManager(rankDao)
-        seasonManager = SeasonManager(rankDao, rewardManager)
+        seasonManager = SeasonManager(rankDao)
 
         matchmakingQueue = MatchmakingQueue()
 
@@ -59,9 +59,7 @@ class CobblemonRanked : ModInitializer {
         // 注册玩家登录事件
         ServerPlayConnectionEvents.JOIN.register { handler, sender, server ->
             val player = handler.player
-            // 检查并恢复原始等级（如果数据库中有记录）
             BattleHandler.restoreLevelsFromDatabase(player)
-
             CrossServerSocket.handlePlayerJoin(handler.player)
         }
 
@@ -81,6 +79,8 @@ class CobblemonRanked : ModInitializer {
             PlayerRankDataPayload.ID,
             PlayerRankDataPayload.CODEC
         )
+
+        // 注册网络包
         PayloadTypeRegistry.playS2C().register(
             SeasonInfoTextPayload.ID,
             SeasonInfoTextPayload.CODEC
@@ -89,6 +89,18 @@ class CobblemonRanked : ModInitializer {
             LeaderboardPayload.ID,
             LeaderboardPayload.CODEC
         )
+        PayloadTypeRegistry.playS2C().register(
+            TeamSelectionStartPayload.ID,
+            TeamSelectionStartPayload.CODEC
+        )
+        PayloadTypeRegistry.playC2S().register(
+            TeamSelectionSubmitPayload.ID,
+            TeamSelectionSubmitPayload.CODEC
+        )
+
+        ServerPlayNetworking.registerGlobalReceiver(TeamSelectionSubmitPayload.ID) { payload, context ->
+            cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.handleSubmission(context.player(), payload.selectedUuids)
+        }
 
         // 注册网络处理器
         ServerPlayNetworking.registerGlobalReceiver(RequestPlayerRankPayload.ID) { payload, context ->
@@ -120,18 +132,16 @@ class CobblemonRanked : ModInitializer {
     private fun setupSeasonCheck() {
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             var tickCounter = 0
-            val interval = 20 * 60 * 10 // 10分钟
+            val interval = 20 * 60 * 10
             var cleanupCounter = 0
-            val cleanupInterval = 20 * 60 * 60 * 24 // 24小时
+            val cleanupInterval = 20 * 60 * 60 * 24
 
             ServerTickEvents.START_SERVER_TICK.register {
                 if (++tickCounter >= interval) {
-                    tickCounter = 0
                     seasonManager.checkSeasonEnd(server)
                 }
 
                 if (++cleanupCounter >= cleanupInterval) {
-                    cleanupCounter = 0
                     try {
                         rankDao.cleanupOldReturnLocations()
                     } catch (e: Exception) {

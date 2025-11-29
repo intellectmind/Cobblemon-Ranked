@@ -14,7 +14,7 @@ abstract class StandardImageButton(
     width: Int,
     height: Int,
     private val texture: Identifier,
-    private val hoverOverlay: Identifier? = Identifier.of("cobblemon_ranked", "textures/gui/hover_overlay.png") // 默认蒙版
+    private val hoverOverlay: Identifier? = Identifier.of("cobblemon_ranked", "textures/gui/hover_overlay.png")
 ) : ClickableWidget(x, y, width, height, Text.empty()) {
 
     private var hoverProgress = 0f
@@ -24,10 +24,8 @@ abstract class StandardImageButton(
         val target = if (isHovered) 1f else 0f
         hoverProgress += (target - hoverProgress) * animationSpeed
 
-        // 渲染背景
         context.drawTexture(texture, x, y, 0f, 0f, width, height, width, height)
 
-        // 渲染自定义 hover overlay
         if (hoverProgress > 0.01f && hoverOverlay != null) {
             val inset = 1
             val overlayX = x + inset

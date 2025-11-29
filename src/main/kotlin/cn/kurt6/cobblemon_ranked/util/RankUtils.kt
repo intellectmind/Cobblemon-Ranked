@@ -1,5 +1,3 @@
-// RankUtils.kt
-// 工具类集合
 package cn.kurt6.cobblemon_ranked.util
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
@@ -12,7 +10,6 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
 object RankUtils {
-    // 消息工具
     fun sendMessage(player: PlayerEntity, message: String) {
         player.sendMessage(Text.literal(message), false)
     }
@@ -34,14 +31,6 @@ object RankUtils {
         }
     }
 
-    /**
-     * ELO计算工具
-     * @param winnerElo 胜者当前ELO
-     * @param loserElo 败者当前ELO
-     * @param kFactor K因子（影响ELO变化幅度）
-     * @param minElo 最低ELO分数
-     * @return Pair<新胜者ELO, 新败者ELO>
-     */
     fun calculateElo(
         winnerElo: Int,
         loserElo: Int,
@@ -54,7 +43,6 @@ object RankUtils {
         val newWinnerElo = winnerElo + (kFactor * (1 - winnerExpected)).toInt()
         val newLoserElo = loserElo + (kFactor * (0 - loserExpected)).toInt()
 
-        // 确保ELO不低于最小值
         return Pair(
             maxOf(minElo, newWinnerElo),
             maxOf(minElo, newLoserElo)
@@ -63,55 +51,12 @@ object RankUtils {
 
     private fun <A, B> Pair<A, B>.swap(): Pair<B, A> = Pair(second, first)
 
-    fun updateElo(player: ServerPlayerEntity, win: Boolean) {
-        val seasonId = CobblemonRanked.seasonManager.currentSeasonId
-        val format = "doubles"
-        val dao = CobblemonRanked.rankDao
-
-        val data = dao.getPlayerData(player.uuid, seasonId, format)
-            ?: PlayerRankData(
-                playerId = player.uuid,
-                playerName = player.name.string, // 设置默认名
-                seasonId = seasonId,
-                format = format
-            ).apply {
-                elo = CobblemonRanked.config.initialElo
-            }
-
-        data.playerName = player.name.string // 同步最新玩家名
-
-        val opponentElo = CobblemonRanked.config.initialElo // 对手未知，默认值
-        val (newElo, _) = if (win) {
-            calculateElo(data.elo, opponentElo, CobblemonRanked.config.eloKFactor, CobblemonRanked.config.minElo)
-        } else {
-            calculateElo(opponentElo, data.elo, CobblemonRanked.config.eloKFactor, CobblemonRanked.config.minElo).swap()
-        }
-
-        data.elo = newElo
-        if (win) {
-            data.wins++
-            data.winStreak++
-            if (data.winStreak > data.bestWinStreak) data.bestWinStreak = data.winStreak
-        } else {
-            data.losses++
-            data.winStreak = 0
-        }
-
-        dao.savePlayerData(data)
-    }
-
-    /**
-     * 将玩家输入的段位（如 "gold"）标准化为配置中使用的段位名（如 "Gold"）
-     */
     fun resolveStandardRankName(input: String): String? {
         return CobblemonRanked.config.rankTitles.values.firstOrNull {
             it.equals(input.trim(), ignoreCase = true)
         }
     }
 
-    /**
-     * 根据玩家输入的段位和格式，获取配置中的奖励指令列表（null 表示未配置）
-     */
     fun getRewardCommands(format: String, rankInput: String): List<String>? {
         val standardRank = resolveStandardRankName(rankInput) ?: return null
         return CobblemonRanked.config.rankRewards[format]?.get(standardRank)

@@ -1,4 +1,3 @@
-// PlayerRankDataPayload.kt
 package cn.kurt6.cobblemon_ranked.network
 
 import net.minecraft.network.PacketByteBuf

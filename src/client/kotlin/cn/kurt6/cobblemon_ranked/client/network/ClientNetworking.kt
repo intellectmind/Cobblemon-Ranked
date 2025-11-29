@@ -6,6 +6,7 @@ import cn.kurt6.cobblemon_ranked.network.LeaderboardPayload
 import cn.kurt6.cobblemon_ranked.network.PlayerRankDataPayload
 import cn.kurt6.cobblemon_ranked.network.RequestType
 import cn.kurt6.cobblemon_ranked.network.SeasonInfoTextPayload
+import cn.kurt6.cobblemon_ranked.network.TeamSelectionStartPayload
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.Text.translatable
@@ -37,6 +38,21 @@ fun registerClientReceivers() {
     // 排行榜
     ClientPlayNetworking.registerGlobalReceiver(LeaderboardPayload.ID) { payload, _ ->
         updateScreenInfo(RequestType.LEADERBOARD, payload.text)
+    }
+
+    // 选队
+    ClientPlayNetworking.registerGlobalReceiver(TeamSelectionStartPayload.ID) { payload, context ->
+        context.client().execute {
+            context.client().setScreen(
+                cn.kurt6.cobblemon_ranked.client.gui.TeamSelectionScreen(
+                    payload.limit,
+                    payload.timeLimitSeconds,
+                    payload.opponentName,
+                    payload.opponentTeam,
+                    payload.yourTeam
+                )
+            )
+        }
     }
 }
 

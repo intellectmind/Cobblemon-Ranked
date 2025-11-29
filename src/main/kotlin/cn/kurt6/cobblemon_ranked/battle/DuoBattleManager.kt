@@ -2,7 +2,6 @@ package cn.kurt6.cobblemon_ranked.battle
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
 import cn.kurt6.cobblemon_ranked.CobblemonRanked.Companion.config
-import cn.kurt6.cobblemon_ranked.battle.BattleHandler.restoreLevelAdjustments
 import cn.kurt6.cobblemon_ranked.config.ArenaCoordinate
 import cn.kurt6.cobblemon_ranked.config.BattleArena
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
@@ -171,12 +170,6 @@ object DuoBattleManager {
                 p2,
                 MessageConfig.get("queue.customBattleLevel", lang, "level" to config.customBattleLevel)
             )
-
-            BattleHandler.prepareBattleSnapshot(p1, winnerTeam.getActiveTeam())
-            BattleHandler.prepareBattleSnapshot(p2, loserTeam.getActiveTeam())
-
-            BattleHandler.applyLevelAdjustments(p1)
-            BattleHandler.applyLevelAdjustments(p2)
         }
 
         val team1Pokemon = getBattlePokemonList(p1, winnerTeam.getActiveTeam())
@@ -276,10 +269,6 @@ object DuoBattleManager {
             BattleHandler.sendBattleResultMessage(player, data, eloDiff)
         }
 
-        allPlayers.forEach { player ->
-            restoreLevelAdjustments(player)
-        }
-
         val winnerNames = "${winnerTeam.player1.name.string} & ${winnerTeam.player2.name.string}"
         val loserNames = "${loserTeam.player1.name.string} & ${loserTeam.player2.name.string}"
 
@@ -328,10 +317,26 @@ object DuoBattleManager {
 
     private fun getBattlePokemonList(player: ServerPlayerEntity, uuids: List<UUID>): List<BattlePokemon> {
         val party = Cobblemon.storage.getParty(player)
-        return uuids.mapNotNull { id -> party.find { it?.uuid == id }?.let { BattlePokemon(it!!) } }
+        return uuids.mapNotNull { id -> 
+            val original = party.find { it?.uuid == id } ?: return@mapNotNull null
+            
+            val battleEntity = if (CobblemonRanked.config.enableCustomLevel) {
+                try {
+                    val clone = original.clone()
+                    clone.level = CobblemonRanked.config.customBattleLevel
+                    clone.heal()
+                    clone
+                } catch (e: Exception) {
+                    CobblemonRanked.logger.error("Failed to clone pokemon for duo ranked", e)
+                    original
+                }
+            } else {
+                original
+            }
+            
+            BattlePokemon(battleEntity)
+        }
     }
-
-    fun isTeamInBattle(team: DuoTeam): Boolean = teamBattleIdMap.containsKey(team)
 
     fun cleanupTeamData(vararg teams: DuoTeam) {
         teams.forEach { team ->

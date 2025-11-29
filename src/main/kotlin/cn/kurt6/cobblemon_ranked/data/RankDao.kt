@@ -69,7 +69,6 @@ class RankDao(dbConfig: DatabaseConfig, configDir: File) {
                     PlayerRankTable,
                     SeasonInfoTable,
                     PokemonUsageTable,
-                    PokemonOriginalDataTable,
                     ReturnLocationTable
                 )
             }
@@ -94,7 +93,7 @@ class RankDao(dbConfig: DatabaseConfig, configDir: File) {
         block: () -> T
     ): T {
         var lastException: Exception? = null
-        
+
         repeat(maxRetries) { attempt ->
             try {
                 return executeWithTimeout(operation, block)
@@ -106,12 +105,11 @@ class RankDao(dbConfig: DatabaseConfig, configDir: File) {
                     logger.warn("Database operation '$operation' timed out, retry ${attempt + 1}/$maxRetries (delay: ${delayMs}ms)")
                 }
             } catch (e: Exception) {
-                // 非超时异常不重试
                 logger.error("Database operation '$operation' failed", e)
                 throw e
             }
         }
-        
+
         throw lastException ?: RuntimeException("Failed after $maxRetries retries: $operation")
     }
 
@@ -214,7 +212,7 @@ class RankDao(dbConfig: DatabaseConfig, configDir: File) {
         }
     }
 
-    fun getPlayerData(playerId: UUID, seasonId: Int, format: String? = null): PlayerRankData? = 
+    fun getPlayerData(playerId: UUID, seasonId: Int, format: String? = null): PlayerRankData? =
         executeWithRetry("Get player data") {
             transaction(database) {
                 val query = PlayerRankTable.select {
@@ -399,15 +397,6 @@ class RankDao(dbConfig: DatabaseConfig, configDir: File) {
         override val primaryKey = PrimaryKey(id)
     }
 
-    object PokemonOriginalDataTable : Table("pokemon_original_data") {
-        val playerId = varchar("player_id", 36)
-        val pokemonUuid = varchar("pokemon_uuid", 36)
-        val originalLevel = integer("original_level")
-        val originalExp = integer("original_exp")
-
-        override val primaryKey = PrimaryKey(playerId, pokemonUuid)
-    }
-
     fun getAllPlayerData(seasonId: Int): List<PlayerRankData> = executeWithRetry("Get all player data") {
         transaction(database) {
             PlayerRankTable.select { PlayerRankTable.seasonId eq seasonId }
@@ -511,63 +500,11 @@ class RankDao(dbConfig: DatabaseConfig, configDir: File) {
         }
     }
 
-    fun savePokemonOriginalData(playerId: UUID, pokemonUuid: UUID, originalLevel: Int, originalExp: Int) = executeWithRetry("Save pokemon original data") {
-        transaction(database) {
-            PokemonOriginalDataTable.insert { row ->
-                row[PokemonOriginalDataTable.playerId] = playerId.toString()
-                row[PokemonOriginalDataTable.pokemonUuid] = pokemonUuid.toString()
-                row[PokemonOriginalDataTable.originalLevel] = originalLevel
-                row[PokemonOriginalDataTable.originalExp] = originalExp
-            }
-        }
-    }
-
-    fun getPokemonOriginalData(playerId: UUID): Map<UUID, Pair<Int, Int>> = executeWithRetry("Get pokemon original data") {
-        transaction(database) {
-            PokemonOriginalDataTable.select {
-                PokemonOriginalDataTable.playerId eq playerId.toString()
-            }.associate {
-                UUID.fromString(it[PokemonOriginalDataTable.pokemonUuid]) to
-                        Pair(
-                            it[PokemonOriginalDataTable.originalLevel],
-                            it[PokemonOriginalDataTable.originalExp]
-                        )
-            }
-        }
-    }
-
-    fun deletePokemonOriginalData(playerId: UUID) = executeWithRetry("Delete pokemon original data") {
-        transaction(database) {
-            PokemonOriginalDataTable.deleteWhere {
-                PokemonOriginalDataTable.playerId eq playerId.toString()
-            }
-        }
-    }
-
-    /**
-     * 获取赛季使用率统计
-     * @return Map<物种名称小写, 使用次数>
-     */
     fun getUsageStatistics(seasonId: Int): Map<String, Int> = executeWithRetry("Get usage statistics") {
         transaction(database) {
             PokemonUsageTable
                 .select { PokemonUsageTable.seasonId eq seasonId }
                 .associate {
-                    it[PokemonUsageTable.pokemonSpecies].lowercase() to it[PokemonUsageTable.count]
-                }
-        }
-    }
-
-    /**
-     * 获取使用率前N的宝可梦
-     */
-    fun getTopUsedPokemon(seasonId: Int, limit: Int): List<Pair<String, Int>> = executeWithRetry("Get top used pokemon") {
-        transaction(database) {
-            PokemonUsageTable
-                .select { PokemonUsageTable.seasonId eq seasonId }
-                .orderBy(PokemonUsageTable.count to SortOrder.DESC)
-                .limit(limit)
-                .map {
                     it[PokemonUsageTable.pokemonSpecies].lowercase() to it[PokemonUsageTable.count]
                 }
         }

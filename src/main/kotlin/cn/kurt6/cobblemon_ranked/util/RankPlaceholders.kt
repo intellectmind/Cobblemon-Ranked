@@ -8,16 +8,8 @@ import eu.pb4.placeholders.api.Placeholders
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.util.Identifier
 
-/**
- * PlaceholderAPI 集成
- * 提供宝可梦排位赛的占位符支持
- */
 object RankPlaceholders {
 
-    /**
-     * 注册所有占位符
-     * 格式: %cobblemon_ranked:<key>% 或 %cobblemon_ranked:<key>_<format>%
-     */
     fun register() {
         if (!FabricLoader.getInstance().isModLoaded("placeholder-api")) {
             CobblemonRanked.logger.info("PlaceholderAPI not found, skipping placeholder registration")
@@ -155,12 +147,6 @@ object RankPlaceholders {
         CobblemonRanked.logger.info("Successfully registered ${14} placeholders for Cobblemon Ranked")
     }
 
-    /**
-     * 注册单个占位符
-     * @param key 占位符键名
-     * @param defaultVal 默认值(当玩家无数据时)
-     * @param extractor 从 PlayerRankData 提取值的函数
-     */
     private fun registerPapi(
         key: String,
         defaultVal: String = "0",
@@ -182,7 +168,6 @@ object RankPlaceholders {
                 val data = CobblemonRanked.rankDao.getPlayerData(player.uuid, seasonId, format)
 
                 if (data == null) {
-                    // 特殊处理默认值
                     when (key) {
                         "elo" -> PlaceholderResult.value(CobblemonRanked.config.initialElo.toString())
                         "rank_title" -> PlaceholderResult.value("Unranked")

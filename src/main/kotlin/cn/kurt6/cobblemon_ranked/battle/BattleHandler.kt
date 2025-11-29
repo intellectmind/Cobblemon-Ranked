@@ -45,8 +45,6 @@ object BattleHandler {
     private val seasonManager get() = CobblemonRanked.seasonManager
 
     private val returnLocations = ConcurrentHashMap<UUID, Pair<ServerWorld, Triple<Double, Double, Double>>>()
-    private data class OriginalLevelData(val originalLevel: Int, val originalExp: Int)
-    private val pendingLevelAdjustments = ConcurrentHashMap<UUID, MutableMap<UUID, OriginalLevelData>>()
 
     fun getRandomArenaForPlayers(count: Int): Pair<BattleArena, List<ArenaCoordinate>>? {
         val arenas = CobblemonRanked.config.battleArenas
@@ -70,25 +68,13 @@ object BattleHandler {
         }
     }
 
-    fun cleanupBattleById(battleId: UUID) {
-        rankedBattles.remove(battleId)
-        battleToIdMap.entries.removeIf { it.value == battleId }
-        logger.debug("Cleaned up all data for battleId: $battleId")
-    }
-
     private fun finalBattleCleanup(battle: PokemonBattle, battleId: UUID?) {
         try {
-            // 清理 battleToIdMap
             battleToIdMap.remove(battle)
-            
-            // 清理 rankedBattles
             if (battleId != null) {
                 rankedBattles.remove(battleId)
             }
-            
-            // 清理所有可能残留的映射
             battleToIdMap.entries.removeIf { it.key == battle || it.value == battleId }
-            
             logger.debug("Final cleanup completed for battle: $battleId")
         } catch (e: Exception) {
             logger.error("Error during final battle cleanup", e)
@@ -120,6 +106,16 @@ object BattleHandler {
         if (format == BattleFormat.GEN_9_DOUBLES && pokemonList.size < 2) {
             RankUtils.sendMessage(player, MessageConfig.get("battle.team.too_small", lang, "min" to "2"))
             return false
+        }
+
+        if (!config.allowDuplicateItems) {
+            val heldItems = pokemonList.map { it.heldItem() }.filter { !it.isEmpty }
+            val distinctItems = heldItems.map { net.minecraft.registry.Registries.ITEM.getId(it.item).toString() }.distinct()
+
+            if (distinctItems.size != heldItems.size) {
+                RankUtils.sendMessage(player, MessageConfig.get("battle.team.duplicate_items", lang))
+                return false
+            }
         }
 
         if (pokemonList.size < config.minTeamSize) {
@@ -268,7 +264,6 @@ object BattleHandler {
             }
         }
 
-        // 使用率和进化限制验证
         val seasonId = CobblemonRanked.seasonManager.currentSeasonId
         val violatingPokemon = mutableListOf<String>()
 
@@ -308,12 +303,9 @@ object BattleHandler {
 
     fun shutdown() {
         teleportScheduler.shutdownNow()
-        
-        // 清理所有残留数据
         rankedBattles.clear()
         battleToIdMap.clear()
         returnLocations.clear()
-        pendingLevelAdjustments.clear()
         
         logger.info("BattleHandler shutdown complete")
     }
@@ -342,7 +334,6 @@ object BattleHandler {
                     onBattleVictory(event)
                 }
             } finally {
-                // 确保清理
                 finalBattleCleanup(battle, battleId)
             }
         }
@@ -435,7 +426,6 @@ object BattleHandler {
                     }
                     rankDao.savePlayerData(data)
                     RankUtils.sendMessage(player, MessageConfig.get("battle.disconnect.loser", lang))
-                    restoreLevelAdjustments(player)
                 }
 
                 winnerTeam.forEachIndexed { i, player ->
@@ -444,11 +434,10 @@ object BattleHandler {
                         elo = newWinnerElo
                         wins++
                         winStreak++
-                        if (winStreak > bestWinStreak) bestWinStreak = winStreak
+                        if (data.winStreak > data.bestWinStreak) data.bestWinStreak = data.winStreak
                     }
                     rankDao.savePlayerData(data)
                     RankUtils.sendMessage(player, MessageConfig.get("battle.disconnect.winner", lang))
-                    restoreLevelAdjustments(player)
                 }
 
                 Cobblemon.battleRegistry.closeBattle(battle)
@@ -521,9 +510,6 @@ object BattleHandler {
 
             Cobblemon.battleRegistry.closeBattle(battle)
 
-            restoreLevelAdjustments(winner)
-            restoreLevelAdjustments(loser)
-
             recordPokemonUsage(listOf(winner, loser), seasonId)
 
             RankUtils.sendMessage(loser, MessageConfig.get("battle.disconnect.loser", lang, "elo" to loserData.elo.toString()))
@@ -545,7 +531,6 @@ object BattleHandler {
             }, 2, TimeUnit.SECONDS)
             
         } finally {
-            // 确保清理
             if (battleId != null) {
                 finalBattleCleanup(battle, battleId)
             } else {
@@ -578,10 +563,6 @@ object BattleHandler {
             val allPlayers = battle.sides
                 .flatMap { it.actors.toList() }
                 .mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
-
-            allPlayers.forEach { player ->
-                restoreLevelAdjustments(player)
-            }
 
             val playerWinners = extractPlayerActors(event.winners)
             val playerLosers = extractPlayerActors(event.losers)
@@ -647,7 +628,6 @@ object BattleHandler {
             teleportBackIfPossible(winner)
             teleportBackIfPossible(loser)
         } finally {
-            // 确保清理
             finalBattleCleanup(battle, battleId)
         }
     }
@@ -762,128 +742,11 @@ object BattleHandler {
         }
     }
 
-    fun prepareBattleSnapshot(player: ServerPlayerEntity, teamUuids: List<UUID>) {
-        if (!CobblemonRanked.config.enableCustomLevel) return
-
-        val playerAdjustments = pendingLevelAdjustments.getOrPut(player.uuid) { mutableMapOf() }
-
-        playerAdjustments.clear()
-        CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
-
-        teamUuids.mapNotNull { getPokemonFromPlayer(player, it) }.forEach { pokemon ->
-            prepareLevelAdjustment(player, pokemon)
-        }
-    }
-
-    private fun prepareLevelAdjustment(player: ServerPlayerEntity, pokemon: Pokemon) {
-        if (!CobblemonRanked.config.enableCustomLevel) return
-
-        val playerAdjustments = pendingLevelAdjustments.getOrPut(player.uuid) { mutableMapOf() }
-        playerAdjustments[pokemon.uuid] = OriginalLevelData(pokemon.level, pokemon.experience)
-
-        CobblemonRanked.rankDao.savePokemonOriginalData(
-            player.uuid,
-            pokemon.uuid,
-            pokemon.level,
-            pokemon.experience
-        )
-    }
-
-    fun applyLevelAdjustments(player: ServerPlayerEntity) {
-        val config = CobblemonRanked.config
-        if (!config.enableCustomLevel) return
-
-        val playerAdjustments = pendingLevelAdjustments[player.uuid] ?: return
-
-        Cobblemon.storage.getParty(player).forEach { pokemon ->
-            pokemon?.let {
-                if (playerAdjustments.containsKey(it.uuid)) {
-                    val targetLevel = config.customBattleLevel
-                    it.level = targetLevel
-                    it.currentHealth = it.maxHealth
-                    it.onChange()
-                }
-            }
-        }
-    }
-
-    fun restoreLevelAdjustments(player: ServerPlayerEntity) {
-        val playerAdjustments = pendingLevelAdjustments.remove(player.uuid) ?: return
-        val lang = CobblemonRanked.config.defaultLang
-
-        Cobblemon.storage.getParty(player).forEach { pokemon ->
-            pokemon?.let {
-                playerAdjustments[it.uuid]?.let { original ->
-                    it.setExperienceAndUpdateLevel(original.originalExp)
-
-                    if (it.level != original.originalLevel) {
-                        it.level = original.originalLevel
-                    }
-
-                    it.currentHealth = it.maxHealth
-                    it.onChange()
-                }
-            }
-        }
-
-        CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
-        RankUtils.sendMessage(player, MessageConfig.get("customBattleLevel.restore", lang))
-    }
-
     fun restoreLevelsFromDatabase(player: ServerPlayerEntity) {
-        val memoryAdjustments = pendingLevelAdjustments[player.uuid]
-        if (memoryAdjustments != null) {
-            val lang = CobblemonRanked.config.defaultLang
-
-            Cobblemon.storage.getParty(player).forEach { pokemon ->
-                pokemon?.let {
-                    memoryAdjustments[it.uuid]?.let { original ->
-                        it.setExperienceAndUpdateLevel(original.originalExp)
-                        if (it.level != original.originalLevel) {
-                            it.level = original.originalLevel
-                        }
-                        it.currentHealth = it.maxHealth
-                        it.onChange()
-                    }
-                }
-            }
-
-            pendingLevelAdjustments.remove(player.uuid)
-            CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
-            return
-        }
-
-        val originalData = CobblemonRanked.rankDao.getPokemonOriginalData(player.uuid)
-
-        if (originalData.isNotEmpty()) {
-            Cobblemon.storage.getParty(player).forEach { pokemon ->
-                pokemon?.let {
-                    originalData[it.uuid]?.let { (level, exp) ->
-                        it.setExperienceAndUpdateLevel(exp)
-                        if (it.level != level) {
-                            it.level = level
-                        }
-                        it.currentHealth = it.maxHealth
-                        it.onChange()
-                    }
-                }
-            }
-
-            CobblemonRanked.rankDao.deletePokemonOriginalData(player.uuid)
-        }
-
-        pendingLevelAdjustments.remove(player.uuid)
         teleportBackIfPossible(player)
     }
 
     fun forceCleanupPlayerBattleData(player: ServerPlayerEntity) {
         returnLocations.remove(player.uuid)
-        pendingLevelAdjustments.remove(player.uuid)
-
-        try {
-            restoreLevelAdjustments(player)
-        } catch (e: Exception) {
-            logger.warn("Failed to restore level adjustments during cleanup", e)
-        }
     }
 }
