@@ -7,7 +7,7 @@
 # 📊 CobblemonRanked Ranked System Documentation
 
 > This mod only needs to be installed on the server side.  
-> After the client is installed, pressing the X key will open the graphical GUI by default.    
+> After the client is installed, pressing the `X` key will open the graphical GUI by default.    
 > 💡 In order to use the `enableTeamPreview` feature, this mod is also required on the client side.  
 
 ---
