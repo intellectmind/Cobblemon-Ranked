@@ -6,11 +6,13 @@ import cn.kurt6.cobblemon_ranked.CobblemonRanked.Companion.matchmakingQueue
 import cn.kurt6.cobblemon_ranked.battle.BattleHandler
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.config.RankConfig
+import cn.kurt6.cobblemon_ranked.network.TeamSelectionStartPayload
 import cn.kurt6.cobblemon_ranked.util.RankUtils
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.battles.BattleFormat
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.Identifier
 import net.minecraft.registry.RegistryKey
@@ -88,6 +90,11 @@ class MatchmakingQueue {
         val now = System.currentTimeMillis()
         val nextAllowedTime = cooldownMap[player.uuid] ?: 0L
         val server = player.server
+
+        if (config.enableTeamPreview && !ServerPlayNetworking.canSend(player, TeamSelectionStartPayload.ID)) {
+            RankUtils.sendMessage(player, MessageConfig.get("queue.mod_required", lang))
+            return
+        }
 
         if (!canPlayerJoinQueue(player)) {
             RankUtils.sendMessage(player, MessageConfig.get("queue.cannot_join", lang))
@@ -183,7 +190,7 @@ class MatchmakingQueue {
 
     private fun processQueue() {
         val matchedPairs = mutableListOf<Pair<QueueEntry, QueueEntry>>()
-        
+
         synchronized(queue) {
             if (queue.size < 2) return
 
@@ -240,7 +247,7 @@ class MatchmakingQueue {
                     processedInThisRound.add(player2.player.uuid)
 
                     matchedPairs.add(player1 to player2)
-                    
+
                     logger.info("Matched players: ${player1.player.name.string} vs ${player2.player.name.string}")
                     break
                 }
@@ -252,10 +259,10 @@ class MatchmakingQueue {
                 startRankedBattle(p1, p2)
             } catch (e: Exception) {
                 logger.error("Error starting battle for ${p1.player.name.string} vs ${p2.player.name.string}", e)
-                
+
                 processingMatches.remove(p1.player.uuid)
                 processingMatches.remove(p2.player.uuid)
-                
+
                 if (!p1.player.isDisconnected && Cobblemon.battleRegistry.getBattleByParticipatingPlayer(p1.player) == null) {
                     queue[p1.player.uuid] = p1
                 }
@@ -380,9 +387,16 @@ class MatchmakingQueue {
                     val formatName = getFormatName(player1.format)
 
                     cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.startSelection(
-                        player1.player, team1Uuids,
-                        player2.player, team2Uuids,
-                        player1.format, formatName
+                        player1 = player1.player,
+                        team1Uuids = team1Uuids,
+                        p1SkipSelection = false,
+                        player2 = player2.player,
+                        team2Uuids = team2Uuids,
+                        p2SkipSelection = false,
+                        format = player1.format,
+                        formatName = formatName,
+                        p1Pos = positions[0],
+                        p2Pos = positions[1]
                     )
 
                     processingMatches.remove(player1.player.uuid)

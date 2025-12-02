@@ -27,6 +27,10 @@ class TeamSelectionScreen(
     private val gapX = 8
     private val gapY = 8
 
+    override fun shouldCloseOnEsc(): Boolean {
+        return false
+    }
+
     override fun init() {
         super.init()
         val centerX = width / 2
@@ -108,7 +112,9 @@ class TeamSelectionScreen(
         if (System.currentTimeMillis() - lastTick > 1000) {
             timeRemaining--
             lastTick = System.currentTimeMillis()
-            if (timeRemaining <= 0) close()
+            if (timeRemaining <= 0) {
+                close()
+            }
         }
 
         val timeColor = if (timeRemaining < 10) 0xFFFF5555.toInt() else 0xFFFFFFFF.toInt()

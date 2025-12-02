@@ -18,6 +18,10 @@ object MessageConfig {
             Files.createDirectories(path.parent)
             val defaultMessages = mapOf(
                 // Team Selection (队伍选择)
+                "queue.mod_required" to mapOf(
+                    "zh" to "§c服务器启用了排位选人预览，请安装 Cobblemon Ranked Mod 后再参与排位。",
+                    "en" to "§cTeam Preview is enabled. Please install the Cobblemon Ranked Mod to join ranked matches."
+                ),
                 "battle.team.duplicate_items" to mapOf(
                     "zh" to "§c队伍中包含重复携带道具，请调整后再试！",
                     "en" to "§cDuplicate held items detected in your team!"
@@ -33,6 +37,10 @@ object MessageConfig {
                 "queue.selection_timeout" to mapOf(
                     "zh" to "§c选人超时，系统已自动为您选择默认首发。",
                     "en" to "§cSelection timed out. Default team selected automatically."
+                ),
+                "queue.selection_invalid" to mapOf(
+                    "zh" to "§c[Ranked] 队伍选择无效：包含了已无法战斗的宝可梦或数量不符！",
+                    "en" to "§c[Ranked] Invalid selection: Contains unusable Pokémon or incorrect count!"
                 ),
 
                 "battle.VictoryRewards" to mapOf(
@@ -494,8 +502,8 @@ object MessageConfig {
                     "en" to "§cYou cannot flee in a ranked battle."
                 ),
                 "battle.team.banned_held_items" to mapOf(
-                "zh" to "§c队伍中有宝可梦携带了被禁止的物品: {names}",
-                "en" to "§cYour team contains Pokémon with banned held items: {names}"
+                    "zh" to "§c队伍中有宝可梦携带了被禁止的物品: {names}",
+                    "en" to "§cYour team contains Pokémon with banned held items: {names}"
                 ),
                 "battle.team.banned_moves" to mapOf(
                     "zh" to "§c队伍中有宝可梦使用了被禁止的招式: {names}",

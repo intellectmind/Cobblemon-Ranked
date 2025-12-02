@@ -30,10 +30,10 @@ data class RankConfig(
     var maxTeamSize: Int = 6,
 
     @Comment("Allow duplicate held items in a team / 是否允许队伍中携带重复道具 (道具条款)")
-    var allowDuplicateItems: Boolean = false,
+    var allowDuplicateItems: Boolean = true,
 
     @Comment("Enable Team Preview and Selection (Bring 6 Pick 3/4) / 是否启用队伍预览和选出阶段 (6选3/4)")
-    var enableTeamPreview: Boolean = true,
+    var enableTeamPreview: Boolean = false,
 
     @Comment("Time allowed for team selection in seconds / 队伍选择阶段的时间限制(秒)")
     var teamSelectionTime: Int = 90,
@@ -192,15 +192,15 @@ data class RankConfig(
     var enableCrossServer: Boolean = false,
 
     @Comment("Cloud server ID for this server(Cannot be repeated with others) / 本服的云端标识(不可与他人重复)")
-    var cloudServerId: String = "server",
+    var cloudServerId: String = "",
 
     @Comment("Cloud server auth token(Leave blank for the public cloud server) / 云端验证用密钥(公开云服留空即可)")
     var cloudToken: String = "",
 
     @Comment("Cloud API address(Either IP or domain name is acceptable) / 云端 API 地址(ip或者域名都可以)")
-    var cloudApiUrl: String = "http://139.196.103.55:8000",
+    var cloudApiUrl: String = "",
 
     @Comment("Cloud WebSocket Address(Either IP or domain name is acceptable) / 云端 WebSocket 地址(ip或者域名都可以)")
-    var cloudWebSocketUrl: String = "ws://139.196.103.55:8000/ws/"
+    var cloudWebSocketUrl: String = ""
 
 )

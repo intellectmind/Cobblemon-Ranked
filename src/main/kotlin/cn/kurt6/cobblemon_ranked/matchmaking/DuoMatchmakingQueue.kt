@@ -6,9 +6,11 @@ import cn.kurt6.cobblemon_ranked.battle.BattleHandler
 import cn.kurt6.cobblemon_ranked.battle.DuoBattleManager
 import cn.kurt6.cobblemon_ranked.battle.DuoBattleManager.DuoTeam
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
+import cn.kurt6.cobblemon_ranked.network.TeamSelectionStartPayload
 import cn.kurt6.cobblemon_ranked.util.RankUtils
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.battles.BattleFormat
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
@@ -32,6 +34,11 @@ object DuoMatchmakingQueue {
         val lang = CobblemonRanked.config.defaultLang
         val now = System.currentTimeMillis()
         val nextAllowedTime = cooldownMap[player.uuid] ?: 0L
+
+        if (config.enableTeamPreview && !ServerPlayNetworking.canSend(player, TeamSelectionStartPayload.ID)) {
+            RankUtils.sendMessage(player, MessageConfig.get("queue.mod_required", lang))
+            return
+        }
 
         if (!canPlayerJoinQueue(player)) {
             RankUtils.sendMessage(player, MessageConfig.get("duo.cannot_join", lang))

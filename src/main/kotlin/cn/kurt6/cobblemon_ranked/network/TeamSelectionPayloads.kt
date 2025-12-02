@@ -102,3 +102,13 @@ data class TeamSelectionSubmitPayload(
         )
     }
 }
+
+class TeamSelectionEndPayload private constructor() : CustomPayload {
+    override fun getId() = ID
+
+    companion object {
+        val INSTANCE = TeamSelectionEndPayload()
+        val ID = CustomPayload.Id<TeamSelectionEndPayload>(Identifier.of("cobblemon_ranked", "team_selection_end"))
+        val CODEC: PacketCodec<PacketByteBuf, TeamSelectionEndPayload> = PacketCodec.unit(INSTANCE)
+    }
+}

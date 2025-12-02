@@ -7,6 +7,7 @@ import cn.kurt6.cobblemon_ranked.network.PlayerRankDataPayload
 import cn.kurt6.cobblemon_ranked.network.RequestType
 import cn.kurt6.cobblemon_ranked.network.SeasonInfoTextPayload
 import cn.kurt6.cobblemon_ranked.network.TeamSelectionStartPayload
+import cn.kurt6.cobblemon_ranked.network.TeamSelectionEndPayload
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.Text.translatable
@@ -40,7 +41,7 @@ fun registerClientReceivers() {
         updateScreenInfo(RequestType.LEADERBOARD, payload.text)
     }
 
-    // 选队
+    // 选队开始
     ClientPlayNetworking.registerGlobalReceiver(TeamSelectionStartPayload.ID) { payload, context ->
         context.client().execute {
             context.client().setScreen(
@@ -52,6 +53,15 @@ fun registerClientReceivers() {
                     payload.yourTeam
                 )
             )
+        }
+    }
+
+    // 强制关闭选人界面
+    ClientPlayNetworking.registerGlobalReceiver(TeamSelectionEndPayload.ID) { _, context ->
+        context.client().execute {
+            if (context.client().currentScreen is cn.kurt6.cobblemon_ranked.client.gui.TeamSelectionScreen) {
+                context.client().currentScreen?.close()
+            }
         }
     }
 }

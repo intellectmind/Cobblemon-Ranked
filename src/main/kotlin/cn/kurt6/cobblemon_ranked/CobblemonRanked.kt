@@ -1,6 +1,7 @@
 package cn.kurt6.cobblemon_ranked
 
 import cn.kurt6.cobblemon_ranked.battle.BattleHandler
+import cn.kurt6.cobblemon_ranked.battle.DuoBattleManager
 import cn.kurt6.cobblemon_ranked.commands.RankCommands
 import cn.kurt6.cobblemon_ranked.config.ConfigManager
 import cn.kurt6.cobblemon_ranked.config.DatabaseConfig
@@ -25,6 +26,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 
 class CobblemonRanked : ModInitializer {
     override fun onInitialize() {
@@ -65,6 +67,7 @@ class CobblemonRanked : ModInitializer {
 
         // 注册玩家退出事件
         ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
+            cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.handleDisconnect(handler.player)
             CrossServerSocket.handlePlayerDisconnect(handler.player)
         }
 
@@ -93,6 +96,11 @@ class CobblemonRanked : ModInitializer {
             TeamSelectionStartPayload.ID,
             TeamSelectionStartPayload.CODEC
         )
+        PayloadTypeRegistry.playS2C().register(
+            TeamSelectionEndPayload.ID,
+            TeamSelectionEndPayload.CODEC
+        )
+
         PayloadTypeRegistry.playC2S().register(
             TeamSelectionSubmitPayload.ID,
             TeamSelectionSubmitPayload.CODEC
@@ -123,7 +131,9 @@ class CobblemonRanked : ModInitializer {
             matchmakingQueue.clear()
             matchmakingQueue.shutdown()
             DuoMatchmakingQueue.shutdown()
+            DuoBattleManager.clearAll()
             BattleHandler.shutdown()
+            cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.shutdown()
             rankDao.close()
             CrossServerSocket.disconnect()
         }
@@ -142,10 +152,14 @@ class CobblemonRanked : ModInitializer {
                 }
 
                 if (++cleanupCounter >= cleanupInterval) {
-                    try {
-                        rankDao.cleanupOldReturnLocations()
-                    } catch (e: Exception) {
-                        logger.warn("Failed to cleanup old return locations", e)
+                    cleanupCounter = 0
+                    CompletableFuture.runAsync {
+                        try {
+                            rankDao.cleanupOldReturnLocations()
+                            logger.info("Performed daily cleanup of old return locations")
+                        } catch (e: Exception) {
+                            logger.warn("Failed to cleanup old return locations", e)
+                        }
                     }
                 }
             }
