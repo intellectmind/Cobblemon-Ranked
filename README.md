@@ -24,8 +24,11 @@
 - Elo-based matchmaking queue with optional waiting-time-based relaxation  
 - Disconnects are treated as losses; Elo is deducted  
 - Fully GUI-driven with clickable text menus and graphical GUI  
-- 🌐 Cross-server matchmaking support 
-
+- Cross-server matchmaking support
+- After enableTeamPreview is enabled, if the number of Pokémon exceeds the set limit, the interface for selecting Pokémon to battle will be triggered. If the number does not exceed the limit, the interface will not be triggered.  
+For example, if singlesPickCountNumber is set to 3:  
+Player 1 has 5 Pokémon, which will trigger the selection interface, requiring them to choose 3 for battle.  
+Player 2 has only 2 Pokémon, so the selection interface will not be triggered. Instead, after Player 1 completes their selection, the battle will begin directly.  
 ---
 
 ## 🌐 Cross-Server Matchmaking
