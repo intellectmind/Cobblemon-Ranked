@@ -24,9 +24,13 @@ object DuoMatchmakingQueue {
 
     init {
         scheduler.scheduleAtFixedRate({
-            cleanupStaleEntries()
-            processQueue()
-            DuoBattleManager.tick()
+            try {
+                cleanupStaleEntries()
+                processQueue()
+                DuoBattleManager.tick()
+            } catch (e: Exception) {
+                CobblemonRanked.logger.error("Error in DuoMatchmakingQueue tick", e)
+            }
         }, 5, 5, TimeUnit.SECONDS)
     }
 
@@ -79,108 +83,111 @@ object DuoMatchmakingQueue {
     }
 
     private fun processQueue() {
-        synchronized(queuedPlayers) {
-            if (queuedPlayers.size < 4) return
+        if (queuedPlayers.size < 4) return
 
-            val battleRegistry = Cobblemon.battleRegistry
-            val entries = queuedPlayers.toList()
-            val processedPlayers = mutableSetOf<UUID>()
+        val snapshot = ArrayList(queuedPlayers)
+        val matched = HashSet<UUID>()
+        val battleRegistry = Cobblemon.battleRegistry
 
-            for (i in 0 until entries.size - 3) {
-                for (j in i + 1 until entries.size - 2) {
-                    for (k in j + 1 until entries.size - 1) {
-                        for (l in k + 1 until entries.size) {
-                            val p1 = entries[i]
-                            val p2 = entries[j]
-                            val p3 = entries[k]
-                            val p4 = entries[l]
+        var i = 0
+        while (i < snapshot.size) {
+            val p1Entry = snapshot[i]
+            if (matched.contains(p1Entry.player.uuid)) {
+                i++
+                continue
+            }
 
-                            val playerUuids = listOf(p1.player.uuid, p2.player.uuid, p3.player.uuid, p4.player.uuid)
-                            if (playerUuids.any { it in processedPlayers }) {
-                                continue
-                            }
+            if (p1Entry.player.isDisconnected || battleRegistry.getBattleByParticipatingPlayer(p1Entry.player) != null) {
+                queuedPlayers.remove(p1Entry)
+                i++
+                continue
+            }
 
-                            if (!playerUuids.all { uuid -> queuedPlayers.any { it.player.uuid == uuid } }) {
-                                continue
-                            }
-
-                            if (playerUuids.any { uuid ->
-                                    val player = queuedPlayers.find { it.player.uuid == uuid }?.player
-                                    player != null && battleRegistry.getBattleByParticipatingPlayer(player) != null
-                                }) {
-                                queuedPlayers.removeAll { playerUuids.contains(it.player.uuid) }
-                                continue
-                            }
-
-                            val teamA = DuoTeam(p1.player, p2.player, p1.team, p2.team)
-                            val teamB = DuoTeam(p3.player, p4.player, p3.team, p4.team)
-
-                            if (!isEloCompatible(teamA, teamB)) continue
-
-                            val playersToRemove = listOf(p1, p2, p3, p4)
-                            val allStillInQueue = playersToRemove.all { player ->
-                                queuedPlayers.any { it.player.uuid == player.player.uuid }
-                            }
-
-                            if (!allStillInQueue) {
-                                continue
-                            }
-
-                            queuedPlayers.removeAll(playersToRemove)
-                            processedPlayers.addAll(playerUuids)
-
-                            val lang = config.defaultLang
-                            RankUtils.sendMessage(p1.player, MessageConfig.get("queue.match_success", lang))
-                            RankUtils.sendMessage(p2.player, MessageConfig.get("queue.match_success", lang))
-                            RankUtils.sendMessage(p3.player, MessageConfig.get("queue.match_success", lang))
-                            RankUtils.sendMessage(p4.player, MessageConfig.get("queue.match_success", lang))
-
-                            val server = p1.player.server
-                            scheduler.schedule({
-                                server.execute {
-                                    val players = listOf(p1, p2, p3, p4)
-                                    val disconnectedPlayers = players.filter { it.player.isDisconnected }
-
-                                    if (disconnectedPlayers.isNotEmpty()) {
-                                        players.filter { !it.player.isDisconnected }.forEach { playerEntry ->
-                                            RankUtils.sendMessage(
-                                                playerEntry.player,
-                                                MessageConfig.get("queue.opponent_disconnected", lang)
-                                            )
-                                            synchronized(queuedPlayers) {
-                                                if (!queuedPlayers.any { it.player.uuid == playerEntry.player.uuid }) {
-                                                    queuedPlayers.add(playerEntry)
-                                                }
-                                            }
-                                        }
-
-                                        return@execute
-                                    }
-
-                                    val invalidPlayers = players.filter {
-                                        !BattleHandler.validateTeam(it.player, it.team, BattleFormat.GEN_9_SINGLES)
-                                    }
-
-                                    if (invalidPlayers.isNotEmpty()) {
-                                        players.forEach { playerEntry ->
-                                            RankUtils.sendMessage(
-                                                playerEntry.player,
-                                                MessageConfig.get("queue.cancel_team_changed", lang)
-                                            )
-                                        }
-                                        return@execute
-                                    }
-
-                                    startNextBattle(teamA, teamB)
-                                }
-                            }, 5, TimeUnit.SECONDS)
-
-                            return
-                        }
-                    }
+            var p2Entry: QueuedPlayer? = null
+            for (j in i + 1 until snapshot.size) {
+                val candidate = snapshot[j]
+                if (!matched.contains(candidate.player.uuid) &&
+                    !candidate.player.isDisconnected &&
+                    battleRegistry.getBattleByParticipatingPlayer(candidate.player) == null
+                ) {
+                    p2Entry = candidate
+                    break
                 }
             }
+
+            if (p2Entry == null) {
+                i++
+                continue
+            }
+
+            val teamA = DuoTeam(p1Entry.player, p2Entry.player, p1Entry.team, p2Entry.team)
+
+            var foundOpponent = false
+            for (k in snapshot.indexOf(p2Entry) + 1 until snapshot.size) {
+                val p3Entry = snapshot[k]
+                if (matched.contains(p3Entry.player.uuid) || p3Entry.player.isDisconnected) continue
+
+                for (l in k + 1 until snapshot.size) {
+                    val p4Entry = snapshot[l]
+                    if (matched.contains(p4Entry.player.uuid) || p4Entry.player.isDisconnected) continue
+
+                    val teamB = DuoTeam(p3Entry.player, p4Entry.player, p3Entry.team, p4Entry.team)
+
+                    if (isEloCompatible(teamA, teamB)) {
+                        foundOpponent = true
+
+                        val participants = listOf(p1Entry, p2Entry, p3Entry, p4Entry)
+                        participants.forEach { matched.add(it.player.uuid) }
+                        queuedPlayers.removeAll(participants)
+
+                        initiateMatch(p1Entry, p2Entry, p3Entry, p4Entry, teamA, teamB)
+                        break
+                    }
+                }
+                if (foundOpponent) break
+            }
+            
+            i++ 
         }
+    }
+
+    private fun initiateMatch(
+        p1: QueuedPlayer, p2: QueuedPlayer,
+        p3: QueuedPlayer, p4: QueuedPlayer,
+        teamA: DuoTeam, teamB: DuoTeam
+    ) {
+        val lang = config.defaultLang
+        val players = listOf(p1, p2, p3, p4)
+
+        players.forEach {
+            RankUtils.sendMessage(it.player, MessageConfig.get("queue.match_success", lang))
+        }
+
+        val server = p1.player.server
+        scheduler.schedule({
+            server.execute {
+                val finalCheck = players.all { entry ->
+                    !entry.player.isDisconnected &&
+                    BattleHandler.validateTeam(entry.player, entry.team, BattleFormat.GEN_9_SINGLES)
+                }
+
+                if (!finalCheck) {
+                    players.forEach { entry ->
+                        if (!entry.player.isDisconnected) {
+                            RankUtils.sendMessage(entry.player, MessageConfig.get("queue.cancel_team_changed", lang))
+                            if (BattleHandler.validateTeam(entry.player, entry.team, BattleFormat.GEN_9_SINGLES)) {
+                                if (!queuedPlayers.any { it.player.uuid == entry.player.uuid }) {
+                                     queuedPlayers.add(0, entry)
+                                }
+                            }
+                        }
+                    }
+                    return@execute
+                }
+
+                startNextBattle(teamA, teamB)
+            }
+        }, 5, TimeUnit.SECONDS)
     }
 
     private fun isEloCompatible(team1: DuoTeam, team2: DuoTeam): Boolean {
@@ -238,9 +245,7 @@ object DuoMatchmakingQueue {
             }
         }
 
-        toRemove.forEach { player ->
-            queuedPlayers.remove(player)
-        }
+        queuedPlayers.removeAll(toRemove)
     }
 
     fun canPlayerJoinQueue(player: ServerPlayerEntity): Boolean {

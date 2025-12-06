@@ -172,33 +172,28 @@ object TeamSelectionManager {
                 RankUtils.sendMessage(player, MessageConfig.get("queue.selection_invalid", lang))
             }
 
+            if (!validateSubmission(player, selectedUuids, session.limit)) {
+                sendError()
+                return
+            }
+
             if (player.uuid == session.player1.uuid) {
                 if (session.p1Selection == null) {
-                    if (validateSelection(player, selectedUuids, session.limit)) {
-                        session.p1Selection = selectedUuids
-                        if (session.formatName == "2v2singles") {
-                            DuoBattleManager.updateTeamOrder(player.uuid, selectedUuids)
-                        }
-                        RankUtils.sendMessage(player, MessageConfig.get("queue.selection_confirmed", CobblemonRanked.config.defaultLang))
-                        RankUtils.sendMessage(session.player2, MessageConfig.get("queue.opponent_confirmed", CobblemonRanked.config.defaultLang))
-                    } else {
-                        sendError()
-                        return
+                    session.p1Selection = selectedUuids
+                    if (session.formatName == "2v2singles") {
+                        DuoBattleManager.updateTeamOrder(player.uuid, selectedUuids)
                     }
+                    RankUtils.sendMessage(player, MessageConfig.get("queue.selection_confirmed", CobblemonRanked.config.defaultLang))
+                    RankUtils.sendMessage(session.player2, MessageConfig.get("queue.opponent_confirmed", CobblemonRanked.config.defaultLang))
                 }
             } else if (player.uuid == session.player2.uuid) {
                 if (session.p2Selection == null) {
-                    if (validateSelection(player, selectedUuids, session.limit)) {
-                        session.p2Selection = selectedUuids
-                        if (session.formatName == "2v2singles") {
-                            DuoBattleManager.updateTeamOrder(player.uuid, selectedUuids)
-                        }
-                        RankUtils.sendMessage(player, MessageConfig.get("queue.selection_confirmed", CobblemonRanked.config.defaultLang))
-                        RankUtils.sendMessage(session.player1, MessageConfig.get("queue.opponent_confirmed", CobblemonRanked.config.defaultLang))
-                    } else {
-                        sendError()
-                        return
+                    session.p2Selection = selectedUuids
+                    if (session.formatName == "2v2singles") {
+                        DuoBattleManager.updateTeamOrder(player.uuid, selectedUuids)
                     }
+                    RankUtils.sendMessage(player, MessageConfig.get("queue.selection_confirmed", CobblemonRanked.config.defaultLang))
+                    RankUtils.sendMessage(session.player1, MessageConfig.get("queue.opponent_confirmed", CobblemonRanked.config.defaultLang))
                 }
             }
 
@@ -212,12 +207,16 @@ object TeamSelectionManager {
         }
     }
 
-    private fun validateSelection(player: ServerPlayerEntity, selected: List<UUID>, limit: Int): Boolean {
+    private fun validateSubmission(player: ServerPlayerEntity, selected: List<UUID>, limit: Int): Boolean {
         if (selected.size != limit) return false
         val party = Cobblemon.storage.getParty(player)
-        return selected.all { uuid ->
+
+        val allInParty = selected.all { uuid ->
             party.any { it.uuid == uuid } && !DuoBattleManager.isPokemonUsed(player.uuid, uuid)
         }
+        if (!allInParty) return false
+
+        return BattleHandler.validateTeam(player, selected, BattleFormat.GEN_9_SINGLES)
     }
 
     private fun handleTimeout(session: SelectionSession, p1Full: List<UUID>, p2Full: List<UUID>) {

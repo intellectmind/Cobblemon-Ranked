@@ -14,6 +14,7 @@ import com.cobblemon.mod.common.api.events.CobblemonEvents
 import com.cobblemon.mod.common.api.events.battles.BattleVictoryEvent
 import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
+import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import com.cobblemon.mod.common.pokemon.Pokemon
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.server.MinecraftServer
@@ -29,7 +30,6 @@ import net.minecraft.util.Identifier
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.ConcurrentHashMap
 
 object BattleHandler {
@@ -303,6 +303,20 @@ object BattleHandler {
     }
 
     fun register() {
+        CobblemonEvents.LOOT_DROPPED.subscribe { event ->
+            val entity = event.entity
+            if (entity is PokemonEntity) {
+                val owner = entity.owner
+                if (owner is ServerPlayerEntity) {
+                    val battle = Cobblemon.battleRegistry.getBattleByParticipatingPlayer(owner)
+                    if (battle != null && battleToIdMap.containsKey(battle)) {
+                        event.drops.clear()
+                        logger.debug("Prevented loot drop for player ${owner.name.string} in ranked battle")
+                    }
+                }
+            }
+        }
+
         CobblemonEvents.BATTLE_VICTORY.subscribe { event: BattleVictoryEvent ->
             val battle = event.battle
             val battleId = battleToIdMap[battle]
