@@ -33,57 +33,46 @@ class CobblemonRanked : ModInitializer {
         INSTANCE = this
         logger.info("Initializing Cobblemon Ranked Mod")
 
-        // 初始化路径和配置
         dataPath = FabricLoader.getInstance().configDir.resolve(MOD_ID).apply { toFile().mkdirs() }
         config = ConfigManager.load()
 
-        // 加载数据库配置
         databaseConfig = ConfigManager.loadDatabaseConfig()
 
-        // 初始化消息配置
         MessageConfig.get("msg_example")
 
-        // 初始化核心组件
         rankDao = RankDao(databaseConfig, dataPath.toFile())
         rewardManager = RewardManager(rankDao)
         seasonManager = SeasonManager(rankDao)
 
         matchmakingQueue = MatchmakingQueue()
 
-        // 注册系统和事件
         registerCommands()
         registerEvents()
         setupSeasonCheck()
 
-        // 注册 Placeholders
         RankPlaceholders.register()
 
-        // 注册玩家登录事件
         ServerPlayConnectionEvents.JOIN.register { handler, sender, server ->
             val player = handler.player
             BattleHandler.restoreLevelsFromDatabase(player)
             CrossServerSocket.handlePlayerJoin(handler.player)
         }
 
-        // 注册玩家退出事件
         ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
             cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.handleDisconnect(handler.player)
             CrossServerSocket.handlePlayerDisconnect(handler.player)
         }
 
-        // 注册客户端到服务器负载 (C2S)
         PayloadTypeRegistry.playC2S().register(
             RequestPlayerRankPayload.ID,
             RequestPlayerRankPayload.CODEC
         )
 
-        // 注册服务器到客户端负载 (S2C)
         PayloadTypeRegistry.playS2C().register(
             PlayerRankDataPayload.ID,
             PlayerRankDataPayload.CODEC
         )
 
-        // 注册网络包
         PayloadTypeRegistry.playS2C().register(
             SeasonInfoTextPayload.ID,
             SeasonInfoTextPayload.CODEC
@@ -110,7 +99,6 @@ class CobblemonRanked : ModInitializer {
             cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.handleSubmission(context.player(), payload.selectedUuids)
         }
 
-        // 注册网络处理器
         ServerPlayNetworking.registerGlobalReceiver(RequestPlayerRankPayload.ID) { payload, context ->
             ServerNetworking.handle(payload, context)
         }
@@ -127,6 +115,8 @@ class CobblemonRanked : ModInitializer {
 
     private fun registerEvents() {
         BattleHandler.register()
+        DuoBattleManager.register()
+
         ServerLifecycleEvents.SERVER_STOPPING.register {
             matchmakingQueue.clear()
             matchmakingQueue.shutdown()

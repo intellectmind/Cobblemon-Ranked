@@ -47,6 +47,10 @@ object TeamSelectionManager {
         }
     }
 
+    fun isPlayerInSelection(uuid: UUID): Boolean {
+        return pendingSessions.containsKey(uuid)
+    }
+
     fun startSelection(
         player1: ServerPlayerEntity,
         team1Uuids: List<UUID>,
@@ -138,6 +142,9 @@ object TeamSelectionManager {
                     BattleHandler.handleSelectionPhaseDisconnect(opponent, player, session.formatName)
                 }
             }
+
+            BattleHandler.releaseArenaForPlayer(player.uuid)
+            BattleHandler.releaseArenaForPlayer(opponent.uuid)
 
             BattleHandler.forceCleanupPlayerBattleData(opponent)
             BattleHandler.forceCleanupPlayerBattleData(player)

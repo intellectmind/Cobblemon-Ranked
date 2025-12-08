@@ -17,10 +17,13 @@ object MessageConfig {
         if (!Files.exists(path)) {
             Files.createDirectories(path.parent)
             val defaultMessages = mapOf(
-                // Team Selection (队伍选择)
                 "queue.mod_required" to mapOf(
                     "zh" to "§c服务器启用了排位选人预览，请安装 Cobblemon Ranked Mod 后再参与排位。",
                     "en" to "§cTeam Preview is enabled. Please install the Cobblemon Ranked Mod to join ranked matches."
+                ),
+                "queue.cannot_join" to mapOf(
+                    "zh" to "§c无法加入匹配队列：你可能已在队列中、正在战斗或状态异常。",
+                    "en" to "§cCannot join queue: You might be already queued, in battle, or in an invalid state."
                 ),
                 "battle.team.duplicate_items" to mapOf(
                     "zh" to "§c队伍中包含重复携带道具，请调整后再试！",
@@ -42,7 +45,6 @@ object MessageConfig {
                     "zh" to "§c[Ranked] 队伍选择无效：包含了已无法战斗的宝可梦或数量不符！",
                     "en" to "§c[Ranked] Invalid selection: Contains unusable Pokémon or incorrect count!"
                 ),
-
                 "battle.VictoryRewards" to mapOf(
                     "zh" to "§a已发放获胜奖励！",
                     "en" to "§aVictory rewards have been granted!"
@@ -63,7 +65,6 @@ object MessageConfig {
                     "zh" to "§e[宝可梦统计]",
                     "en" to "§e[Pokemon Statistics]"
                 ),
-                // MatchmakingQueue (单人匹配)
                 "queue.global_join" to mapOf(
                     "zh" to "§a玩家 {player} 加入了 {format} 模式的匹配队列！",
                     "en" to "§aPlayer {player} has joined the matching queue of {format} mode!"
@@ -124,6 +125,14 @@ object MessageConfig {
                     "zh" to "§c没有可用战斗场地（至少2个玩家位置）",
                     "en" to "§cNo available battle arenas (at least 2 player positions required)"
                 ),
+                "queue.waiting_for_arena" to mapOf(
+                    "zh" to "§e当前无空闲场地，您已进入等待队列，排队位置: {position}",
+                    "en" to "§eNo arena available. You are in the waiting queue, position: {position}"
+                ),
+                "queue.arena_found" to mapOf(
+                    "zh" to "§a已为您分配到空闲场地，正在准备战斗...",
+                    "en" to "§aArena found! Preparing battle..."
+                ),
                 "duo.already_in_queue" to mapOf(
                     "zh" to "§e你已经在匹配队列中。",
                     "en" to "§eYou are already in the matchmaking queue."
@@ -160,8 +169,6 @@ object MessageConfig {
                     "zh" to "§a战斗开始！对战: §e{opponent}",
                     "en" to "§aBattle started! Opponent: §e{opponent}"
                 ),
-
-                // DuoMatchmakingQueue (双人匹配)
                 "duo.waiting_for_match" to mapOf(
                     "zh" to "§a已加入 2v2单打 匹配队列...",
                     "en" to "§aJoined the 2v2singles matchmaking queue..."
@@ -190,8 +197,6 @@ object MessageConfig {
                     "zh" to "§c队伍不符合对战规则，无法加入匹配",
                     "en" to "§cYour team does not meet the battle requirements."
                 ),
-
-                // SeasonManager
                 "season.start.title" to mapOf(
                     "zh" to "§6新赛季开始!",
                     "en" to "§6New Season Started!"
@@ -200,8 +205,6 @@ object MessageConfig {
                     "zh" to "§f赛季 #{season} {name} ({start} - {end})",
                     "en" to "§fSeason #{season} {name}  ({start} - {end})"
                 ),
-
-                // RewardManager
                 "reward.not_eligible" to mapOf(
                     "zh" to "§c胜率未达要求（{rate}%），无法领取 {rank} 段位奖励。",
                     "en" to "§cYou must have at least {rate}% win rate to claim the {rank} reward."
@@ -218,8 +221,6 @@ object MessageConfig {
                     "zh" to "§a已为您发放 {rank} 段位奖励！",
                     "en" to "§a{rank} rank reward has been granted to you!"
                 ),
-
-                // RankCommands
                 "leaderboard.prev_page" to mapOf(
                     "zh" to "§e« 上一页",
                     "en" to "§e« Previous Page"
@@ -443,8 +444,6 @@ object MessageConfig {
                     "zh" to "§b[查看2v2单打]",
                     "en" to "§b[View 2v2singles]"
                 ),
-
-                // BattleHandler
                 "battle.team.not_base_form" to mapOf(
                     "zh" to "§c{name}不是最初形态！只允许使用最初形态的宝可梦",
                     "en" to "§c{name} is not in its base form! Only base form Pokémon are allowed"
@@ -644,8 +643,6 @@ object MessageConfig {
                     "zh" to "§e[提示] 本次为 2v2 轮战模式：每队每次出战一人，胜者留场，败者轮换，直到全员战败！",
                     "en" to "§e[Tip] This is a 2v2 round-robin mode: each team will send one Pokémon per round, and the winner will stay in the battle, while the loser will be replaced. The battle will end when all Pokémon are defeated."
                 ),
-
-                // ServerNetworking
                 "rank.not_found" to mapOf(
                     "zh" to "§c未找到您的战绩数据。",
                     "en" to "§cYour ranked data could not be found."
@@ -666,9 +663,6 @@ object MessageConfig {
                     "zh" to "§6当前赛季: #{season} {name}\n§f开始时间: §7{start}\n§f结束时间: §7{end}\n§f赛季时长: §e{duration}天\n§f剩余时间: §e{remaining}\n§f参与玩家: §a{players} 人",
                     "en" to "§6Current Season: #{season} {name}\n§fStart: §7{start}\n§fEnd: §7{end}\n§fDuration: §e{duration} days\n§fRemaining: §e{remaining}\n§fParticipants: §a{players}"
                 ),
-
-                // CrossServerSocket 消息
-                // 通用
                 "cross.cross_server_disabled" to mapOf(
                     "zh" to "§c跨服匹配未启用",
                     "en" to "§cCross-server matching is disabled"
@@ -685,8 +679,6 @@ object MessageConfig {
                     "zh" to "§c未知错误",
                     "en" to "§cUnknown error"
                 ),
-
-                // 状态/方向
                 "cross.status.normal" to mapOf(
                     "zh" to "§a正常",
                     "en" to "§aNormal"
@@ -723,8 +715,6 @@ object MessageConfig {
                     "zh" to "§c下降",
                     "en" to "§cfell"
                 ),
-
-                // 日志
                 "cross.log.heartbeat_start" to mapOf(
                     "zh" to "§8开始心跳",
                     "en" to "§8Heartbeat started"
@@ -793,8 +783,6 @@ object MessageConfig {
                     "zh" to "§e玩家 {player} 断线，自动发送投降指令: battle_id = {battleId}",
                     "en" to "§ePlayer {player} disconnected, auto-sending forfeit: battle_id = {battleId}"
                 ),
-
-                // 队列
                 "cross.queue.already_in_queue" to mapOf(
                     "zh" to "§e[跨服匹配]你已在匹配队列中",
                     "en" to "§e[CrossServer]You are already in the queue"
@@ -823,8 +811,6 @@ object MessageConfig {
                     "zh" to "§c[跨服匹配]当前战斗数量超出了限制，请稍后再试。",
                     "en" to "§c[CrossServer]Current battle count exceeds the limit, please try again later."
                 ),
-
-                // 对战
                 "cross.battle.match_found" to mapOf(
                     "zh" to "§6===== §a匹配成功! §6=====",
                     "en" to "§6===== §aMATCH FOUND! §6====="
@@ -1049,20 +1035,14 @@ object MessageConfig {
                     "zh" to "§7玩家 {playerName} 已选择行动",
                     "en" to "§7Player {playerName} has chosen an action"
                 ),
-
-                // ELO系统
                 "cross.elo.update" to mapOf(
                     "zh" to "§6你的 Elo 分数更新: §f{oldRating} §7→ §e{newRating} §a({change})",
                     "en" to "§6Your Elo rating updated: §f{oldRating} §7→ §e{newRating} §a({change})"
                 ),
-
-                // 聊天
                 "cross.chat.message" to mapOf(
                     "zh" to "§b[跨服匹配消息 {opponentName}] §f{message}",
                     "en" to "§b[Cross-Battle {opponentName}] §f{message}"
                 ),
-
-                // CrossCommand 消息
                 "cross.queue.not_connected" to mapOf(
                     "zh" to "§c跨服连接尚未建立，请稍后再试或联系管理员",
                     "en" to "§cThe cross-server connection is not established. Please try again later or contact an administrator"

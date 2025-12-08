@@ -5,6 +5,7 @@ import cn.kurt6.cobblemon_ranked.CobblemonRanked.Companion.config
 import cn.kurt6.cobblemon_ranked.battle.BattleHandler
 import cn.kurt6.cobblemon_ranked.battle.DuoBattleManager
 import cn.kurt6.cobblemon_ranked.battle.DuoBattleManager.DuoTeam
+import cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.network.TeamSelectionStartPayload
 import cn.kurt6.cobblemon_ranked.util.RankUtils
@@ -39,6 +40,21 @@ object DuoMatchmakingQueue {
         val now = System.currentTimeMillis()
         val nextAllowedTime = cooldownMap[player.uuid] ?: 0L
 
+        if (Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player) != null) {
+            RankUtils.sendMessage(player, MessageConfig.get("duo.in_battle", lang))
+            return
+        }
+
+        if (TeamSelectionManager.isPlayerInSelection(player.uuid)) {
+            RankUtils.sendMessage(player, MessageConfig.get("duo.in_battle", lang))
+            return
+        }
+
+        if (BattleHandler.isPlayerWaitingForArena(player.uuid)) {
+            RankUtils.sendMessage(player, MessageConfig.get("queue.cannot_join", lang))
+            return
+        }
+
         if (config.enableTeamPreview && !ServerPlayNetworking.canSend(player, TeamSelectionStartPayload.ID)) {
             RankUtils.sendMessage(player, MessageConfig.get("queue.mod_required", lang))
             return
@@ -60,12 +76,6 @@ object DuoMatchmakingQueue {
             return
         }
 
-        val battleRegistry = Cobblemon.battleRegistry
-        if (battleRegistry.getBattleByParticipatingPlayer(player) != null) {
-            RankUtils.sendMessage(player, MessageConfig.get("duo.in_battle", lang))
-            return
-        }
-
         val partyUuids = Cobblemon.storage.getParty(player).mapNotNull { it?.uuid }.toSet()
         if (!team.all { it in partyUuids }) {
             RankUtils.sendMessage(player, MessageConfig.get("duo.invalid_team_selection", lang))
@@ -80,6 +90,11 @@ object DuoMatchmakingQueue {
         CobblemonRanked.matchmakingQueue.removePlayer(player.uuid)
         queuedPlayers.add(QueuedPlayer(player, team, now))
         RankUtils.sendMessage(player, MessageConfig.get("duo.waiting_for_match", lang))
+    }
+
+    fun removePlayer(player: ServerPlayerEntity): Boolean {
+        BattleHandler.removePlayerFromWaitingQueue(player.uuid)
+        return queuedPlayers.removeIf { it.player.uuid == player.uuid }
     }
 
     private fun processQueue() {
@@ -146,8 +161,8 @@ object DuoMatchmakingQueue {
                 }
                 if (foundOpponent) break
             }
-            
-            i++ 
+
+            i++
         }
     }
 
@@ -159,35 +174,48 @@ object DuoMatchmakingQueue {
         val lang = config.defaultLang
         val players = listOf(p1, p2, p3, p4)
 
-        players.forEach {
-            RankUtils.sendMessage(it.player, MessageConfig.get("queue.match_success", lang))
-        }
-
         val server = p1.player.server
-        scheduler.schedule({
-            server.execute {
-                val finalCheck = players.all { entry ->
-                    !entry.player.isDisconnected &&
-                    BattleHandler.validateTeam(entry.player, entry.team, BattleFormat.GEN_9_SINGLES)
+
+        BattleHandler.requestArena(
+            players.map { it.player },
+            2,
+            onArenaFound = { arena, positions ->
+                players.forEach {
+                    RankUtils.sendMessage(it.player, MessageConfig.get("queue.match_success", lang))
                 }
 
-                if (!finalCheck) {
-                    players.forEach { entry ->
-                        if (!entry.player.isDisconnected) {
-                            RankUtils.sendMessage(entry.player, MessageConfig.get("queue.cancel_team_changed", lang))
-                            if (BattleHandler.validateTeam(entry.player, entry.team, BattleFormat.GEN_9_SINGLES)) {
-                                if (!queuedPlayers.any { it.player.uuid == entry.player.uuid }) {
-                                     queuedPlayers.add(0, entry)
+                server.execute {
+                    val finalCheck = players.all { entry ->
+                        !entry.player.isDisconnected &&
+                                BattleHandler.validateTeam(entry.player, entry.team, BattleFormat.GEN_9_SINGLES)
+                    }
+
+                    if (!finalCheck) {
+                        players.forEach { entry ->
+                            if (!entry.player.isDisconnected) {
+                                RankUtils.sendMessage(entry.player, MessageConfig.get("queue.cancel_team_changed", lang))
+                                if (BattleHandler.validateTeam(entry.player, entry.team, BattleFormat.GEN_9_SINGLES)) {
+                                    if (!queuedPlayers.any { it.player.uuid == entry.player.uuid }) {
+                                        queuedPlayers.add(0, entry)
+                                    }
                                 }
                             }
                         }
+                        BattleHandler.releaseArena(arena)
+                        return@execute
                     }
-                    return@execute
-                }
 
-                startNextBattle(teamA, teamB)
+                    startNextBattle(teamA, teamB)
+                }
+            },
+            onAbort = { survivor ->
+                val entry = players.find { it.player.uuid == survivor.uuid }
+                if (entry != null && !queuedPlayers.any { it.player.uuid == survivor.uuid }) {
+                    queuedPlayers.add(0, entry)
+                    RankUtils.sendMessage(survivor, MessageConfig.get("queue.opponent_disconnected", lang))
+                }
             }
-        }, 5, TimeUnit.SECONDS)
+        )
     }
 
     private fun isEloCompatible(team1: DuoTeam, team2: DuoTeam): Boolean {
@@ -213,10 +241,6 @@ object DuoMatchmakingQueue {
 
     private fun startNextBattle(t1: DuoTeam, t2: DuoTeam) {
         DuoBattleManager.startNextRound(t1, t2)
-    }
-
-    fun removePlayer(player: ServerPlayerEntity): Boolean {
-        return queuedPlayers.removeIf { it.player.uuid == player.uuid }
     }
 
     fun shutdown() {
@@ -250,12 +274,10 @@ object DuoMatchmakingQueue {
 
     fun canPlayerJoinQueue(player: ServerPlayerEntity): Boolean {
         if (queuedPlayers.any { it.player.uuid == player.uuid }) return false
-
         val battleRegistry = Cobblemon.battleRegistry
         if (battleRegistry.getBattleByParticipatingPlayer(player) != null) return false
-
         if (player.isDisconnected) return false
-
+        if (TeamSelectionManager.isPlayerInSelection(player.uuid)) return false
         return true
     }
 }
