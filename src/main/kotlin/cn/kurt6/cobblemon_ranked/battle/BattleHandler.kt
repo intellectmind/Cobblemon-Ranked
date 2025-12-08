@@ -16,6 +16,8 @@ import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import com.cobblemon.mod.common.pokemon.Pokemon
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -24,6 +26,8 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.registry.Registries
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.minecraft.entity.EquipmentSlot
+import net.minecraft.entity.ItemEntity
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.util.Identifier
@@ -302,17 +306,95 @@ object BattleHandler {
         logger.info("BattleHandler shutdown complete")
     }
 
+    fun isPlayerInRankedBattle(player: ServerPlayerEntity): Boolean {
+        val battle = Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player) ?: return false
+        return battleToIdMap.containsKey(battle)
+    }
+
     fun register() {
-        CobblemonEvents.LOOT_DROPPED.subscribe { event ->
-            val entity = event.entity
+        ServerLivingEntityEvents.ALLOW_DEATH.register { entity, damageSource, amount ->
             if (entity is PokemonEntity) {
                 val owner = entity.owner
                 if (owner is ServerPlayerEntity) {
                     val battle = Cobblemon.battleRegistry.getBattleByParticipatingPlayer(owner)
+
                     if (battle != null && battleToIdMap.containsKey(battle)) {
-                        event.drops.clear()
-                        logger.debug("Prevented loot drop for player ${owner.name.string} in ranked battle")
+                        val heldItem = entity.pokemon.heldItem()
+                        if (!heldItem.isEmpty) {
+                            entity.pokemon.removeHeldItem()
+                        }
+
+                        entity.equipStack(EquipmentSlot.MAINHAND, net.minecraft.item.ItemStack.EMPTY)
+                        entity.equipStack(EquipmentSlot.OFFHAND, net.minecraft.item.ItemStack.EMPTY)
+                        entity.equipStack(EquipmentSlot.HEAD, net.minecraft.item.ItemStack.EMPTY)
+                        entity.equipStack(EquipmentSlot.CHEST, net.minecraft.item.ItemStack.EMPTY)
+                        entity.equipStack(EquipmentSlot.LEGS, net.minecraft.item.ItemStack.EMPTY)
+                        entity.equipStack(EquipmentSlot.FEET, net.minecraft.item.ItemStack.EMPTY)
                     }
+                }
+            }
+            true
+        }
+
+        ServerEntityEvents.ENTITY_LOAD.register { entity, world ->
+            if (entity is ItemEntity) {
+                if (battleToIdMap.isEmpty()) return@register
+
+                var shouldDiscard = false
+                var nearbyPlayer: ServerPlayerEntity? = null
+                var targetBattle: PokemonBattle? = null
+
+                for (battle in battleToIdMap.keys) {
+                    val isNearby = battle.actors.any { actor ->
+                        val player = (actor as? PlayerBattleActor)?.entity as? ServerPlayerEntity
+                        if (player != null && player.serverWorld == world && player.squaredDistanceTo(entity) < 400.0) {
+                            nearbyPlayer = player
+                            true
+                        } else false
+                    }
+                    if (isNearby) {
+                        shouldDiscard = true
+                        targetBattle = battle
+                        break
+                    }
+                }
+
+                if (shouldDiscard && targetBattle != null) {
+                    val droppedItemType = entity.stack.item
+                    val itemName = entity.stack.item.name.string
+
+                    val isPokemonHeldItem = targetBattle.actors
+                        .filterIsInstance<PlayerBattleActor>()
+                        .mapNotNull { it.entity as? ServerPlayerEntity }
+                        .any { player ->
+                            Cobblemon.storage.getParty(player).any { pokemon ->
+                                !pokemon.heldItem().isEmpty && pokemon.heldItem().item == droppedItemType
+                            }
+                        }
+
+                    if (isPokemonHeldItem) {
+                        entity.discard()
+                    }
+                }
+            }
+        }
+
+        net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents.BEFORE.register { world, player, pos, state, blockEntity ->
+            if (player is ServerPlayerEntity && isPlayerInRankedBattle(player)) {
+                false
+            } else {
+                true
+            }
+        }
+
+        ServerEntityEvents.ENTITY_LOAD.register { entity, world ->
+            if (entity is ItemEntity) {
+                val nearbyRankedPlayers = world.players
+                    .filterIsInstance<ServerPlayerEntity>()
+                    .filter { isPlayerInRankedBattle(it) && it.squaredDistanceTo(entity) < 100.0 }
+
+                if (nearbyRankedPlayers.isNotEmpty()) {
+                    entity.setPickupDelay(40)
                 }
             }
         }

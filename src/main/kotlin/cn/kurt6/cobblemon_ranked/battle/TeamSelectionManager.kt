@@ -60,10 +60,16 @@ object TeamSelectionManager {
         p2Pos: ArenaCoordinate
     ) {
         val config = CobblemonRanked.config
-        val limit = when (formatName) {
-            "doubles" -> config.doublesPickCount
-            "singles", "2v2singles" -> config.singlesPickCount
-            else -> 3
+        val lang = config.defaultLang
+
+        val limit = if (!config.enableTeamPreview) {
+            6
+        } else {
+            when (formatName) {
+                "doubles" -> config.doublesPickCount
+                "singles", "2v2singles" -> config.singlesPickCount
+                else -> 4
+            }
         }
 
         val validTeam1 = team1Uuids.filter { !DuoBattleManager.isPokemonUsed(player1.uuid, it) }
@@ -81,16 +87,20 @@ object TeamSelectionManager {
 
         if (p1SkipSelection || !config.enableTeamPreview || validTeam1.size <= actualLimit) {
             session.p1Selection = validTeam1.take(actualLimit)
-            val lang = CobblemonRanked.config.defaultLang
-            RankUtils.sendMessage(player1, MessageConfig.get("queue.selection_confirmed", lang))
+
+            if (config.enableTeamPreview && validTeam1.size <= actualLimit) {
+                RankUtils.sendMessage(player1, MessageConfig.get("queue.selection_confirmed", lang))
+            }
         } else {
             sendStartPacket(player1, validTeam1, player2, validTeam2, actualLimit)
         }
 
         if (p2SkipSelection || !config.enableTeamPreview || validTeam2.size <= actualLimit) {
             session.p2Selection = validTeam2.take(actualLimit)
-            val lang = CobblemonRanked.config.defaultLang
-            RankUtils.sendMessage(player2, MessageConfig.get("queue.selection_confirmed", lang))
+
+            if (config.enableTeamPreview && validTeam2.size <= actualLimit) {
+                RankUtils.sendMessage(player2, MessageConfig.get("queue.selection_confirmed", lang))
+            }
         } else {
             sendStartPacket(player2, validTeam2, player1, validTeam1, actualLimit)
         }
