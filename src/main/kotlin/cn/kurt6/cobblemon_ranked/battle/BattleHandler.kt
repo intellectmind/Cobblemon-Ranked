@@ -18,6 +18,7 @@ import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import com.cobblemon.mod.common.pokemon.Pokemon
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -49,6 +50,7 @@ object BattleHandler {
     private val seasonManager get() = CobblemonRanked.seasonManager
 
     private val returnLocations = ConcurrentHashMap<UUID, Pair<ServerWorld, Triple<Double, Double, Double>>>()
+    private var tickCounter = 0
 
     fun getRandomArenaForPlayers(count: Int): Pair<BattleArena, List<ArenaCoordinate>>? {
         val arenas = CobblemonRanked.config.battleArenas
@@ -319,17 +321,27 @@ object BattleHandler {
                     val battle = Cobblemon.battleRegistry.getBattleByParticipatingPlayer(owner)
 
                     if (battle != null && battleToIdMap.containsKey(battle)) {
-                        val heldItem = entity.pokemon.heldItem()
-                        if (!heldItem.isEmpty) {
-                            entity.pokemon.removeHeldItem()
-                        }
+                        val isInBattle = battle.actors
+                            .filterIsInstance<PlayerBattleActor>()
+                            .any { actor ->
+                                actor.pokemonList.any { battlePokemon ->
+                                    battlePokemon.effectedPokemon == entity.pokemon
+                                }
+                            }
 
-                        entity.equipStack(EquipmentSlot.MAINHAND, net.minecraft.item.ItemStack.EMPTY)
-                        entity.equipStack(EquipmentSlot.OFFHAND, net.minecraft.item.ItemStack.EMPTY)
-                        entity.equipStack(EquipmentSlot.HEAD, net.minecraft.item.ItemStack.EMPTY)
-                        entity.equipStack(EquipmentSlot.CHEST, net.minecraft.item.ItemStack.EMPTY)
-                        entity.equipStack(EquipmentSlot.LEGS, net.minecraft.item.ItemStack.EMPTY)
-                        entity.equipStack(EquipmentSlot.FEET, net.minecraft.item.ItemStack.EMPTY)
+                        if (isInBattle) {
+                            val heldItem = entity.pokemon.heldItem()
+                            if (!heldItem.isEmpty) {
+                                entity.pokemon.removeHeldItem()
+                            }
+
+                            entity.equipStack(EquipmentSlot.MAINHAND, net.minecraft.item.ItemStack.EMPTY)
+                            entity.equipStack(EquipmentSlot.OFFHAND, net.minecraft.item.ItemStack.EMPTY)
+                            entity.equipStack(EquipmentSlot.HEAD, net.minecraft.item.ItemStack.EMPTY)
+                            entity.equipStack(EquipmentSlot.CHEST, net.minecraft.item.ItemStack.EMPTY)
+                            entity.equipStack(EquipmentSlot.LEGS, net.minecraft.item.ItemStack.EMPTY)
+                            entity.equipStack(EquipmentSlot.FEET, net.minecraft.item.ItemStack.EMPTY)
+                        }
                     }
                 }
             }
@@ -340,40 +352,35 @@ object BattleHandler {
             if (entity is ItemEntity) {
                 if (battleToIdMap.isEmpty()) return@register
 
-                var shouldDiscard = false
-                var nearbyPlayer: ServerPlayerEntity? = null
-                var targetBattle: PokemonBattle? = null
-
-                for (battle in battleToIdMap.keys) {
-                    val isNearby = battle.actors.any { actor ->
-                        val player = (actor as? PlayerBattleActor)?.entity as? ServerPlayerEntity
-                        if (player != null && player.serverWorld == world && player.squaredDistanceTo(entity) < 400.0) {
-                            nearbyPlayer = player
-                            true
-                        } else false
-                    }
-                    if (isNearby) {
-                        shouldDiscard = true
-                        targetBattle = battle
-                        break
-                    }
+                val blockResult = checkAndBlockBattleItem(entity, world)
+                if (blockResult != null) {
+                    entity.discard()
                 }
+            }
+        }
 
-                if (shouldDiscard && targetBattle != null) {
-                    val droppedItemType = entity.stack.item
-                    val itemName = entity.stack.item.name.string
+        ServerTickEvents.END_SERVER_TICK.register { server ->
+            if (++tickCounter % 10 != 0) return@register
+            if (battleToIdMap.isEmpty()) return@register
 
-                    val isPokemonHeldItem = targetBattle.actors
+            val activeWorlds = battleToIdMap.keys
+                .flatMap { battle ->
+                    battle.actors
                         .filterIsInstance<PlayerBattleActor>()
-                        .mapNotNull { it.entity as? ServerPlayerEntity }
-                        .any { player ->
-                            Cobblemon.storage.getParty(player).any { pokemon ->
-                                !pokemon.heldItem().isEmpty && pokemon.heldItem().item == droppedItemType
-                            }
-                        }
+                        .mapNotNull { (it.entity as? ServerPlayerEntity)?.serverWorld }
+                }
+                .distinct()
 
-                    if (isPokemonHeldItem) {
-                        entity.discard()
+            activeWorlds.forEach { world ->
+                val removedItems = mutableListOf<String>()
+
+                world.iterateEntities().forEach { entity ->
+                    if (entity is ItemEntity && !entity.isRemoved) {
+                        val blockResult = checkAndBlockBattleItem(entity, world)
+                        if (blockResult != null) {
+                            removedItems.add(blockResult.itemName)
+                            entity.discard()
+                        }
                     }
                 }
             }
@@ -454,6 +461,44 @@ object BattleHandler {
             }
         }
     }
+
+    private fun checkAndBlockBattleItem(entity: ItemEntity, world: ServerWorld): BlockResult? {
+        if (battleToIdMap.isEmpty()) return null
+
+        val droppedItemType = entity.stack.item
+        val itemName = entity.stack.item.name.string
+
+        for (battle in battleToIdMap.keys) {
+            val nearbyPlayer = battle.actors
+                .filterIsInstance<PlayerBattleActor>()
+                .mapNotNull { it.entity as? ServerPlayerEntity }
+                .firstOrNull { player ->
+                    player.serverWorld == world && player.squaredDistanceTo(entity) < 400.0
+                }
+
+            if (nearbyPlayer != null) {
+                val isBattlePokemonItem = battle.actors
+                    .filterIsInstance<PlayerBattleActor>()
+                    .any { actor ->
+                        actor.pokemonList.any { battlePokemon ->
+                            val pokemon = battlePokemon.effectedPokemon
+                            !pokemon.heldItem().isEmpty && pokemon.heldItem().item == droppedItemType
+                        }
+                    }
+
+                if (isBattlePokemonItem) {
+                    return BlockResult(itemName, nearbyPlayer.name.string)
+                }
+            }
+        }
+
+        return null
+    }
+
+    private data class BlockResult(
+        val itemName: String,
+        val playerName: String
+    )
 
     fun handleSelectionPhaseDisconnect(winner: ServerPlayerEntity, loser: ServerPlayerEntity, formatName: String) {
         val lang = CobblemonRanked.config.defaultLang
