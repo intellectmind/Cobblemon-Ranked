@@ -131,6 +131,14 @@ object TeamSelectionManager {
 
             val opponent = if (session.player1.uuid == player.uuid) session.player2 else session.player1
 
+            if (opponent.isDisconnected) {
+                BattleHandler.releaseArenaForPlayer(player.uuid)
+                BattleHandler.releaseArenaForPlayer(opponent.uuid)
+                BattleHandler.forceCleanupPlayerBattleData(opponent)
+                BattleHandler.forceCleanupPlayerBattleData(player)
+                return
+            }
+
             if (ServerPlayNetworking.canSend(opponent, TeamSelectionEndPayload.ID)) {
                 ServerPlayNetworking.send(opponent, TeamSelectionEndPayload.INSTANCE)
             }

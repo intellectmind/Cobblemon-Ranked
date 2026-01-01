@@ -1,7 +1,6 @@
 package cn.kurt6.cobblemon_ranked.util
 
 import cn.kurt6.cobblemon_ranked.CobblemonRanked
-import cn.kurt6.cobblemon_ranked.data.PlayerRankData
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket
 import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket
@@ -35,13 +34,25 @@ object RankUtils {
         winnerElo: Int,
         loserElo: Int,
         kFactor: Int,
-        minElo: Int
+        minElo: Int,
+        loserProtectionRate: Double = 1.0
     ): Pair<Int, Int> {
         val winnerExpected = 1.0 / (1 + Math.pow(10.0, (loserElo - winnerElo) / 400.0))
         val loserExpected = 1.0 - winnerExpected
 
-        val newWinnerElo = winnerElo + (kFactor * (1 - winnerExpected)).toInt()
-        val newLoserElo = loserElo + (kFactor * (0 - loserExpected)).toInt()
+        val winnerGainRaw = (kFactor * (1 - winnerExpected)).toInt()
+        val loserLossRaw = (kFactor * (0 - loserExpected)).toInt()
+
+        val maxLoserLoss = (winnerGainRaw * loserProtectionRate).toInt()
+        val actualLoserLoss = if (loserLossRaw < 0) {
+            val absLoserLoss = -loserLossRaw
+            if (absLoserLoss > maxLoserLoss) -maxLoserLoss else loserLossRaw
+        } else {
+            loserLossRaw
+        }
+
+        val newWinnerElo = winnerElo + winnerGainRaw
+        val newLoserElo = loserElo + actualLoserLoss
 
         return Pair(
             maxOf(minElo, newWinnerElo),

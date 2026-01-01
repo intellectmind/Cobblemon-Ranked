@@ -65,6 +65,9 @@ data class RankConfig(
     @Comment("Minimum possible Elo score / 最低Elo分数限制")
     val minElo: Int = 0,
 
+    @Comment("Loser protection rate (0.0 to 1.0). Loser will lose at most (winner_gain * loserProtectionRate). 1.0 = no protection / 败者保护率，败者最多扣除胜者获得的Elo * loserProtectionRate。1.0 = 不启用保护")
+    val loserProtectionRate: Double = 1.0,
+
     @Comment("Banned Pokémon / 禁止使用的宝可梦")
     var bannedPokemon: List<String> = listOf("Mewtwo", "Arceus"),
 

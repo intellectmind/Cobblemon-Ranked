@@ -24,6 +24,7 @@ import net.minecraft.text.Text
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 object DuoBattleManager {
     private val activeBattles = ConcurrentHashMap<UUID, Pair<DuoTeam, DuoTeam>>()
@@ -113,18 +114,39 @@ object DuoBattleManager {
         if (loserTeam.switchToNextPlayer()) {
             val nextLoserPlayer = loserTeam.getActivePlayer()
             val currentWinnerPlayer = winnerTeam.getActivePlayer()
+
+            if (nextLoserPlayer.isDisconnected || currentWinnerPlayer.isDisconnected) {
+                val actualWinner = if (nextLoserPlayer.isDisconnected) currentWinnerPlayer else nextLoserPlayer
+                val actualLoser = if (nextLoserPlayer.isDisconnected) nextLoserPlayer else currentWinnerPlayer
+                endBattle(
+                    if (actualWinner.uuid == winnerTeam.player1.uuid || actualWinner.uuid == winnerTeam.player2.uuid) winnerTeam else loserTeam,
+                    if (actualLoser.uuid == loserTeam.player1.uuid || actualLoser.uuid == loserTeam.player2.uuid) loserTeam else winnerTeam
+                )
+                return
+            }
+
             if (!nextLoserPlayer.isDisconnected) RankUtils.sendMessage(nextLoserPlayer, MessageConfig.get("duo.next_round.ready", lang, "opponent" to currentWinnerPlayer.name.string))
             if (!currentWinnerPlayer.isDisconnected) RankUtils.sendMessage(currentWinnerPlayer, MessageConfig.get("duo.next_round.win_continue", lang))
 
             val server = if (!nextLoserPlayer.isDisconnected) nextLoserPlayer.server else currentWinnerPlayer.server
             java.util.concurrent.Executors.newSingleThreadScheduledExecutor().schedule({
                 server.execute {
-                    if (nextLoserPlayer.isDisconnected) handleVictory(currentWinnerPlayer.uuid, nextLoserPlayer.uuid)
-                    else if (currentWinnerPlayer.isDisconnected) handleVictory(nextLoserPlayer.uuid, currentWinnerPlayer.uuid)
-                    else {
-                        cleanupRoundPokemonEntities(loserTeam.player1); cleanupRoundPokemonEntities(loserTeam.player2)
-                        cleanupRoundPokemonEntities(winnerTeam.player1); cleanupRoundPokemonEntities(winnerTeam.player2)
-                        startNextRound(winnerTeam, loserTeam)
+                    try {
+                        if (nextLoserPlayer.isDisconnected) {
+                            handleVictory(currentWinnerPlayer.uuid, nextLoserPlayer.uuid)
+                        } else if (currentWinnerPlayer.isDisconnected) {
+                            handleVictory(nextLoserPlayer.uuid, currentWinnerPlayer.uuid)
+                        } else {
+                            cleanupRoundPokemonEntities(loserTeam.player1)
+                            cleanupRoundPokemonEntities(loserTeam.player2)
+                            cleanupRoundPokemonEntities(winnerTeam.player1)
+                            cleanupRoundPokemonEntities(winnerTeam.player2)
+                            startNextRound(winnerTeam, loserTeam)
+                        }
+                    } catch (e: Exception) {
+                        CobblemonRanked.logger.error("Error in next round", e)
+                        loserTeam.currentIndex = 0
+                        endBattle(winnerTeam, loserTeam)
                     }
                 }
             }, 3, TimeUnit.SECONDS)
@@ -259,27 +281,33 @@ object DuoBattleManager {
         val loserData = listOf(loserTeam.player1, loserTeam.player2).map {
             BattleHandler.rankDao.getPlayerData(it.uuid, seasonId, format) ?: PlayerRankData(playerId = it.uuid, seasonId = seasonId, format = format, playerName = it.name.string, elo = CobblemonRanked.config.initialElo)
         }
-        val teamEloWinner = winnerData.map { it.elo }.average().toInt()
-        val teamEloLoser = loserData.map { it.elo }.average().toInt()
-        val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(teamEloWinner, teamEloLoser, CobblemonRanked.config.eloKFactor, CobblemonRanked.config.minElo)
+
+        val oldWinnerElos = winnerData.map { it.elo }
+        val oldLoserElos = loserData.map { it.elo }
+
+        val teamEloWinner = winnerData.map { it.elo }.average().roundToInt()
+        val teamEloLoser = loserData.map { it.elo }.average().roundToInt()
+        val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(teamEloWinner, teamEloLoser, config.eloKFactor, config.minElo, config.loserProtectionRate)
 
         winnerData.forEachIndexed { index, data ->
             val player = listOf(winnerTeam.player1, winnerTeam.player2)[index]
+            val eloDiff = newWinnerElo - oldWinnerElos[index]
             data.apply { elo = newWinnerElo; wins++; winStreak++; if (winStreak > bestWinStreak) bestWinStreak = winStreak }
             BattleHandler.rankDao.savePlayerData(data)
             if(!player.isDisconnected) {
                 BattleHandler.rewardManager.grantRankRewardIfEligible(player, data.getRankTitle(), format, player.server)
-                BattleHandler.sendBattleResultMessage(player, data, newWinnerElo - data.elo)
+                BattleHandler.sendBattleResultMessage(player, data, eloDiff)
                 BattleHandler.grantVictoryRewards(player, player.server)
             }
         }
         loserData.forEachIndexed { index, data ->
             val player = listOf(loserTeam.player1, loserTeam.player2)[index]
+            val eloDiff = newLoserElo - oldLoserElos[index]
             data.apply { elo = newLoserElo; losses++; winStreak = 0 }
             BattleHandler.rankDao.savePlayerData(data)
             if(!player.isDisconnected) {
                 BattleHandler.rewardManager.grantRankRewardIfEligible(player, data.getRankTitle(), format, player.server)
-                BattleHandler.sendBattleResultMessage(player, data, newLoserElo - data.elo)
+                BattleHandler.sendBattleResultMessage(player, data, eloDiff)
             }
         }
 

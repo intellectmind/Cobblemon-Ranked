@@ -166,6 +166,9 @@ object ConfigManager {
                 val rawMinElo = json.get("minElo")
                 val fixedMinElo = rawMinElo?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.minElo
 
+                val rawLoserProtectionRate = json.get("loserProtectionRate")
+                val fixedLoserProtectionRate = rawLoserProtectionRate?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.loserProtectionRate
+
                 val rawMaxLevel = json.get("maxLevel")
                 val fixedMaxLevel = rawMaxLevel?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.maxLevel
 
@@ -305,6 +308,7 @@ object ConfigManager {
                     initialElo = fixedInitialElo,
                     eloKFactor = fixedEloKFactor,
                     minElo = fixedMinElo,
+                    loserProtectionRate = fixedLoserProtectionRate,
                     allowDuplicateSpecies = fixedAllowDuplicateSpecies,
                     maxLevel = fixedMaxLevel,
                     customBattleLevel = fixedCustomBattleLevel,
@@ -346,7 +350,7 @@ object ConfigManager {
 
         CobblemonRanked.matchmakingQueue.clear()
         synchronized(DuoMatchmakingQueue) {
-            // DuoMatchmakingQueue 内部的清理
+
         }
 
         CobblemonRanked.config = newConfig
@@ -364,7 +368,7 @@ object ConfigManager {
                 )
             }
         } catch (e: Exception) {
-            // 忽略通知失败
+
         }
 
         return newConfig

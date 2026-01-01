@@ -33,7 +33,6 @@ import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.Box
-import net.minecraft.util.math.Vec3d
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -59,7 +58,8 @@ object BattleHandler {
         val players: List<ServerPlayerEntity>,
         val requiredSeats: Int,
         val onArenaFound: (BattleArena, List<ArenaCoordinate>) -> Unit,
-        val onAbort: (ServerPlayerEntity) -> Unit
+        val onAbort: (ServerPlayerEntity) -> Unit,
+        var assignedArena: BattleArena? = null
     )
     private val pendingRequests = ConcurrentLinkedQueue<PendingBattleRequest>()
 
@@ -77,22 +77,23 @@ object BattleHandler {
         onArenaFound: (BattleArena, List<ArenaCoordinate>) -> Unit,
         onAbort: (ServerPlayerEntity) -> Unit
     ) {
-        synchronized(occupiedArenas) {
+        val selected = synchronized(occupiedArenas) {
             val arenas = CobblemonRanked.config.battleArenas
             val suitableAndFree = arenas.filter {
                 it.playerPositions.size >= requiredSeats && !occupiedArenas.contains(it)
             }
+            suitableAndFree.randomOrNull()
+        }
 
-            if (suitableAndFree.isNotEmpty()) {
-                val selected = suitableAndFree.random()
-                lockArena(selected, players)
-                onArenaFound(selected, selected.playerPositions.take(requiredSeats))
-            } else {
-                pendingRequests.add(PendingBattleRequest(players, requiredSeats, onArenaFound, onAbort))
-                val lang = CobblemonRanked.config.defaultLang
-                players.forEach {
-                    RankUtils.sendMessage(it, MessageConfig.get("queue.waiting_for_arena", lang, "position" to pendingRequests.size.toString()))
-                }
+        if (selected != null) {
+            lockArena(selected, players)
+            onArenaFound(selected, selected.playerPositions.take(requiredSeats))
+        } else {
+            val request = PendingBattleRequest(players, requiredSeats, onArenaFound, onAbort)
+            pendingRequests.add(request)
+            val lang = CobblemonRanked.config.defaultLang
+            players.forEach {
+                RankUtils.sendMessage(it, MessageConfig.get("queue.waiting_for_arena", lang, "position" to pendingRequests.size.toString()))
             }
         }
     }
@@ -107,6 +108,11 @@ object BattleHandler {
             val request = iterator.next()
             if (request.players.any { it.uuid == uuid }) {
                 iterator.remove()
+
+                request.assignedArena?.let { arena ->
+                    releaseArena(arena)
+                }
+
                 val lang = CobblemonRanked.config.defaultLang
                 request.players.forEach { player ->
                     if (player.uuid != uuid) {
@@ -125,10 +131,11 @@ object BattleHandler {
     }
 
     fun releaseArena(arena: BattleArena) {
-        synchronized(occupiedArenas) {
-            if (occupiedArenas.remove(arena)) {
-                processPendingRequests()
-            }
+        val shouldProcess = synchronized(occupiedArenas) {
+            occupiedArenas.remove(arena)
+        }
+        if (shouldProcess) {
+            processPendingRequests()
         }
     }
 
@@ -141,27 +148,32 @@ object BattleHandler {
 
     private fun processPendingRequests() {
         if (pendingRequests.isEmpty()) return
-        val arenas = CobblemonRanked.config.battleArenas
 
-        val request = pendingRequests.peek()
+        val request = pendingRequests.peek() ?: return
+
         if (request.players.any { it.isDisconnected }) {
             pendingRequests.poll()
+            request.assignedArena?.let { releaseArena(it) }
             processPendingRequests()
             return
         }
 
-        val suitableAndFree = arenas.filter {
-            it.playerPositions.size >= request.requiredSeats && !occupiedArenas.contains(it)
+        val selected = synchronized(occupiedArenas) {
+            val arenas = CobblemonRanked.config.battleArenas
+            val suitableAndFree = arenas.filter {
+                it.playerPositions.size >= request.requiredSeats && !occupiedArenas.contains(it)
+            }
+            suitableAndFree.randomOrNull()
         }
 
-        if (suitableAndFree.isNotEmpty()) {
+        if (selected != null) {
             val validRequest = pendingRequests.poll()
-            val selected = suitableAndFree.random()
             val lang = CobblemonRanked.config.defaultLang
             validRequest.players.forEach {
                 RankUtils.sendMessage(it, MessageConfig.get("queue.arena_found", lang))
             }
             lockArena(selected, validRequest.players)
+            validRequest.assignedArena = selected
             validRequest.onArenaFound(selected, selected.playerPositions.take(validRequest.requiredSeats))
         }
     }
@@ -277,16 +289,6 @@ object BattleHandler {
             return false
         }
 
-        if (!config.allowDuplicateItems) {
-            val heldItems = pokemonList.map { it.heldItem() }.filter { !it.isEmpty }
-            val distinctItems = heldItems.map { Registries.ITEM.getId(it.item).toString() }.distinct()
-
-            if (distinctItems.size != heldItems.size) {
-                RankUtils.sendMessage(player, MessageConfig.get("battle.team.duplicate_items", lang))
-                return false
-            }
-        }
-
         if (pokemonList.size < config.minTeamSize) {
             RankUtils.sendMessage(player, MessageConfig.get("battle.team.too_small", lang, "min" to config.minTeamSize.toString()))
             return false
@@ -296,65 +298,94 @@ object BattleHandler {
             return false
         }
 
-        val bannedPokemon = config.bannedPokemon.map { it.lowercase() }
-        val bannedInTeam = pokemonList.filter { bannedPokemon.contains(it.species.name.lowercase()) }
-        if (bannedInTeam.isNotEmpty()) {
-            val bannedNames = bannedInTeam.joinToString(", ") { it.species.name }
-            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_pokemon", lang, "names" to bannedNames))
-            return false
-        }
+        val violations = mutableListOf<String>()
+        val speciesCount = mutableMapOf<String, Int>()
+        val heldItems = mutableListOf<String>()
+        val seasonId = CobblemonRanked.seasonManager.currentSeasonId
 
-        if (config.maxLevel > 0) {
-            val overleveled = pokemonList.filter { it.level > config.maxLevel }
-            if (overleveled.isNotEmpty()) {
-                val names = overleveled.joinToString(", ") { "${it.species.name} (Lv.${it.level})" }
-                RankUtils.sendMessage(player, MessageConfig.get("battle.team.overleveled", lang, "max" to config.maxLevel.toString(), "names" to names))
-                return false
+        pokemonList.forEach { pokemon ->
+            val speciesName = pokemon.species.name.lowercase()
+
+            if (config.bannedPokemon.map { it.lowercase() }.contains(speciesName)) {
+                violations.add("banned_pokemon:${pokemon.species.name}")
+            }
+
+            if (config.maxLevel > 0 && pokemon.level > config.maxLevel) {
+                violations.add("overlevel:${pokemon.species.name}(Lv.${pokemon.level})")
+            }
+
+            if (!config.allowDuplicateSpecies) {
+                speciesCount[pokemon.species.name] = speciesCount.getOrDefault(pokemon.species.name, 0) + 1
+            }
+
+            if (!config.allowDuplicateItems) {
+                val heldItem = pokemon.heldItem()
+                if (!heldItem.isEmpty) {
+                    heldItems.add(Registries.ITEM.getId(heldItem.item).toString())
+                }
+            }
+
+            if (isEgg(pokemon)) {
+                violations.add("egg:${pokemon.species.name}")
+            } else if (isFainted(pokemon)) {
+                violations.add("fainted:${pokemon.species.name}")
+            }
+
+            val bannedHeldItems = config.bannedHeldItems.map { it.lowercase() }
+            val stack = pokemon.heldItem()
+            if (!stack.isEmpty) {
+                val itemId = Registries.ITEM.getId(stack.item).toString().lowercase()
+                if (itemId in bannedHeldItems) {
+                    violations.add("banned_held:${pokemon.species.name}($itemId)")
+                }
+            }
+
+            val bannedNatures = config.bannedNatures.map { it.lowercase() }
+            if (pokemon.nature.name.toString().lowercase() in bannedNatures) {
+                violations.add("banned_nature:${pokemon.species.name}(${pokemon.nature.name})")
+            }
+
+            val bannedAbilities = config.bannedAbilities.map { it.uppercase() }
+            if (pokemon.ability.name.uppercase() in bannedAbilities) {
+                violations.add("banned_ability:${pokemon.species.name}(${pokemon.ability.name})")
+            }
+
+            val bannedGenders = config.bannedGenders.map { it.uppercase() }
+            if (pokemon.gender?.name?.uppercase() in bannedGenders) {
+                violations.add("banned_gender:${pokemon.species.name}(${pokemon.gender?.name})")
+            }
+
+            val bannedMoves = config.bannedMoves.map { it.lowercase().trim() }
+            val pokemonBannedMoves = pokemon.moveSet.getMovesWithNulls()
+                .mapNotNull { move ->
+                    val moveName = move?.name?.toString()?.lowercase()
+                    if (moveName in bannedMoves) moveName else null
+                }
+            if (pokemonBannedMoves.isNotEmpty()) {
+                violations.add("banned_moves:${pokemon.species.name}(${pokemonBannedMoves.joinToString(",")})")
+            }
+
+            if (config.bannedShiny && pokemon.shiny) {
+                violations.add("shiny:${pokemon.species.name}")
+            }
+
+            val usageResult = PokemonUsageValidator.validateUsageRestrictions(player, pokemon, seasonId, lang)
+            if (!usageResult.isValid) {
+                usageResult.errorMessage?.let { violations.add(it) }
             }
         }
 
         if (!config.allowDuplicateSpecies) {
-            val speciesCount = mutableMapOf<String, Int>()
-            pokemonList.forEach {
-                val name = it.species.name
-                speciesCount[name] = speciesCount.getOrDefault(name, 0) + 1
-            }
-            val duplicates = speciesCount.filter { it.value > 1 }.keys
-            if (duplicates.isNotEmpty()) {
-                RankUtils.sendMessage(player, MessageConfig.get("battle.team.duplicates", lang, "names" to duplicates.joinToString()))
-                return false
+            speciesCount.filter { it.value > 1 }.keys.forEach { species ->
+                violations.add("duplicate_species:$species")
             }
         }
 
-        val invalidPokemon = pokemonList.filter { isEgg(it) || isFainted(it) }
-        if (invalidPokemon.isNotEmpty()) {
-            val invalidEntries = invalidPokemon.map {
-                val status = when {
-                    isEgg(it) -> MessageConfig.get("battle.status.egg", lang)
-                    isFainted(it) -> MessageConfig.get("battle.status.fainted", lang)
-                    else -> MessageConfig.get("battle.status.unknown", lang)
-                }
-                "${it.species.name}($status)"
+        if (!config.allowDuplicateItems) {
+            val duplicateItems = heldItems.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
+            if (duplicateItems.isNotEmpty()) {
+                violations.add("duplicate_items:${duplicateItems.joinToString(",")}")
             }
-            RankUtils.sendMessage(player, MessageConfig.get("battle.team.invalid", lang, "entries" to invalidEntries.joinToString()))
-            return false
-        }
-
-        val bannedHeldItems = config.bannedHeldItems.map { it.lowercase() }
-        val heldItemViolations = pokemonList.filter { poke ->
-            val stack = poke.heldItem()
-            if (stack.isEmpty) return@filter false
-            val id = Registries.ITEM.getId(stack.item).toString().lowercase()
-            id in bannedHeldItems
-        }
-        if (heldItemViolations.isNotEmpty()) {
-            val names = heldItemViolations.joinToString(", ") {
-                val item = it.heldItem().item
-                val itemId = Registries.ITEM.getId(item).path
-                "${it.species.name}($itemId)"
-            }
-            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_held_items", lang, "names" to names))
-            return false
         }
 
         val bannedItems = config.bannedCarriedItems.map { it.lowercase() }
@@ -365,89 +396,33 @@ object BattleHandler {
             .filter { it in bannedItems }
 
         if (violatedItems.isNotEmpty()) {
-            val itemList = violatedItems.joinToString(", ")
-            RankUtils.sendMessage(player, MessageConfig.get("battle.player.banned_items", lang, "items" to itemList))
-            return false
+            violations.add("player_banned_items:${violatedItems.joinToString(",")}")
         }
 
-        val bannedNatures = config.bannedNatures.map { it.lowercase() }
-        val hasBannedNature = pokemonList.filter {
-            it.nature.name.toString().lowercase() in bannedNatures
-        }
-        if (hasBannedNature.isNotEmpty()) {
-            val names = hasBannedNature.joinToString(", ") {
-                "${it.species.name}(${it.nature.name})"
-            }
-            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_nature", lang, "names" to names))
-            return false
-        }
+        if (violations.isNotEmpty()) {
+            violations.forEach { violation ->
+                val parts = violation.split(":", limit = 2)
+                val type = parts[0]
+                val detail = parts.getOrNull(1) ?: ""
 
-        val bannedAbilities = config.bannedAbilities.map { it.uppercase() }
-        val hasBannedAbility = pokemonList.filter {
-            it.ability.name.uppercase() in bannedAbilities
-        }
-        if (hasBannedAbility.isNotEmpty()) {
-            val names = hasBannedAbility.joinToString(", ") {
-                "${it.species.name}(${it.ability.name})"
-            }
-            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_ability", lang, "names" to names))
-            return false
-        }
-
-        val bannedGenders = config.bannedGenders.map { it.uppercase() }
-        val hasBannedGender = pokemonList.filter {
-            it.gender?.name?.uppercase() in bannedGenders
-        }
-        if (hasBannedGender.isNotEmpty()) {
-            val names = hasBannedGender.joinToString(", ") {
-                "${it.species.name}(${it.gender?.name})"
-            }
-            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_gender", lang, "names" to names))
-            return false
-        }
-
-        val bannedMoves = config.bannedMoves.map { it.lowercase().trim() }
-        val hasBannedMoves = pokemonList.mapNotNull { poke ->
-            val banned = poke.moveSet.getMovesWithNulls()
-                .mapNotNull { move ->
-                    val moveName = move?.name?.toString()?.lowercase()
-                    if (moveName in bannedMoves) moveName else null
+                when (type) {
+                    "banned_pokemon" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_pokemon", lang, "names" to detail))
+                    "overlevel" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.overleveled", lang, "max" to config.maxLevel.toString(), "names" to detail))
+                    "duplicate_species" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.duplicates", lang, "names" to detail))
+                    "duplicate_items" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.duplicate_items", lang))
+                    "egg", "fainted" -> {
+                        val status = if (type == "egg") MessageConfig.get("battle.status.egg", lang) else MessageConfig.get("battle.status.fainted", lang)
+                        RankUtils.sendMessage(player, MessageConfig.get("battle.team.invalid", lang, "entries" to "$detail($status)"))
+                    }
+                    "banned_held" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_held_items", lang, "names" to detail))
+                    "banned_nature" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_nature", lang, "names" to detail))
+                    "banned_ability" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_ability", lang, "names" to detail))
+                    "banned_gender" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_gender", lang, "names" to detail))
+                    "banned_moves" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_moves", lang, "names" to detail))
+                    "shiny" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_shiny", lang, "names" to detail))
+                    "player_banned_items" -> RankUtils.sendMessage(player, MessageConfig.get("battle.player.banned_items", lang, "items" to detail))
+                    else -> RankUtils.sendMessage(player, detail)
                 }
-
-            if (banned.isNotEmpty()) {
-                "${poke.species.name}(${banned.joinToString(", ")})"
-            } else null
-        }
-        if (hasBannedMoves.isNotEmpty()) {
-            val names = hasBannedMoves.joinToString(", ")
-            RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_moves", lang, "names" to names))
-            return false
-        }
-
-        if (config.bannedShiny) {
-            val shinyPokemon = pokemonList.filter { it.shiny }
-            if (shinyPokemon.isNotEmpty()) {
-                val names = shinyPokemon.joinToString(", ") { it.species.name }
-                RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_shiny", lang, "names" to names))
-                return false
-            }
-        }
-
-        val seasonId = CobblemonRanked.seasonManager.currentSeasonId
-        val violatingPokemon = mutableListOf<String>()
-
-        pokemonList.forEach { pokemon ->
-            val result = PokemonUsageValidator.validateUsageRestrictions(
-                player, pokemon, seasonId, lang
-            )
-            if (!result.isValid) {
-                violatingPokemon.add(result.errorMessage ?: pokemon.species.name)
-            }
-        }
-
-        if (violatingPokemon.isNotEmpty()) {
-            violatingPokemon.forEach { message ->
-                RankUtils.sendMessage(player, message)
             }
             return false
         }
@@ -637,8 +612,13 @@ object BattleHandler {
         val winnerData = getOrCreatePlayerData(winner.uuid, seasonId, formatName).apply { playerName = winner.name.string }
         val loserData = getOrCreatePlayerData(loser.uuid, seasonId, formatName).apply { playerName = loser.name.string }
 
-        val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(winnerData.elo, loserData.elo, config.eloKFactor, config.minElo)
-        val eloDiff = newWinnerElo - winnerData.elo
+        val oldWinnerElo = winnerData.elo
+        val oldLoserElo = loserData.elo
+
+        val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(winnerData.elo, loserData.elo, config.eloKFactor, config.minElo, config.loserProtectionRate)
+
+        val eloDiffWinner = newWinnerElo - oldWinnerElo
+        val eloDiffLoser = newLoserElo - oldLoserElo
 
         winnerData.apply { elo = newWinnerElo; wins++; winStreak++; if (winStreak > bestWinStreak) bestWinStreak = winStreak }
         loserData.apply { elo = newLoserElo; losses++; winStreak = 0; fleeCount++ }
@@ -655,7 +635,7 @@ object BattleHandler {
         markPlayerForCleanup(loser)
         if (!winner.isDisconnected) {
             RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", config.defaultLang, "elo" to winnerData.elo.toString()))
-            sendBattleResultMessage(winner, winnerData, eloDiff)
+            sendBattleResultMessage(winner, winnerData, eloDiffWinner)
             grantVictoryRewards(winner, winner.server)
             teleportBackIfPossible(winner)
         }
@@ -714,7 +694,13 @@ object BattleHandler {
             val loserData = getOrCreatePlayerData(loserUuid, seasonId, formatName)
             val winnerData = getOrCreatePlayerData(winnerUuid, seasonId, formatName)
 
-            val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(winnerData.elo, loserData.elo, config.eloKFactor, config.minElo)
+            val oldWinnerElo = winnerData.elo
+            val oldLoserElo = loserData.elo
+
+            val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(winnerData.elo, loserData.elo, config.eloKFactor, config.minElo, config.loserProtectionRate)
+
+            val eloDiffWinner = newWinnerElo - oldWinnerElo
+            val eloDiffLoser = newLoserElo - oldLoserElo
 
             loserData.apply { elo = newLoserElo; losses++; winStreak = 0; fleeCount++ }
             winnerData.apply { elo = newWinnerElo; wins++; winStreak++; if (winStreak > bestWinStreak) bestWinStreak = winStreak }
@@ -736,7 +722,7 @@ object BattleHandler {
 
             if (winnerPlayer != null && !winnerPlayer.isDisconnected) {
                 RankUtils.sendMessage(winnerPlayer, MessageConfig.get("battle.disconnect.winner", lang, "elo" to winnerData.elo.toString()))
-                sendBattleResultMessage(winnerPlayer, winnerData, newWinnerElo - winnerData.elo)
+                sendBattleResultMessage(winnerPlayer, winnerData, eloDiffWinner)
                 teleportBackIfPossible(winnerPlayer)
                 markPlayerForCleanup(winnerPlayer)
                 playerToArena.remove(winnerUuid)
@@ -753,13 +739,17 @@ object BattleHandler {
             logger.error("Error handling disconnect as flee", e)
         } finally {
             markPlayerForCleanup(disconnected)
+            cleanupCooldowns.remove(disconnected.uuid)
             if (battleId != null) {
                 battleToIdMap.remove(battle)
             }
         }
     }
 
-    fun markAsRanked(battleId: UUID, formatName: String) { rankedBattles[battleId] = formatName }
+    fun markAsRanked(battleId: UUID, formatName: String) {
+        rankedBattles[battleId] = formatName
+    }
+
     fun registerBattle(battle: PokemonBattle, battleId: UUID) {
         battleToIdMap[battle] = battleId
         val player = battle.actors.filterIsInstance<PlayerBattleActor>().firstOrNull()?.entity as? ServerPlayerEntity
@@ -789,7 +779,7 @@ object BattleHandler {
                 winnerData.playerName = winner.name.string
                 loserData.playerName = loser.name.string
 
-                val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(winnerData.elo, loserData.elo, config.eloKFactor, config.minElo)
+                val (newWinnerElo, newLoserElo) = RankUtils.calculateElo(winnerData.elo, loserData.elo, config.eloKFactor, config.minElo, config.loserProtectionRate)
                 val eloDiffWinner = newWinnerElo - winnerData.elo
                 val eloDiffLoser = newLoserElo - loserData.elo
 
@@ -906,10 +896,14 @@ object BattleHandler {
         }
     }
 
-    fun restoreLevelsFromDatabase(player: ServerPlayerEntity) { teleportBackIfPossible(player) }
+    fun restoreLevelsFromDatabase(player: ServerPlayerEntity) {
+        teleportBackIfPossible(player)
+    }
+
     fun forceCleanupPlayerBattleData(player: ServerPlayerEntity) {
         returnLocations.remove(player.uuid)
         playerToArena.remove(player.uuid)
+        cleanupCooldowns.remove(player.uuid)
         markPlayerForCleanup(player)
     }
 }

@@ -101,36 +101,36 @@ class CrossServerScreen : RankedBaseScreen(Text.translatable("cobblemon_ranked.c
         val scaleX = client.window.scaledWidth / 1920f
         val scaleY = client.window.scaledHeight / 1080f
 
-        // 准备文本
-        val webPortal = Text.translatable("cobblemon_ranked.cross_server.web_portal",
-            "http://139.196.103.55")
-        val authKey = Text.translatable("cobblemon_ranked.cross_server.auth_key",
-            "cobblemonranked")
-
-        // 使用正确的缩放因子计算位置
-        val baseY = (height * 0.1f).toInt()  // 屏幕高度10%处开始
-        val spacing = (20 * scaleY).toInt()   // 使用scaleY计算间距
-        val fontHeight = textRenderer.fontHeight
-
-        // 重置矩阵确保文本位置正确
-        context.matrices.push()
-        context.matrices.translate(0f, 0f, 500f)  // 确保文本在顶层渲染
-
-        // 第一行文本（门户链接）
-        val webPortalWidth = textRenderer.getWidth(webPortal)
-        val webPortalX = width / 2 - webPortalWidth / 2
-        val webPortalColor = if (webPortalRect?.contains(mouseX.toDouble(), mouseY.toDouble()) == true) 0x00FFFF else 0x00FFAA
-        context.drawText(textRenderer, webPortal, webPortalX, baseY, webPortalColor, true)
-        webPortalRect = Rect(webPortalX, baseY, webPortalWidth, fontHeight)
-
-        // 第二行文本（认证密钥）
-        val authKeyWidth = textRenderer.getWidth(authKey)
-        val authKeyX = width / 2 - authKeyWidth / 2
-        val authKeyColor = if (authKeyRect?.contains(mouseX.toDouble(), mouseY.toDouble()) == true) 0x00FFFF else 0x00FFAA
-        context.drawText(textRenderer, authKey, authKeyX, baseY + fontHeight + spacing, authKeyColor, false)
-        authKeyRect = Rect(authKeyX, baseY + fontHeight + spacing, authKeyWidth, fontHeight)
-
-        context.matrices.pop()  // 恢复矩阵状态
+//        // 准备文本
+//        val webPortal = Text.translatable("cobblemon_ranked.cross_server.web_portal",
+//            "http://139.196.103.55")
+//        val authKey = Text.translatable("cobblemon_ranked.cross_server.auth_key",
+//            "cobblemonranked")
+//
+//        // 使用正确的缩放因子计算位置
+//        val baseY = (height * 0.1f).toInt()  // 屏幕高度10%处开始
+//        val spacing = (20 * scaleY).toInt()   // 使用scaleY计算间距
+//        val fontHeight = textRenderer.fontHeight
+//
+//        // 重置矩阵确保文本位置正确
+//        context.matrices.push()
+//        context.matrices.translate(0f, 0f, 500f)  // 确保文本在顶层渲染
+//
+//        // 第一行文本（门户链接）
+//        val webPortalWidth = textRenderer.getWidth(webPortal)
+//        val webPortalX = width / 2 - webPortalWidth / 2
+//        val webPortalColor = if (webPortalRect?.contains(mouseX.toDouble(), mouseY.toDouble()) == true) 0x00FFFF else 0x00FFAA
+//        context.drawText(textRenderer, webPortal, webPortalX, baseY, webPortalColor, true)
+//        webPortalRect = Rect(webPortalX, baseY, webPortalWidth, fontHeight)
+//
+//        // 第二行文本（认证密钥）
+//        val authKeyWidth = textRenderer.getWidth(authKey)
+//        val authKeyX = width / 2 - authKeyWidth / 2
+//        val authKeyColor = if (authKeyRect?.contains(mouseX.toDouble(), mouseY.toDouble()) == true) 0x00FFFF else 0x00FFAA
+//        context.drawText(textRenderer, authKey, authKeyX, baseY + fontHeight + spacing, authKeyColor, false)
+//        authKeyRect = Rect(authKeyX, baseY + fontHeight + spacing, authKeyWidth, fontHeight)
+//
+//        context.matrices.pop()  // 恢复矩阵状态
 
         // 渲染聊天内容
         client.inGameHud.chatHud.render(context, client.inGameHud.ticks, mouseX, mouseY, false)

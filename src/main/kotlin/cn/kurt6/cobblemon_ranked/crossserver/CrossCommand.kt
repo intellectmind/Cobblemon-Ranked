@@ -48,10 +48,10 @@ object CrossCommand {
                                 }
 
                                 // +++ 验证是否为正版玩家 +++
-                                if (!player.gameProfile.properties.containsKey("textures")) {
-                                    source.sendError(MessageConfig.get("command.join.authenticated_only", CobblemonRanked.config.defaultLang))
-                                    return@executes Command.SINGLE_SUCCESS
-                                }
+//                                if (!player.gameProfile.properties.containsKey("textures")) {
+//                                    source.sendError(MessageConfig.get("command.join.authenticated_only", CobblemonRanked.config.defaultLang))
+//                                    return@executes Command.SINGLE_SUCCESS
+//                                }
 
                                 val mode = StringArgumentType.getString(context, "mode")
                                 val team = Utils.getPokemonTeam(player)

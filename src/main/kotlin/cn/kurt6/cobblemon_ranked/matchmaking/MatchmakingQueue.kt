@@ -141,39 +141,66 @@ class MatchmakingQueue {
     }
 
     private fun processQueue() {
-        val matchedPairs = mutableListOf<Pair<QueueEntry, QueueEntry>>()
-        synchronized(queue) {
+        val entries = synchronized(queue) {
             if (queue.size < 2) return
-            val entries = queue.values.toList()
-            val processedInThisRound = mutableSetOf<UUID>()
-            for (i in entries.indices) {
-                for (j in i + 1 until entries.size) {
-                    val p1 = entries[i]; val p2 = entries[j]
-                    if (p1.player.uuid in processedInThisRound || p2.player.uuid in processedInThisRound || p1.player.uuid in processingMatches || p2.player.uuid in processingMatches) continue
-                    if (p1.format != p2.format) continue
-                    if (!isEloCompatible(p1, p2)) continue
-                    if (Cobblemon.battleRegistry.getBattleByParticipatingPlayer(p1.player) != null || Cobblemon.battleRegistry.getBattleByParticipatingPlayer(p2.player) != null) {
-                        queue.remove(p1.player.uuid); queue.remove(p2.player.uuid); continue
+            queue.values.toList()
+        }
+
+        val matchedPairs = mutableListOf<Pair<QueueEntry, QueueEntry>>()
+        val processedInThisRound = mutableSetOf<UUID>()
+
+        for (i in entries.indices) {
+            for (j in i + 1 until entries.size) {
+                val p1 = entries[i]
+                val p2 = entries[j]
+
+                if (p1.player.uuid in processedInThisRound || p2.player.uuid in processedInThisRound) continue
+                if (p1.player.uuid in processingMatches || p2.player.uuid in processingMatches) continue
+                if (p1.format != p2.format) continue
+                if (!isEloCompatible(p1, p2)) continue
+                if (Cobblemon.battleRegistry.getBattleByParticipatingPlayer(p1.player) != null ||
+                    Cobblemon.battleRegistry.getBattleByParticipatingPlayer(p2.player) != null) {
+                    synchronized(queue) {
+                        queue.remove(p1.player.uuid)
+                        queue.remove(p2.player.uuid)
                     }
+                    continue
+                }
+
+                val removed = synchronized(queue) {
                     val removed1 = queue.remove(p1.player.uuid)
                     val removed2 = queue.remove(p2.player.uuid)
                     if (removed1 == null || removed2 == null) {
-                        removed1?.let { queue[p1.player.uuid] = it }; removed2?.let { queue[p2.player.uuid] = it }; continue
+                        removed1?.let { queue[p1.player.uuid] = it }
+                        removed2?.let { queue[p2.player.uuid] = it }
+                        null
+                    } else {
+                        p1 to p2
                     }
-                    processingMatches.add(p1.player.uuid); processingMatches.add(p2.player.uuid)
-                    processedInThisRound.add(p1.player.uuid); processedInThisRound.add(p2.player.uuid)
+                }
+
+                if (removed != null) {
+                    processingMatches.add(p1.player.uuid)
+                    processingMatches.add(p2.player.uuid)
+                    processedInThisRound.add(p1.player.uuid)
+                    processedInThisRound.add(p2.player.uuid)
                     matchedPairs.add(p1 to p2)
                     break
                 }
             }
         }
+
         matchedPairs.forEach { (p1, p2) ->
             try {
                 startRankedBattle(p1, p2)
             } catch (e: Exception) {
                 logger.error("Error starting battle", e)
-                processingMatches.remove(p1.player.uuid); processingMatches.remove(p2.player.uuid)
-                queue[p1.player.uuid] = p1; queue[p2.player.uuid] = p2
+                processingMatches.remove(p1.player.uuid)
+                processingMatches.remove(p2.player.uuid)
+                synchronized(queue) {
+                    queue[p1.player.uuid] = p1
+                    queue[p2.player.uuid] = p2
+                }
             }
         }
     }
@@ -254,8 +281,10 @@ class MatchmakingQueue {
             },
             onAbort = { survivor ->
                 val entry = if (survivor.uuid == player1.player.uuid) player1 else player2
-                if (!queue.containsKey(entry.player.uuid)) {
-                    queue[entry.player.uuid] = entry
+                synchronized(queue) {
+                    if (!queue.containsKey(entry.player.uuid)) {
+                        queue[entry.player.uuid] = entry
+                    }
                 }
                 processingMatches.remove(entry.player.uuid)
                 RankUtils.sendMessage(survivor, MessageConfig.get("queue.opponent_disconnected", lang))
