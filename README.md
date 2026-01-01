@@ -31,11 +31,9 @@ Player 1 has 5 Pokémon, which will trigger the selection interface, requiring t
 Player 2 has only 2 Pokémon, so the selection interface will not be triggered. Instead, after Player 1 completes their selection, the battle will begin directly.  
 ---
 
-## 🌐 Cross-Server Matchmaking
+## 🌐 Cross-Server Matchmaking(No longer maintained)
 
 > Available from v1.2.0+ — Supports connecting from **any server or single-player world** (requires **official Minecraft account**)  
-> If you encounter an abnormal match, you can report it to us on [Discord](https://discord.gg/guTkeS8wEE)  
-> Cloud server support guaranteed until at least 2026-01-01.  
 > Cross server matching demonstration and configuration: [Youtube](https://youtu.be/V8zmSMrxSuU)  
 
 ### ✅ How to Use
@@ -44,10 +42,6 @@ Player 2 has only 2 Pokémon, so the selection interface will not be triggered. 
 2. Modify `cloudServerId`, which should not be duplicated with other servers (the default `server` may already be used by someone)  
 3. Enter `/rank reload` to reload the configuration or restart the server.  
 4. Enter `/rank cross start` to connect to the cloud server  
-
-> 🌍 Public server:  
-> Website: [http://139.196.103.55](http://139.196.103.55)  
-> Token: `cobblemonranked`
 
 ### ⚠️ Current Limitations
 
