@@ -164,6 +164,7 @@ For example:
   "initialElo": 1000,                      // Elo at the beginning of a season
   "eloKFactor": 32,                        // Elo K-factor (affects Elo change magnitude)
   "minElo": 0,                             // Minimum Elo floor
+  "loserProtectionRate": 1.0,              // Loser protection rate (0.0 to 1.0). Loser will lose at most (winner_gain * loserProtectionRate). 1.0 = no protection
   "bannedPokemon": ["Mewtwo", "Arceus"],   // Banned Pokémon (e.g., legendaries)
   "bannedHeldItems": ["cobblemon:leftovers"], // Banned held items for Pokémon
   "bannedCarriedItems": ["cobblemon:leftovers"], // Banned items in player's inventory
