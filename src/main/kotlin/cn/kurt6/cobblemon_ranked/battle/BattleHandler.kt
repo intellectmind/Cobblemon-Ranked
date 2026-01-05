@@ -230,7 +230,7 @@ object BattleHandler {
 
         val entities = world.getEntitiesByClass(net.minecraft.entity.Entity::class.java, box) { entity ->
             if (entity is ItemEntity) {
-                return@getEntitiesByClass checkAndBlockBattleItem(entity, world) != null
+                return@getEntitiesByClass true
             }
 
             if (entity is PokemonEntity) {
@@ -470,8 +470,9 @@ object BattleHandler {
             }
             if (entity is ItemEntity) {
                 if (battleToIdMap.isNotEmpty()) {
-                    val blockResult = checkAndBlockBattleItem(entity, world)
-                    if (blockResult != null) entity.discard()
+                    if (shouldClearItem(entity, world)) {
+                        entity.discard()
+                    }
                 }
             }
         }
@@ -492,7 +493,7 @@ object BattleHandler {
         }
 
         ServerTickEvents.END_SERVER_TICK.register { server ->
-            if (++tickCounter % 20 != 0) return@register
+            if (++tickCounter % 10 != 0) return@register
             val now = System.currentTimeMillis()
             cleanupCooldowns.entries.removeIf { it.value < now }
             if (battleToIdMap.isEmpty()) return@register
@@ -500,7 +501,9 @@ object BattleHandler {
             activeWorlds.forEach { world ->
                 world.iterateEntities().forEach { entity ->
                     if (entity is ItemEntity && !entity.isRemoved) {
-                        if (checkAndBlockBattleItem(entity, world) != null) entity.discard()
+                        if (shouldClearItem(entity, world)) {
+                            entity.discard()
+                        }
                     }
                 }
             }
@@ -560,52 +563,19 @@ object BattleHandler {
         }
     }
 
-    private fun checkAndBlockBattleItem(entity: ItemEntity, world: ServerWorld): BlockResult? {
-        if (battleToIdMap.isEmpty()) return null
+    private fun shouldClearItem(entity: ItemEntity, world: ServerWorld): Boolean {
+        if (battleToIdMap.isEmpty()) return false
 
-        val droppedItemType = entity.stack.item
-        val itemName = droppedItemType.name.string
+        val cleanupRadiusSq = 2500.0
 
-        val activeBattleIds = battleToIdMap.values.toSet()
-
-        for (battle in battleToIdMap.keys) {
-            val battleId = battleToIdMap[battle]
-            if (battleId == null || battleId !in activeBattleIds) continue
-
-            try {
-                val nearbyPlayer = battle.actors
-                    .filterIsInstance<PlayerBattleActor>()
-                    .mapNotNull { it.entity as? ServerPlayerEntity }
-                    .firstOrNull { player ->
-                        !player.isDisconnected &&
-                                player.serverWorld == world &&
-                                player.squaredDistanceTo(entity) < 2500.0
-                    }
-
-                if (nearbyPlayer != null) {
-                    val isBattleItem = battle.actors
-                        .filterIsInstance<PlayerBattleActor>()
-                        .any { actor ->
-                            actor.pokemonList.any { battleMon ->
-                                battleMon.originalPokemon?.let { pokemon ->
-                                    !pokemon.heldItem().isEmpty &&
-                                            pokemon.heldItem().item == droppedItemType
-                                } ?: false
-                            }
-                        }
-
-                    if (isBattleItem) {
-                        return BlockResult(itemName, nearbyPlayer.name.string)
-                    }
-                }
-            } catch (e: Exception) {
-                CobblemonRanked.logger.warn("Error checking battle item for battle ${battleToIdMap[battle]}: ${e.message}")
-                continue
+        return battleToIdMap.keys.any { battle ->
+            battle.actors.filterIsInstance<PlayerBattleActor>().any { actor ->
+                val player = actor.entity as? ServerPlayerEntity ?: return@any false
+                if (player.isDisconnected || player.serverWorld != world) return@any false
+                player.squaredDistanceTo(entity) < cleanupRadiusSq
             }
         }
-        return null
     }
-    private data class BlockResult(val itemName: String, val playerName: String)
 
     fun handleSelectionPhaseDisconnect(winner: ServerPlayerEntity, loser: ServerPlayerEntity, formatName: String) {
         val seasonId = seasonManager.currentSeasonId
