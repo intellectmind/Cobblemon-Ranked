@@ -15,6 +15,7 @@ import com.cobblemon.mod.common.api.events.battles.BattleVictoryEvent
 import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.pokemon.Pokemon
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.registry.RegistryKey
@@ -41,6 +42,8 @@ object BattleHandler {
     private val battleIdToArena = ConcurrentHashMap<UUID, BattleArena>()
     val playerToArena = ConcurrentHashMap<UUID, BattleArena>()
 
+    private val playersInRankedBattle = ConcurrentHashMap.newKeySet<UUID>()
+
     private val pokemonOriginalLevels = ConcurrentHashMap<UUID, Int>()
 
     data class PendingBattleRequest(
@@ -56,6 +59,7 @@ object BattleHandler {
     val rankDao get() = CobblemonRanked.rankDao
     val rewardManager get() = CobblemonRanked.rewardManager
     private val seasonManager get() = CobblemonRanked.seasonManager
+    private val usedPokemonUuids = ConcurrentHashMap<UUID, MutableSet<UUID>>()
 
     private val returnLocations = ConcurrentHashMap<UUID, Pair<ServerWorld, Triple<Double, Double, Double>>>()
 
@@ -120,7 +124,11 @@ object BattleHandler {
 
     fun releaseArena(arena: BattleArena) {
         val shouldProcess = synchronized(occupiedArenas) {
-            occupiedArenas.remove(arena)
+            val removed = occupiedArenas.remove(arena)
+            if (removed) {
+                logger.debug("Released arena: ${arena.world}")
+            }
+            removed
         }
         if (shouldProcess) {
             processPendingRequests()
@@ -130,6 +138,7 @@ object BattleHandler {
     fun releaseArenaForPlayer(uuid: UUID) {
         val arena = playerToArena.remove(uuid)
         if (arena != null) {
+            logger.debug("Releasing arena for player $uuid")
             releaseArena(arena)
         }
     }
@@ -236,6 +245,7 @@ object BattleHandler {
 
         val violations = mutableListOf<String>()
         val speciesCount = mutableMapOf<String, Int>()
+        val restrictedCount = mutableMapOf<String, Int>()
         val heldItems = mutableListOf<String>()
         val seasonId = CobblemonRanked.seasonManager.currentSeasonId
 
@@ -244,6 +254,10 @@ object BattleHandler {
 
             if (config.bannedPokemon.map { it.lowercase() }.contains(speciesName)) {
                 violations.add("banned_pokemon:${pokemon.species.name}")
+            }
+
+            if (config.restrictedPokemon.map { it.lowercase() }.contains(speciesName)) {
+                restrictedCount["restricted"] = restrictedCount.getOrDefault("restricted", 0) + 1
             }
 
             if (config.maxLevel > 0 && pokemon.level > config.maxLevel) {
@@ -311,6 +325,14 @@ object BattleHandler {
             }
         }
 
+        val restrictedTotal = restrictedCount.getOrDefault("restricted", 0)
+        if (restrictedTotal > config.maxRestrictedCount) {
+            val restrictedNames = pokemonList
+                .filter { config.restrictedPokemon.map { r -> r.lowercase() }.contains(it.species.name.lowercase()) }
+                .joinToString(", ") { it.species.name }
+            violations.add("restricted_exceed:${config.maxRestrictedCount}($restrictedNames)")
+        }
+
         if (!config.allowDuplicateSpecies) {
             speciesCount.filter { it.value > 1 }.keys.forEach { species ->
                 violations.add("duplicate_species:$species")
@@ -343,6 +365,7 @@ object BattleHandler {
 
                 when (type) {
                     "banned_pokemon" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_pokemon", lang, "names" to detail))
+                    "restricted_exceed" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.restricted_exceed", lang, "max" to config.maxRestrictedCount.toString(), "names" to detail))
                     "overlevel" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.overleveled", lang, "max" to config.maxLevel.toString(), "names" to detail))
                     "duplicate_species" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.duplicates", lang, "names" to detail))
                     "duplicate_items" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.duplicate_items", lang))
@@ -392,14 +415,56 @@ object BattleHandler {
         }
     }
 
+    fun healPlayerPokemon(player: ServerPlayerEntity) {
+        if (!config.restorePokemonHpAfterBattle) return
+        val party = Cobblemon.storage.getParty(player)
+        party.forEach { pokemon ->
+            if (pokemon != null && !pokemon.isFainted() && pokemon.currentHealth < pokemon.maxHealth) {
+                pokemon.heal()
+            }
+        }
+    }
+
     fun isPlayerInRankedBattle(player: ServerPlayerEntity): Boolean {
         val battle = Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player) ?: return false
         return battleToIdMap.containsKey(battle)
     }
 
+    fun setPlayerInRankedBattle(playerId: UUID, inBattle: Boolean) {
+        if (inBattle) {
+            playersInRankedBattle.add(playerId)
+        } else {
+            playersInRankedBattle.remove(playerId)
+        }
+    }
+
+    fun isPlayerBlockBreakingRestricted(playerId: UUID): Boolean {
+        return config.preventBlockBreaking && playersInRankedBattle.contains(playerId)
+    }
+
+    fun cleanupStaleRankedBattleMarkers(server: MinecraftServer) {
+        val toRemove = mutableListOf<UUID>()
+        for (playerId in playersInRankedBattle) {
+            val player = server.playerManager.getPlayer(playerId)
+            if (player == null || !isPlayerInRankedBattle(player)) {
+                toRemove.add(playerId)
+            }
+        }
+        if (toRemove.isNotEmpty()) {
+            playersInRankedBattle.removeAll(toRemove)
+            logger.debug("Cleaned up ${toRemove.size} stale ranked battle markers")
+        }
+    }
+
+    fun clearAllRankedBattleMarkers() {
+        playersInRankedBattle.clear()
+    }
+
     fun register() {
-        net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents.BEFORE.register { world, player, pos, state, blockEntity ->
-            if (player is ServerPlayerEntity && isPlayerInRankedBattle(player)) false else true
+        PlayerBlockBreakEvents.BEFORE.register { world, player, pos, state, blockEntity ->
+            if (player !is ServerPlayerEntity) return@register true
+            if (!config.preventBlockBreaking) return@register true
+            return@register !isPlayerBlockBreakingRestricted(player.uuid)
         }
 
         CobblemonEvents.BATTLE_VICTORY.subscribe { event: BattleVictoryEvent ->
@@ -444,10 +509,20 @@ object BattleHandler {
 
                         removePlayerFromWaitingQueue(player.uuid)
                     }
+
+                    setPlayerInRankedBattle(player.uuid, false)
                 } catch (e: Exception) {
                     logger.error("Error handling player disconnect", e)
                     forceCleanupPlayerBattleData(player)
+                    setPlayerInRankedBattle(player.uuid, false)
                 }
+            }
+        }
+
+        ServerPlayConnectionEvents.JOIN.register { handler, sender, server ->
+            val player = handler.player
+            server.execute {
+                setPlayerInRankedBattle(player.uuid, false)
             }
         }
     }
@@ -479,6 +554,12 @@ object BattleHandler {
         restorePlayerPokemonLevels(winner)
         restorePlayerPokemonLevels(loser)
 
+        healPlayerPokemon(winner)
+        healPlayerPokemon(loser)
+
+        setPlayerInRankedBattle(winner.uuid, false)
+        setPlayerInRankedBattle(loser.uuid, false)
+
         if (!winner.isDisconnected) {
             RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", config.defaultLang, "elo" to winnerData.elo.toString()))
             sendBattleResultMessage(winner, winnerData, eloDiffWinner)
@@ -486,6 +567,8 @@ object BattleHandler {
             teleportBackIfPossible(winner)
             rewardManager.grantRankRewardIfEligible(winner, winnerData.getRankTitle(), formatName, winner.server)
         }
+        clearPlayerUsedPokemon(winner.uuid)
+        clearPlayerUsedPokemon(loser.uuid)
     }
 
     private fun handleDisconnectAsFlee(battle: PokemonBattle, disconnected: ServerPlayerEntity) {
@@ -496,6 +579,13 @@ object BattleHandler {
             if (formatName == "2v2singles") {
                 DuoBattleManager.handlePlayerQuit(disconnected)
                 cleanupBattleData(battle)
+                setPlayerInRankedBattle(disconnected.uuid, false)
+                clearPlayerUsedPokemon(disconnected.uuid)
+
+                val arena = playerToArena.remove(disconnected.uuid)
+                if (arena != null) {
+                    releaseArena(arena)
+                }
                 return
             }
 
@@ -507,10 +597,17 @@ object BattleHandler {
             if (disconnectedActor == null || winner == null) {
                 cleanupBattleData(battle)
                 restorePlayerPokemonLevels(disconnected)
+                setPlayerInRankedBattle(disconnected.uuid, false)
+                clearPlayerUsedPokemon(disconnected.uuid)
+
+                val arena = playerToArena.remove(disconnected.uuid)
+                if (arena != null) {
+                    releaseArena(arena)
+                }
                 return
             }
 
-            DuoBattleManager.markPokemonAsFainted(disconnected.uuid, battle)
+            markPokemonAsUsed(disconnected.uuid, UUID.randomUUID())
 
             val winnerData = getOrCreatePlayerData(winner.uuid, seasonId, formatName).apply { playerName = winner.name.string }
             val loserData = getOrCreatePlayerData(disconnected.uuid, seasonId, formatName).apply { playerName = disconnected.name.string }
@@ -532,6 +629,22 @@ object BattleHandler {
             restorePlayerPokemonLevels(winner)
             restorePlayerPokemonLevels(disconnected)
 
+            healPlayerPokemon(winner)
+            healPlayerPokemon(disconnected)
+
+            setPlayerInRankedBattle(disconnected.uuid, false)
+            setPlayerInRankedBattle(winner.uuid, false)
+
+            clearPlayerUsedPokemon(disconnected.uuid)
+            clearPlayerUsedPokemon(winner.uuid)
+
+            val arena1 = playerToArena.remove(disconnected.uuid)
+            val arena2 = playerToArena.remove(winner.uuid)
+            val arena = arena1 ?: arena2
+            if (arena != null) {
+                releaseArena(arena)
+            }
+
             if (!winner.isDisconnected) {
                 RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", config.defaultLang, "elo" to winnerData.elo.toString()))
                 sendBattleResultMessage(winner, winnerData, eloDiffWinner)
@@ -540,15 +653,16 @@ object BattleHandler {
                 rewardManager.grantRankRewardIfEligible(winner, winnerData.getRankTitle(), formatName, winner.server)
             }
 
-            val arena = playerToArena.remove(disconnected.uuid)
-            playerToArena.remove(winner.uuid)
-            if (arena != null) {
-                releaseArena(arena)
-            }
-
         } catch (e: Exception) {
             logger.error("Error handling disconnect as flee", e)
             restorePlayerPokemonLevels(disconnected)
+            setPlayerInRankedBattle(disconnected.uuid, false)
+            clearPlayerUsedPokemon(disconnected.uuid)
+
+            val arena = playerToArena.remove(disconnected.uuid)
+            if (arena != null) {
+                releaseArena(arena)
+            }
         } finally {
             if (battleId != null) {
                 battleToIdMap.remove(battle)
@@ -566,6 +680,14 @@ object BattleHandler {
         if (player != null) {
             val arena = playerToArena[player.uuid]
             if (arena != null) battleIdToArena[battleId] = arena
+        }
+
+        battle.actors.filterIsInstance<PlayerBattleActor>().forEach { actor ->
+            actor.entity?.let { entity ->
+                if (entity is ServerPlayerEntity) {
+                    setPlayerInRankedBattle(entity.uuid, true)
+                }
+            }
         }
     }
 
@@ -609,14 +731,67 @@ object BattleHandler {
                 restorePlayerPokemonLevels(winner)
                 restorePlayerPokemonLevels(loser)
 
+                healPlayerPokemon(winner)
+                healPlayerPokemon(loser)
+
                 teleportBackIfPossible(winner)
                 teleportBackIfPossible(loser)
 
-                playerToArena.remove(winner.uuid)
-                playerToArena.remove(loser.uuid)
+                val arena1 = playerToArena.remove(winner.uuid)
+                val arena2 = playerToArena.remove(loser.uuid)
+                val arena = arena1 ?: arena2
+                if (arena != null) {
+                    releaseArena(arena)
+                }
+
+                setPlayerInRankedBattle(winner.uuid, false)
+                setPlayerInRankedBattle(loser.uuid, false)
+
+                clearPlayerUsedPokemon(winner.uuid)
+                clearPlayerUsedPokemon(loser.uuid)
             }
         } finally {
             finalBattleCleanup(battle, battleId)
+        }
+    }
+
+    fun markPokemonAsUsed(playerUuid: UUID, pokemonUuid: UUID) {
+        usedPokemonUuids.computeIfAbsent(playerUuid) { mutableSetOf() }.add(pokemonUuid)
+        logger.debug("Marked Pokemon $pokemonUuid as used for player $playerUuid")
+    }
+
+    fun isPokemonUsed(playerUuid: UUID, pokemonUuid: UUID): Boolean {
+        return usedPokemonUuids[playerUuid]?.contains(pokemonUuid) == true
+    }
+
+    fun getUsedPokemonCount(playerUuid: UUID): Int {
+        return usedPokemonUuids[playerUuid]?.size ?: 0
+    }
+
+    fun getUsedPokemonSet(playerUuid: UUID): Set<UUID> {
+        return usedPokemonUuids[playerUuid]?.toSet() ?: emptySet()
+    }
+
+    fun clearPlayerUsedPokemon(playerUuid: UUID) {
+        usedPokemonUuids.remove(playerUuid)
+        logger.debug("Cleared used Pokemon for player $playerUuid")
+    }
+
+    fun clearAllUsedPokemon() {
+        usedPokemonUuids.clear()
+    }
+
+    fun cleanupStaleUsedPokemonMarkers(server: MinecraftServer) {
+        val toRemove = mutableListOf<UUID>()
+        for (playerId in usedPokemonUuids.keys) {
+            val player = server.playerManager.getPlayer(playerId)
+            if (player == null || !isPlayerInRankedBattle(player)) {
+                toRemove.add(playerId)
+            }
+        }
+        if (toRemove.isNotEmpty()) {
+            toRemove.forEach { usedPokemonUuids.remove(it) }
+            logger.debug("Cleaned up ${toRemove.size} stale used Pokemon markers")
         }
     }
 
@@ -700,5 +875,7 @@ object BattleHandler {
     fun forceCleanupPlayerBattleData(player: ServerPlayerEntity) {
         returnLocations.remove(player.uuid)
         playerToArena.remove(player.uuid)
+        setPlayerInRankedBattle(player.uuid, false)
+        clearPlayerUsedPokemon(player.uuid)
     }
 }

@@ -130,25 +130,30 @@ class CobblemonRanked : ModInitializer {
         BattleHandler.register()
 
         ServerLifecycleEvents.SERVER_STOPPING.register {
-            matchmakingQueue.shutdown()
-            DuoMatchmakingQueue.shutdown()
-            matchmakingQueue.clear()
-            CrossServerSocket.disconnect()
-        }
-
-        ServerLifecycleEvents.SERVER_STOPPED.register {
             try {
-                DuoBattleManager.clearAll()
+                BattleHandler.clearAllRankedBattleMarkers()
+                BattleHandler.clearAllUsedPokemon()
+
+                matchmakingQueue.shutdown()
+                DuoMatchmakingQueue.shutdown()
+                matchmakingQueue.clear()
+                CrossServerSocket.disconnect()
                 cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.shutdown()
+                DuoBattleManager.clearAll()
+
                 rankDao.close()
             } catch (e: Exception) {
-                logger.warn("Error during final cleanup", e)
+                logger.warn("Error during server stopping", e)
             }
         }
     }
 
     private fun setupSeasonCheck() {
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
+            BattleHandler.clearAllRankedBattleMarkers()
+            BattleHandler.clearAllUsedPokemon()
+            logger.info("Cleared all ranked battle markers and used Pokemon on server start")
+
             var tickCounter = 0
             val interval = 20 * 60 * 10
             var cleanupCounter = 0
@@ -156,6 +161,7 @@ class CobblemonRanked : ModInitializer {
 
             ServerTickEvents.START_SERVER_TICK.register {
                 if (++tickCounter >= interval) {
+                    tickCounter = 0
                     seasonManager.checkSeasonEnd(server)
                 }
 
@@ -168,6 +174,10 @@ class CobblemonRanked : ModInitializer {
                         } catch (e: Exception) {
                             logger.warn("Failed to cleanup old return locations", e)
                         }
+                    }
+                    server.execute {
+                        BattleHandler.cleanupStaleRankedBattleMarkers(server)
+                        BattleHandler.cleanupStaleUsedPokemonMarkers(server)
                     }
                 }
             }

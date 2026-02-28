@@ -147,7 +147,7 @@ class TeamSelectionScreen(
             context.fill(x, y, x + opCardWidth, y + opCardHeight, 0x66550000)
             context.drawBorder(x, y, opCardWidth, opCardHeight, 0xFFAA0000.toInt())
 
-            renderPokemonInfo(context, info, x, y, opCardWidth, false)
+            renderOpponentPokemon(context, info, x, y, opCardWidth)
         }
     }
 
@@ -189,34 +189,66 @@ class TeamSelectionScreen(
                 context.drawText(textRenderer, "#$order", x + myCardWidth - 15, y + 2, 0xFF00FF00.toInt(), true)
             }
 
-            renderPokemonInfo(context, info, x, y, myCardWidth, true)
+            renderMyPokemon(context, info, x, y, myCardWidth, index)
         }
     }
 
-    private fun renderPokemonInfo(context: DrawContext, info: SelectionPokemonInfo, x: Int, y: Int, width: Int, isSelf: Boolean) {
+    private fun renderOpponentPokemon(context: DrawContext, info: SelectionPokemonInfo, x: Int, y: Int, width: Int) {
+        val localizedName = getLocalizedPokemonName(info.species)
+
         val nameColor = if (info.shiny) 0xFFFFD700.toInt() else 0xFFFFFFFF.toInt()
-        val displayName = if (info.displayName.length > 9) info.displayName.substring(0, 8) + "." else info.displayName
+
+        val displayName = if (localizedName.length > 9) localizedName.substring(0, 8) + "…" else localizedName
         context.drawText(textRenderer, displayName, x + 4, y + 4, nameColor, true)
 
-        val genderKey = when(info.gender) {
-            "MALE" -> "cobblemon_ranked.selection.male"
-            "FEMALE" -> "cobblemon_ranked.selection.female"
+        val genderStr = when(info.gender) {
+            "MALE" -> "♂"
+            "FEMALE" -> "♀"
             else -> ""
         }
-        val genderStr = if (genderKey.isNotEmpty()) Text.translatable(genderKey).string else ""
         val lvlStr = Text.translatable("cobblemon_ranked.selection.lvl", info.level).string
         val detailStr = "$lvlStr $genderStr"
-
         context.drawText(textRenderer, detailStr, x + 4, y + 15, 0xFFAAAAAA.toInt(), true)
 
         if (info.shiny) {
-            val shinyIcon = Text.translatable("cobblemon_ranked.selection.shiny")
-            context.drawText(textRenderer, shinyIcon, x + width - 10, y + 15, 0xFFFF0000.toInt(), true)
+            context.drawText(textRenderer, "✨", x + width - 12, y + 15, 0xFFFFD700.toInt(), true)
+        }
+    }
+
+    private fun renderMyPokemon(context: DrawContext, info: SelectionPokemonInfo, x: Int, y: Int, width: Int, index: Int) {
+        val localizedName = getLocalizedPokemonName(info.species)
+
+        val displayName = if (info.displayName != info.species) {
+            if (info.displayName.length > 12) info.displayName.substring(0, 11) + "…" else info.displayName
+        } else {
+            if (localizedName.length > 9) localizedName.substring(0, 8) + "…" else localizedName
         }
 
-        if (isSelf && !selectedIndices.contains(myTeam.indexOf(info)) && selectedIndices.size >= limit) {
+        val nameColor = if (info.shiny) 0xFFFFD700.toInt() else 0xFFFFFFFF.toInt()
+        context.drawText(textRenderer, displayName, x + 4, y + 4, nameColor, true)
+
+        val genderStr = when(info.gender) {
+            "MALE" -> "♂"
+            "FEMALE" -> "♀"
+            else -> ""
+        }
+        val lvlStr = Text.translatable("cobblemon_ranked.selection.lvl", info.level).string
+        val detailStr = "$lvlStr $genderStr"
+        context.drawText(textRenderer, detailStr, x + 4, y + 15, 0xFFAAAAAA.toInt(), true)
+
+        if (info.shiny) {
+            context.drawText(textRenderer, "✨", x + width - 12, y + 15, 0xFFFFD700.toInt(), true)
+        }
+
+        if (!selectedIndices.contains(index) && selectedIndices.size >= limit) {
             context.fill(x, y, x + width, y + 36, 0xAA000000.toInt())
         }
+    }
+
+    private fun getLocalizedPokemonName(englishName: String): String {
+        val key = "cobblemon.species.${englishName.lowercase()}.name"
+        val translated = Text.translatable(key).string
+        return if (translated == key) englishName else translated
     }
 
     override fun shouldPause() = false

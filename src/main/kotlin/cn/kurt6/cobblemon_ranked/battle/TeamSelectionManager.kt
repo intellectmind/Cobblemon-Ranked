@@ -66,6 +66,9 @@ object TeamSelectionManager {
         val config = CobblemonRanked.config
         val lang = config.defaultLang
 
+        BattleHandler.setPlayerInRankedBattle(player1.uuid, true)
+        BattleHandler.setPlayerInRankedBattle(player2.uuid, true)
+
         val limit = if (!config.enableTeamPreview) {
             6
         } else {
@@ -76,8 +79,8 @@ object TeamSelectionManager {
             }
         }
 
-        val validTeam1 = team1Uuids.filter { !DuoBattleManager.isPokemonUsed(player1.uuid, it) }
-        val validTeam2 = team2Uuids.filter { !DuoBattleManager.isPokemonUsed(player2.uuid, it) }
+        val validTeam1 = team1Uuids.filter { !BattleHandler.isPokemonUsed(player1.uuid, it) }
+        val validTeam2 = team2Uuids.filter { !BattleHandler.isPokemonUsed(player2.uuid, it) }
 
         val adjustedLimit1 = limit.coerceAtMost(validTeam1.size)
         val adjustedLimit2 = limit.coerceAtMost(validTeam2.size)
@@ -131,16 +134,23 @@ object TeamSelectionManager {
 
             val opponent = if (session.player1.uuid == player.uuid) session.player2 else session.player1
 
+            BattleHandler.setPlayerInRankedBattle(player.uuid, false)
+            BattleHandler.setPlayerInRankedBattle(opponent.uuid, false)
+
             BattleHandler.restorePlayerPokemonLevels(player)
             BattleHandler.restorePlayerPokemonLevels(opponent)
 
-            if (session.formatName == "2v2singles") {
-                val arena1 = BattleHandler.playerToArena.remove(player.uuid)
-                val arena2 = BattleHandler.playerToArena.remove(opponent.uuid)
-                val arena = arena1 ?: arena2
-                if (arena != null) {
-                    BattleHandler.releaseArena(arena)
-                }
+            BattleHandler.setPlayerInRankedBattle(player.uuid, false)
+            BattleHandler.setPlayerInRankedBattle(opponent.uuid, false)
+
+            BattleHandler.clearPlayerUsedPokemon(player.uuid)
+            BattleHandler.clearPlayerUsedPokemon(opponent.uuid)
+
+            val arena1 = BattleHandler.playerToArena.remove(player.uuid)
+            val arena2 = BattleHandler.playerToArena.remove(opponent.uuid)
+            val arena = arena1 ?: arena2
+            if (arena != null) {
+                BattleHandler.releaseArena(arena)
             }
 
             if (opponent.isDisconnected) {
@@ -165,7 +175,6 @@ object TeamSelectionManager {
 
             BattleHandler.releaseArenaForPlayer(player.uuid)
             BattleHandler.releaseArenaForPlayer(opponent.uuid)
-
             BattleHandler.forceCleanupPlayerBattleData(opponent)
             BattleHandler.forceCleanupPlayerBattleData(player)
         }
@@ -186,14 +195,48 @@ object TeamSelectionManager {
             myParty.find { it.uuid == uuid }
         }.map { p ->
             val displayLevel = if (config.enableCustomLevel) config.customBattleLevel else p.level
-            SelectionPokemonInfo(p.uuid, p.species.name, p.getDisplayName().string, displayLevel, p.gender.toString(), p.shiny, p.form.name)
+
+            val displayName = p.getDisplayName().string
+
+            val formName = if (p.form != null && p.form.name != "normal") {
+                p.form.name
+            } else {
+                ""
+            }
+
+            SelectionPokemonInfo(
+                p.uuid,
+                p.species.name,
+                displayName,
+                displayLevel,
+                p.gender.toString(),
+                p.shiny,
+                formName
+            )
         }
 
         val opTeamInfo = opponentTeamUuids.mapNotNull { uuid ->
             opParty.find { it.uuid == uuid }
         }.map { p ->
             val displayLevel = if (config.enableCustomLevel) config.customBattleLevel else p.level
-            SelectionPokemonInfo(UUID.randomUUID(), p.species.name, p.species.name, displayLevel, p.gender.toString(), p.shiny, p.form.name)
+
+            val displayName = p.species.name
+
+            val formName = if (p.form != null && p.form.name != "normal") {
+                p.form.name
+            } else {
+                ""
+            }
+
+            SelectionPokemonInfo(
+                UUID.randomUUID(),
+                p.species.name,
+                displayName,
+                displayLevel,
+                p.gender.toString(),
+                p.shiny,
+                formName
+            )
         }
 
         val payload = TeamSelectionStartPayload(limit, config.teamSelectionTime, opponent.name.string, opTeamInfo, myTeamInfo)
@@ -211,6 +254,12 @@ object TeamSelectionManager {
 
             if (!validateSubmission(player, selectedUuids, session.limit)) {
                 sendError()
+                return
+            }
+
+            if (!BattleHandler.validateTeam(player, selectedUuids, session.format)) {
+                val lang = CobblemonRanked.config.defaultLang
+                RankUtils.sendMessage(player, MessageConfig.get("queue.selection_invalid_team", lang))
                 return
             }
 
@@ -249,7 +298,7 @@ object TeamSelectionManager {
         val party = Cobblemon.storage.getParty(player)
 
         val allInParty = selected.all { uuid ->
-            party.any { it.uuid == uuid } && !DuoBattleManager.isPokemonUsed(player.uuid, uuid)
+            party.any { it.uuid == uuid } && !BattleHandler.isPokemonUsed(player.uuid, uuid)
         }
         if (!allInParty) return false
 
@@ -267,6 +316,10 @@ object TeamSelectionManager {
                 val lang = CobblemonRanked.config.defaultLang
                 if(session.p1Selection == null) RankUtils.sendMessage(session.player1, MessageConfig.get("queue.selection_timeout", lang))
                 if(session.p2Selection == null) RankUtils.sendMessage(session.player2, MessageConfig.get("queue.selection_timeout", lang))
+
+                BattleHandler.setPlayerInRankedBattle(session.player1.uuid, true)
+                BattleHandler.setPlayerInRankedBattle(session.player2.uuid, true)
+
                 teleportAndStartBattle(session, p1Final, p2Final)
             }
         }
@@ -291,6 +344,9 @@ object TeamSelectionManager {
 
         session.player1.teleport(session.player1.serverWorld, session.p1Pos.x, session.p1Pos.y, session.p1Pos.z, 0f, 0f)
         session.player2.teleport(session.player2.serverWorld, session.p2Pos.x, session.p2Pos.y, session.p2Pos.z, 0f, 0f)
+
+        BattleHandler.setPlayerInRankedBattle(session.player1.uuid, true)
+        BattleHandler.setPlayerInRankedBattle(session.player2.uuid, true)
 
         startActualBattle(
             session.player1, t1Uuids,

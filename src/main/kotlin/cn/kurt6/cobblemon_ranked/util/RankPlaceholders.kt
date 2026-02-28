@@ -18,50 +18,67 @@ object RankPlaceholders {
 
         CobblemonRanked.logger.info("Registering PlaceholderAPI support for Cobblemon Ranked")
 
-        // ELO 分数 - %cobblemon_ranked:elo% 或 %cobblemon_ranked:elo_singles%
-        registerPapi("elo", CobblemonRanked.config.initialElo.toString()) { it.elo.toString() }
+        val formats = listOf("singles", "doubles", "2v2singles")
 
-        // 段位称号 - %cobblemon_ranked:rank_title% 或 %cobblemon_ranked:rank_title_doubles%
-        registerPapi("rank_title", "Unranked") { it.getRankTitle() }
+        formats.forEach { format ->
+            // ELO 分数 - %cobblemon_ranked:elo_singles%
+            registerSimplePapi("elo_$format", CobblemonRanked.config.initialElo.toString(), format) {
+                it.elo.toString()
+            }
 
-        // 胜率 - %cobblemon_ranked:win_rate% 或 %cobblemon_ranked:win_rate_2v2singles%
-        registerPapi("win_rate", "0.0%") { String.format("%.1f%%", it.winRate) }
+            // 段位称号 - %cobblemon_ranked:rank_title_singles%
+            registerSimplePapi("rank_title_$format", "Unranked", format) {
+                it.getRankTitle()
+            }
 
-        // 胜场 - %cobblemon_ranked:wins%
-        registerPapi("wins", "0") { it.wins.toString() }
+            // 胜率 - %cobblemon_ranked:win_rate_singles%
+            registerSimplePapi("win_rate_$format", "0.0%", format) {
+                String.format("%.1f%%", it.winRate)
+            }
 
-        // 负场 - %cobblemon_ranked:losses%
-        registerPapi("losses", "0") { it.losses.toString() }
+            // 胜场 - %cobblemon_ranked:wins_singles%
+            registerSimplePapi("wins_$format", "0", format) {
+                it.wins.toString()
+            }
 
-        // 总场次 - %cobblemon_ranked:total_games%
-        registerPapi("total_games", "0") { (it.wins + it.losses).toString() }
+            // 负场 - %cobblemon_ranked:losses_singles%
+            registerSimplePapi("losses_$format", "0", format) {
+                it.losses.toString()
+            }
 
-        // 当前连胜 - %cobblemon_ranked:streak%
-        registerPapi("streak", "0") { it.winStreak.toString() }
+            // 总场次 - %cobblemon_ranked:total_games_singles%
+            registerSimplePapi("total_games_$format", "0", format) {
+                (it.wins + it.losses).toString()
+            }
 
-        // 最佳连胜 - %cobblemon_ranked:best_streak%
-        registerPapi("best_streak", "0") { it.bestWinStreak.toString() }
+            // 当前连胜 - %cobblemon_ranked:streak_singles%
+            registerSimplePapi("streak_$format", "0", format) {
+                it.winStreak.toString()
+            }
 
-        // 逃跑次数 - %cobblemon_ranked:flee_count%
-        registerPapi("flee_count", "0") { it.fleeCount.toString() }
+            // 最佳连胜 - %cobblemon_ranked:best_streak_singles%
+            registerSimplePapi("best_streak_$format", "0", format) {
+                it.bestWinStreak.toString()
+            }
 
-        // 排名 - %cobblemon_ranked:rank% 或 %cobblemon_ranked:rank_singles%
-        Placeholders.register(Identifier.of("cobblemon_ranked", "rank")) { ctx, arg ->
-            val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
-            val format = if (arg.isNullOrBlank()) CobblemonRanked.config.defaultFormat else arg
-            val seasonId = CobblemonRanked.seasonManager.currentSeasonId
-
-            try {
-                val rank = CobblemonRanked.rankDao.getPlayerRank(player.uuid, seasonId, format)
-                if (rank > 0) {
-                    PlaceholderResult.value("#$rank")
-                } else {
-                    PlaceholderResult.value("Unranked")
-                }
-            } catch (e: Exception) {
-                PlaceholderResult.value("Error")
+            // 逃跑次数 - %cobblemon_ranked:flee_count_singles%
+            registerSimplePapi("flee_count_$format", "0", format) {
+                it.fleeCount.toString()
             }
         }
+
+        registerSimplePapi("elo", CobblemonRanked.config.initialElo.toString(), CobblemonRanked.config.defaultFormat) { it.elo.toString() }
+        registerSimplePapi("rank_title", "Unranked", CobblemonRanked.config.defaultFormat) { it.getRankTitle() }
+        registerSimplePapi("win_rate", "0.0%", CobblemonRanked.config.defaultFormat) { String.format("%.1f%%", it.winRate) }
+        registerSimplePapi("wins", "0", CobblemonRanked.config.defaultFormat) { it.wins.toString() }
+        registerSimplePapi("losses", "0", CobblemonRanked.config.defaultFormat) { it.losses.toString() }
+        registerSimplePapi("total_games", "0", CobblemonRanked.config.defaultFormat) { (it.wins + it.losses).toString() }
+        registerSimplePapi("streak", "0", CobblemonRanked.config.defaultFormat) { it.winStreak.toString() }
+        registerSimplePapi("best_streak", "0", CobblemonRanked.config.defaultFormat) { it.bestWinStreak.toString() }
+        registerSimplePapi("flee_count", "0", CobblemonRanked.config.defaultFormat) { it.fleeCount.toString() }
+
+        // 排名 - %cobblemon_ranked:rank% 或 %cobblemon_ranked:rank_singles%
+        registerRankPlaceholder()
 
         // 赛季名称 - %cobblemon_ranked:season_name%
         Placeholders.register(Identifier.of("cobblemon_ranked", "season_name")) { _, _ ->
@@ -86,10 +103,106 @@ object RankPlaceholders {
             PlaceholderResult.value("${remaining.days}d ${remaining.hours}h ${remaining.minutes}m")
         }
 
-        // 下一段位所需 ELO - %cobblemon_ranked:next_rank_elo%
-        Placeholders.register(Identifier.of("cobblemon_ranked", "next_rank_elo")) { ctx, arg ->
+        // 下一段位所需 ELO - %cobblemon_ranked:next_rank_elo% 或 %cobblemon_ranked:next_rank_elo_singles%
+        registerNextRankPlaceholder()
+
+        // 下一段位名称 - %cobblemon_ranked:next_rank_name% 或 %cobblemon_ranked:next_rank_name_singles%
+        registerNextRankNamePlaceholder()
+
+        // 排队状态 - %cobblemon_ranked:queue_status%
+        Placeholders.register(Identifier.of("cobblemon_ranked", "queue_status")) { ctx, _ ->
             val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
-            val format = if (arg.isNullOrBlank()) CobblemonRanked.config.defaultFormat else arg
+
+            val in1v1 = CobblemonRanked.matchmakingQueue.getPlayer(player.uuid, "singles") != null
+            val in2v2 = CobblemonRanked.matchmakingQueue.getPlayer(player.uuid, "doubles") != null
+            val inDuo = DuoMatchmakingQueue.isInQueue(player.uuid)
+
+            val status = when {
+                inDuo -> "2v2Singles Queue"
+                in2v2 -> "Doubles Queue"
+                in1v1 -> "Singles Queue"
+                else -> "Not in Queue"
+            }
+
+            PlaceholderResult.value(status)
+        }
+
+        val totalPlaceholders = 14 + formats.size * 9
+        CobblemonRanked.logger.info("Successfully registered $totalPlaceholders placeholders for Cobblemon Ranked")
+    }
+
+    private fun registerSimplePapi(
+        key: String,
+        defaultVal: String,
+        format: String,
+        extractor: (PlayerRankData) -> String
+    ) {
+        Placeholders.register(Identifier.of("cobblemon_ranked", key)) { ctx, _ ->
+            val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
+
+            val seasonId = CobblemonRanked.seasonManager.currentSeasonId
+
+            try {
+                val data = CobblemonRanked.rankDao.getPlayerData(player.uuid, seasonId, format)
+
+                if (data == null) {
+                    when {
+                        key.startsWith("elo") -> PlaceholderResult.value(CobblemonRanked.config.initialElo.toString())
+                        key.startsWith("rank_title") -> PlaceholderResult.value("Unranked")
+                        else -> PlaceholderResult.value(defaultVal)
+                    }
+                } else {
+                    PlaceholderResult.value(extractor(data))
+                }
+            } catch (e: Exception) {
+                CobblemonRanked.logger.warn("Error getting placeholder value for $key: ${e.message}")
+                PlaceholderResult.value(defaultVal)
+            }
+        }
+    }
+
+    private fun registerRankPlaceholder() {
+        Placeholders.register(Identifier.of("cobblemon_ranked", "rank")) { ctx, _ ->
+            val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
+            val format = CobblemonRanked.config.defaultFormat
+            val seasonId = CobblemonRanked.seasonManager.currentSeasonId
+
+            try {
+                val rank = CobblemonRanked.rankDao.getPlayerRank(player.uuid, seasonId, format)
+                if (rank > 0) {
+                    PlaceholderResult.value("#$rank")
+                } else {
+                    PlaceholderResult.value("Unranked")
+                }
+            } catch (e: Exception) {
+                PlaceholderResult.value("Error")
+            }
+        }
+
+        val formats = listOf("singles", "doubles", "2v2singles")
+        formats.forEach { format ->
+            Placeholders.register(Identifier.of("cobblemon_ranked", "rank_$format")) { ctx, _ ->
+                val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
+                val seasonId = CobblemonRanked.seasonManager.currentSeasonId
+
+                try {
+                    val rank = CobblemonRanked.rankDao.getPlayerRank(player.uuid, seasonId, format)
+                    if (rank > 0) {
+                        PlaceholderResult.value("#$rank")
+                    } else {
+                        PlaceholderResult.value("Unranked")
+                    }
+                } catch (e: Exception) {
+                    PlaceholderResult.value("Error")
+                }
+            }
+        }
+    }
+
+    private fun registerNextRankPlaceholder() {
+        Placeholders.register(Identifier.of("cobblemon_ranked", "next_rank_elo")) { ctx, _ ->
+            val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
+            val format = CobblemonRanked.config.defaultFormat
             val seasonId = CobblemonRanked.seasonManager.currentSeasonId
 
             try {
@@ -106,10 +219,32 @@ object RankPlaceholders {
             }
         }
 
-        // 下一段位名称 - %cobblemon_ranked:next_rank_name%
-        Placeholders.register(Identifier.of("cobblemon_ranked", "next_rank_name")) { ctx, arg ->
+        val formats = listOf("singles", "doubles", "2v2singles")
+        formats.forEach { format ->
+            Placeholders.register(Identifier.of("cobblemon_ranked", "next_rank_elo_$format")) { ctx, _ ->
+                val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
+                val seasonId = CobblemonRanked.seasonManager.currentSeasonId
+
+                try {
+                    val data = CobblemonRanked.rankDao.getPlayerData(player.uuid, seasonId, format)
+                    val currentElo = data?.elo ?: CobblemonRanked.config.initialElo
+
+                    val nextRankElo = CobblemonRanked.config.rankTitles.keys
+                        .sorted()
+                        .firstOrNull { it > currentElo }
+
+                    PlaceholderResult.value(nextRankElo?.toString() ?: "MAX")
+                } catch (e: Exception) {
+                    PlaceholderResult.value("Error")
+                }
+            }
+        }
+    }
+
+    private fun registerNextRankNamePlaceholder() {
+        Placeholders.register(Identifier.of("cobblemon_ranked", "next_rank_name")) { ctx, _ ->
             val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
-            val format = if (arg.isNullOrBlank()) CobblemonRanked.config.defaultFormat else arg
+            val format = CobblemonRanked.config.defaultFormat
             val seasonId = CobblemonRanked.seasonManager.currentSeasonId
 
             try {
@@ -126,59 +261,24 @@ object RankPlaceholders {
             }
         }
 
-        // 排队状态 - %cobblemon_ranked:queue_status%
-        Placeholders.register(Identifier.of("cobblemon_ranked", "queue_status")) { ctx, _ ->
-            val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
+        val formats = listOf("singles", "doubles", "2v2singles")
+        formats.forEach { format ->
+            Placeholders.register(Identifier.of("cobblemon_ranked", "next_rank_name_$format")) { ctx, _ ->
+                val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
+                val seasonId = CobblemonRanked.seasonManager.currentSeasonId
 
-            val in1v1 = CobblemonRanked.matchmakingQueue.getPlayer(player.uuid, "singles") != null
-            val in2v2 = CobblemonRanked.matchmakingQueue.getPlayer(player.uuid, "doubles") != null
-            val inDuo = DuoMatchmakingQueue.isInQueue(player.uuid)
+                try {
+                    val data = CobblemonRanked.rankDao.getPlayerData(player.uuid, seasonId, format)
+                    val currentElo = data?.elo ?: CobblemonRanked.config.initialElo
 
-            val status = when {
-                inDuo -> "2v2 Singles Queue"
-                in2v2 -> "2v2 Doubles Queue"
-                in1v1 -> "1v1 Queue"
-                else -> "Not in Queue"
-            }
+                    val nextRank = CobblemonRanked.config.rankTitles
+                        .filterKeys { it > currentElo }
+                        .minByOrNull { it.key }
 
-            PlaceholderResult.value(status)
-        }
-
-        CobblemonRanked.logger.info("Successfully registered ${14} placeholders for Cobblemon Ranked")
-    }
-
-    private fun registerPapi(
-        key: String,
-        defaultVal: String = "0",
-        extractor: (PlayerRankData) -> String
-    ) {
-        Placeholders.register(Identifier.of("cobblemon_ranked", key)) { ctx, arg ->
-            val player = ctx.player ?: return@register PlaceholderResult.invalid("No player")
-
-            // 参数为格式(如 singles/doubles/2v2singles)，否则使用默认格式
-            val format = if (arg.isNullOrBlank()) {
-                CobblemonRanked.config.defaultFormat
-            } else {
-                arg
-            }
-
-            val seasonId = CobblemonRanked.seasonManager.currentSeasonId
-
-            try {
-                val data = CobblemonRanked.rankDao.getPlayerData(player.uuid, seasonId, format)
-
-                if (data == null) {
-                    when (key) {
-                        "elo" -> PlaceholderResult.value(CobblemonRanked.config.initialElo.toString())
-                        "rank_title" -> PlaceholderResult.value("Unranked")
-                        else -> PlaceholderResult.value(defaultVal)
-                    }
-                } else {
-                    PlaceholderResult.value(extractor(data))
+                    PlaceholderResult.value(nextRank?.value ?: "MAX RANK")
+                } catch (e: Exception) {
+                    PlaceholderResult.value("Error")
                 }
-            } catch (e: Exception) {
-                CobblemonRanked.logger.warn("Error getting placeholder value for $key: ${e.message}")
-                PlaceholderResult.value(defaultVal)
             }
         }
     }

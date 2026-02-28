@@ -28,14 +28,17 @@ object DuoBattleManager {
     private val indices = mutableMapOf<DuoTeam, Int>()
     private val arenaCache = mutableMapOf<DuoTeam, Pair<BattleArena, List<ArenaCoordinate>>>()
 
-    private val usedPokemonUuids = ConcurrentHashMap<UUID, MutableSet<UUID>>()
-
     fun registerBattle(battleId: UUID, team1: DuoTeam, team2: DuoTeam) {
         activeBattles[battleId] = team1 to team2
         activePlayers[team1.getActivePlayer().uuid] = team1
         activePlayers[team2.getActivePlayer().uuid] = team2
         teamBattleIdMap[team1] = battleId
         teamBattleIdMap[team2] = battleId
+
+        BattleHandler.setPlayerInRankedBattle(team1.player1.uuid, true)
+        BattleHandler.setPlayerInRankedBattle(team1.player2.uuid, true)
+        BattleHandler.setPlayerInRankedBattle(team2.player1.uuid, true)
+        BattleHandler.setPlayerInRankedBattle(team2.player2.uuid, true)
     }
 
     fun onBattleStarted(battleId: UUID, p1: ServerPlayerEntity, p2: ServerPlayerEntity) {
@@ -80,11 +83,11 @@ object DuoBattleManager {
     }
 
     private fun markAsUsed(playerUuid: UUID, originalPokemonUuid: UUID) {
-        usedPokemonUuids.computeIfAbsent(playerUuid) { mutableSetOf() }.add(originalPokemonUuid)
+        BattleHandler.markPokemonAsUsed(playerUuid, originalPokemonUuid)
     }
 
     fun isPokemonUsed(playerUuid: UUID, originalPokemonUuid: UUID): Boolean {
-        return usedPokemonUuids[playerUuid]?.contains(originalPokemonUuid) == true
+        return BattleHandler.isPokemonUsed(playerUuid, originalPokemonUuid)
     }
 
     fun handlePlayerQuit(player: ServerPlayerEntity) {
@@ -94,10 +97,13 @@ object DuoBattleManager {
             ?: activePlayers.entries.find { it.value != team && teamBattleIdMap[it.value] == battleId }?.key
 
         BattleHandler.restorePlayerPokemonLevels(player)
+        BattleHandler.setPlayerInRankedBattle(player.uuid, false)
+        BattleHandler.clearPlayerUsedPokemon(player.uuid)
 
         val arenaToRelease = arenaCache[team]?.first
         if (arenaToRelease != null) {
             BattleHandler.releaseArena(arenaToRelease)
+            arenaCache.remove(team)
         }
 
         if (opponentUuid != null) {
@@ -253,6 +259,10 @@ object DuoBattleManager {
         }.ifErrored {
             pendingTeams.remove(p1.uuid)
             pendingTeams.remove(p2.uuid)
+            BattleHandler.setPlayerInRankedBattle(p1.uuid, false)
+            BattleHandler.setPlayerInRankedBattle(p2.uuid, false)
+            BattleHandler.clearPlayerUsedPokemon(p1.uuid)
+            BattleHandler.clearPlayerUsedPokemon(p2.uuid)
         }
     }
 
@@ -287,6 +297,9 @@ object DuoBattleManager {
                 BattleHandler.teleportBackIfPossible(player)
             }
             BattleHandler.restorePlayerPokemonLevels(player)
+            BattleHandler.healPlayerPokemon(player)
+            BattleHandler.setPlayerInRankedBattle(player.uuid, false)
+            BattleHandler.clearPlayerUsedPokemon(player.uuid)
         }
 
         val format = "2v2singles"
@@ -411,8 +424,12 @@ object DuoBattleManager {
             arenaCache.remove(team)
             pendingTeams.remove(team.player1.uuid)
             pendingTeams.remove(team.player2.uuid)
-            usedPokemonUuids.remove(team.player1.uuid)
-            usedPokemonUuids.remove(team.player2.uuid)
+
+            BattleHandler.setPlayerInRankedBattle(team.player1.uuid, false)
+            BattleHandler.setPlayerInRankedBattle(team.player2.uuid, false)
+
+            BattleHandler.clearPlayerUsedPokemon(team.player1.uuid)
+            BattleHandler.clearPlayerUsedPokemon(team.player2.uuid)
         }
 
         arenasToRelease.forEach { arena ->
@@ -424,7 +441,6 @@ object DuoBattleManager {
         activeBattles.clear()
         activePlayers.clear()
         pendingTeams.clear()
-        usedPokemonUuids.clear()
         teamBattleIdMap.clear()
         indices.clear()
         arenaCache.clear()

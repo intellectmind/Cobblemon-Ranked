@@ -12,7 +12,7 @@ data class ClientVersionPayload(
 
     companion object {
         val ID = CustomPayload.Id<ClientVersionPayload>(Identifier.of("cobblemon_ranked", "client_version"))
-        const val MINIMUM_VERSION = "1.4.0"
+        const val MINIMUM_VERSION = "1.4.1"
 
         val CODEC: PacketCodec<PacketByteBuf, ClientVersionPayload> = PacketCodec.of(
             { payload, buf ->

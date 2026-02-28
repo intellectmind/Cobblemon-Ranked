@@ -71,6 +71,12 @@ data class RankConfig(
     @Comment("Banned Pokémon / 禁止使用的宝可梦")
     var bannedPokemon: List<String> = listOf("Mewtwo", "Arceus"),
 
+    @Comment("Restricted Pokémon list / 受限宝可梦列表")
+    var restrictedPokemon: List<String> = listOf("Mew", "Celebi"),
+
+    @Comment("Maximum number of restricted Pokémon allowed in a team / 受限宝可梦最大允许携带数量")
+    var maxRestrictedCount: Int = 2,
+
     @Comment("Banned held items for Pokémon / 禁止宝可梦携带的道具")
     var bannedHeldItems: List<String> = listOf("cobblemon:leftovers"),
 
@@ -118,6 +124,12 @@ data class RankConfig(
 
     @Comment("Forcefully modify the level of Pokémon / 设置强制修改宝可梦的等级")
     var customBattleLevel: Int = 50,
+
+    @Comment("Prevent players from breaking blocks during ranked battles / 对战时是否禁止玩家破坏方块")
+    var preventBlockBreaking: Boolean = true,
+
+    @Comment("Restore Pokémon HP after battle / 对战结束后是否恢复宝可梦血量")
+    var restorePokemonHpAfterBattle: Boolean = true,
 
     @Comment("Available battle arenas after matchmaking, each with 2 teleport coordinates / 匹配成功后可用的战斗场地列表，支持多个场地随机挑选，每个场地需要定义 2 个传送坐标")
     var battleArenas: List<BattleArena> = listOf(
@@ -205,5 +217,4 @@ data class RankConfig(
 
     @Comment("Cloud WebSocket Address(Either IP or domain name is acceptable) / 云端 WebSocket 地址(ip或者域名都可以)")
     var cloudWebSocketUrl: String = ""
-
 )

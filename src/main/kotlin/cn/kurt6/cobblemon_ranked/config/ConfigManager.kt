@@ -112,6 +112,12 @@ object ConfigManager {
                     ?.map { it.value as String }
                     ?: rawConfig.bannedPokemon
 
+                val rawRestrictedPokemon = json.get("restrictedPokemon") as? blue.endless.jankson.JsonArray
+                val fixedRestrictedPokemon = rawRestrictedPokemon
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.restrictedPokemon
+
                 val rawAllowedFormats = json.get("allowedFormats") as? blue.endless.jankson.JsonArray
                 val fixedAllowedFormats = rawAllowedFormats
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
@@ -180,6 +186,15 @@ object ConfigManager {
 
                 val rawEnableCustomLevel = json.get("enableCustomLevel")
                 val fixedEnableCustomLevel = rawEnableCustomLevel?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.enableCustomLevel
+
+                val rawPreventBlockBreaking = json.get("preventBlockBreaking")
+                val fixedPreventBlockBreaking = rawPreventBlockBreaking?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.preventBlockBreaking
+
+                val rawRestorePokemonHpAfterBattle = json.get("restorePokemonHpAfterBattle")
+                val fixedRestorePokemonHpAfterBattle = rawRestorePokemonHpAfterBattle?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.restorePokemonHpAfterBattle
+
+                val rawMaxRestrictedCount = json.get("maxRestrictedCount")
+                val fixedMaxRestrictedCount = rawMaxRestrictedCount?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.maxRestrictedCount
 
                 val rawRankRequirementsElement = json.get("rankRequirements")
                 val fixedRankRequirements: Map<String, Double> = if (rawRankRequirementsElement is blue.endless.jankson.JsonObject) {
@@ -291,6 +306,8 @@ object ConfigManager {
                     bannedCarriedItems = fixedBannedCarriedItems,
                     bannedHeldItems = fixedBannedHeldItems,
                     bannedPokemon = fixedBannedPokemon,
+                    restrictedPokemon = fixedRestrictedPokemon,
+                    maxRestrictedCount = fixedMaxRestrictedCount,
                     maxQueueTime = fixedMaxQueueTime,
                     allowDuplicateItems = fixedAllowDuplicateItems,
                     enableTeamPreview = fixedEnableTeamPreview,
@@ -313,6 +330,8 @@ object ConfigManager {
                     maxLevel = fixedMaxLevel,
                     customBattleLevel = fixedCustomBattleLevel,
                     enableCustomLevel = fixedEnableCustomLevel,
+                    preventBlockBreaking = fixedPreventBlockBreaking,
+                    restorePokemonHpAfterBattle = fixedRestorePokemonHpAfterBattle,
                     banUsageBelow = fixedBanUsageBelow,
                     banUsageAbove = fixedBanUsageAbove,
                     banTopUsed = fixedBanTopUsed,

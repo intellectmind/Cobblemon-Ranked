@@ -53,6 +53,18 @@ object MessageConfig {
                     "zh" to "§a已发放获胜奖励！",
                     "en" to "§aVictory rewards have been granted!"
                 ),
+                "battle.team.restricted_exceed" to mapOf(
+                    "zh" to "§c队伍中受限宝可梦数量超过{max}只: {names}",
+                    "en" to "§cYour team contains more than {max} restricted Pokémon: {names}"
+                ),
+                "queue.selection_invalid_team" to mapOf(
+                    "zh" to "§c选人失败：你的队伍不符合对战规则（可能包含禁用或超出数量限制的宝可梦）",
+                    "en" to "§cSelection failed: Your team does not meet battle requirements (may contain banned or excessive restricted Pokémon)"
+                ),
+                "battle.restore_hp" to mapOf(
+                    "zh" to "§a已恢复宝可梦血量",
+                    "en" to "§aPokémon HP has been restored"
+                ),
                 "pokemon_usage.header" to mapOf(
                     "zh" to "§e===== 赛季 §6{season} {name} §e宝可梦使用统计 (第 §6{page}§e/§6{total}§e 页) =====",
                     "en" to "§e===== Season §6{season} {name} §ePokemon Usage Statistics (Page §6{page}§e/§6{total}§e) ====="
@@ -312,7 +324,8 @@ object MessageConfig {
                 "rank.summary" to mapOf(
                     "zh" to "§6{player} 的 {format} 数据（赛季 #{season} {name})\\n§f段位: §e{title} §8(ELO: {elo})\\n§f全球排名: §b{rank}\\n§f战绩: §a{wins}§7/§c{losses} §8(胜率: {rate}%)\\n§f连胜: §6{streak} §8(最高: {best})\\n§f断线次数: §c{flee}",
                     "en" to "§6{player}'s {format} Stats (Season #{season} {name})\\n§fRank: §e{title} §8(ELO: {elo})\\n§fGlobal Rank: §b{rank}\\n§fRecord: §a{wins}§7/§c{losses} §8(Win Rate: {rate}%)\\n§fStreak: §6{streak} §8(Best: {best})\\n§fDisconnection: §c{flee}"
-                ),"leaderboard.empty" to mapOf(
+                ),
+                "leaderboard.empty" to mapOf(
                     "zh" to "§7赛季 #{season} {name} [{format}] 暂无排位数据",
                     "en" to "§7No ranking data for season #{season} {name} [{format}]"
                 ),

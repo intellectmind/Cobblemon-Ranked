@@ -14,7 +14,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.Text.translatable
 
-const val CLIENT_MOD_VERSION = "1.4.0"
+const val CLIENT_MOD_VERSION = "1.4.1"
 
 fun registerClientReceivers() {
     ClientPlayConnectionEvents.JOIN.register { handler, sender, client ->
