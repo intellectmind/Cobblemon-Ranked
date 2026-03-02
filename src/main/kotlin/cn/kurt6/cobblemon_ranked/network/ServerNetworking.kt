@@ -64,12 +64,7 @@ class ServerNetworking {
 
             val playersText = formats.joinToString(" ") { format ->
                 val count = participationByFormat[format] ?: 0
-                val formatName = when (format) {
-                    "singles" -> if (lang == "zh") "单打" else "Singles"
-                    "doubles" -> if (lang == "zh") "双打" else "Doubles"
-                    "2v2singles" -> if (lang == "zh") "2v2单打" else "2v2Singles"
-                    else -> format
-                }
+                val formatName = RankUtils.getFormatDisplayName(format, lang)
                 "§a$formatName: §f$count"
             }
 

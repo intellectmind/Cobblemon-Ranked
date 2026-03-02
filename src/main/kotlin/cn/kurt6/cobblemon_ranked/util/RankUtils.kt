@@ -9,6 +9,16 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
 object RankUtils {
+    fun getFormatDisplayName(format: String, lang: String): String {
+        val normalizedLang = lang.lowercase()
+        return when (format) {
+            "singles" -> if (normalizedLang == "zh") "单打" else "Singles"
+            "doubles" -> if (normalizedLang == "zh") "双打" else "Doubles"
+            "2v2singles" -> if (normalizedLang == "zh") "2v2单打" else "2v2 Singles"
+            else -> format
+        }
+    }
+
     fun sendMessage(player: PlayerEntity, message: String) {
         player.sendMessage(Text.literal(message), false)
     }

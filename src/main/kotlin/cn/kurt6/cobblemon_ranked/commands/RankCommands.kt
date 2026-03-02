@@ -4,6 +4,7 @@ import cn.kurt6.cobblemon_ranked.CobblemonRanked
 import cn.kurt6.cobblemon_ranked.config.ConfigManager
 import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import cn.kurt6.cobblemon_ranked.matchmaking.DuoMatchmakingQueue
+import cn.kurt6.cobblemon_ranked.util.RankUtils
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -497,12 +498,7 @@ object RankCommands {
 
         val playersText = formats.joinToString(" ") { format ->
             val count = participationByFormat[format] ?: 0
-            val formatName = when (format) {
-                "singles" -> if (lang == "zh") "单打" else "Singles"
-                "doubles" -> if (lang == "zh") "双打" else "Doubles"
-                "2v2singles" -> if (lang == "zh") "2v2单打" else "2v2 Singles"
-                else -> format
-            }
+            val formatName = RankUtils.getFormatDisplayName(format, lang)
             "§a$formatName: §f$count"
         }
 
